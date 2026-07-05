@@ -41,7 +41,7 @@ norii/
         src/                 커맨드·파일 I/O·감시 구현
         Cargo.toml
         tauri.conf.json
-        capabilities/        권한 스코프 선언 (파일시스템 접근 범위)
+        capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)
       index.html
       vite.config.ts          vite-tsconfig-paths로 @app~@shared 별칭 반영
       tsconfig.app.json       FSD 레이어 path alias 정의
