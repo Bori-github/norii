@@ -71,7 +71,7 @@
 | 컴포넌트/렌더 환경 | `@vitest/browser` + `playwright`(WebKit) | browser 4.1.9 · playwright 1.61.1 | Playwright의 패치된 WebKit 렌더 — WebKit 기반이나 시스템 WKWebView와 동일하진 않음. happy-dom 대체 (→ [테스트 전략](testing.md#레이어별--무엇을-어디서-테스트하나)) |
 | 컴포넌트 쿼리 | `@testing-library/react` | 16.3.2 | 역할·텍스트 기반 쿼리 |
 | 실앱 E2E | `tauri-plugin-webdriver` (Choochmeque · MIT) | **0.2.1 · 2026-02 (pre-1.0)** | 임베디드 W3C WebDriver — macOS WKWebView 지원. 대안: 공식 임베디드 provider `@wdio/tauri-service`·CrabNebula(상용). **운영 동일 E2E** |
-| IPC 타입 계약 | `tauri-specta` | 1.0.2 | Rust 커맨드 → TS 타입 생성 (계약 드리프트 차단) |
+| IPC 타입 계약 | `tauri-specta` | **2.0.0-rc.25 (pre-1.0)** | Rust 커맨드 → TS 타입 생성 (계약 드리프트 차단). **Tauri 2 지원은 2.0.0-rc 라인뿐**(1.x는 Tauri v1 전용) |
 | 커버리지 | `@vitest/coverage-v8` | 4.1.9 | 커버리지 측정 (V8 기반) |
 | Rust 포맷 | rustfmt (`cargo fmt`) | Rust 툴체인 기본 | 별도 설치 없음 |
 | Rust 린트 | Clippy (`cargo clippy`) | Rust 툴체인 기본 | `-D warnings` |
@@ -79,7 +79,7 @@
 | Git 훅 | lefthook (`lefthook`) | 2.1.9 | 커밋 전 게이트 자동화 |
 | 커밋 린트 | commitlint (`@commitlint/cli`·`@commitlint/config-conventional`) | 21.2.0 | Conventional Commits 검증 (→ [커밋 컨벤션](../rules/commit-convention.md)) |
 
-> 스택의 1.0 미만 도구는 둘(oxfmt·tauri-plugin-webdriver)뿐이다. oxfmt는 광범위 채택(Vue.js·Turborepo·Sentry 등)됐으나 1.0 미만이라 버전을 정확히 핀하고 업그레이드 시 포맷 diff를 확인한다. 상세·리스크 관리는 [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것).
+> **스택의 1.0 미만 도구는 셋 — oxfmt · tauri-plugin-webdriver · tauri-specta(2.0.0-rc). 이 목록은 이 문서(위 표)를 단일 출처로 둔다.** 셋 모두 버전을 정확히 핀하고 정식판 도달 시 재확인한다(추적 → [실제 구현 계획 — 열린 결정](implementation-plan.md#열린-결정-open-decisions)). 도구별 리스크 관리는 각 전략 문서를 단일 출처로 둔다: oxfmt → [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것), tauri-plugin-webdriver → [테스트 전략](testing.md#성숙도-주의).
 
 ## 결정 근거 (why)
 

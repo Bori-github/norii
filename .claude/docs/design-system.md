@@ -59,7 +59,7 @@ widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소
 ```
 
 - 토큰 정의는 `panda.config.ts` 한 곳. `shared`가 이를 감싸 앱에 노출한다.
-- `styled-system/`는 생성물이라 버전관리에서 제외하거나 빌드시 생성한다(→ [파일/폴더 구조](project-structure.md)).
+- `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](project-structure.md)).
 
 ## 통합
 
