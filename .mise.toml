@@ -1,0 +1,62 @@
+# norii 개발환경 — 툴 버전 핀 + 태스크 단일 출처.
+# `mise install`로 고정 버전 세팅, `mise run <task>`로 실행. 팀/CI가 동일 환경을 재현한다.
+# 상세는 .claude/docs/development-commands.md를 단일 출처로 둔다.
+
+[tools]
+node = "24"
+rust = "stable"
+pnpm = "11"
+
+[tasks.dev]
+description = "데스크탑 앱 개발 모드 실행 (Vite + Tauri)"
+run = "pnpm --filter desktop tauri dev"
+
+[tasks.build]
+description = "데스크탑 앱 릴리스 빌드"
+run = "pnpm --filter desktop tauri build"
+
+# --- JS/TS 품질 (Oxc 패밀리) ---
+[tasks.lint]
+description = "JS/TS 린트 (oxlint — 전체 저장소 1패스)"
+run = "oxlint"
+
+[tasks.fmt]
+description = "JS/TS 포맷 적용 (oxfmt)"
+run = "oxfmt ."
+
+[tasks.fmt-check]
+description = "JS/TS 포맷 검증 (수정 없음)"
+run = "oxfmt --check ."
+
+[tasks.fsd-lint]
+description = "FSD 아키텍처 검증 (steiger — 레이어 참조·Public API·구조)"
+run = "steiger apps/desktop/src"
+
+[tasks.typecheck]
+description = "타입 체크 (tsc, 패키지별)"
+run = "turbo typecheck"
+
+[tasks.test]
+description = "JS/TS 테스트 (Vitest, 패키지별)"
+run = "turbo test"
+
+# --- Rust 품질 (툴체인 기본) ---
+[tasks.rust-fmt-check]
+description = "Rust 포맷 검증"
+dir = "apps/desktop/src-tauri"
+run = "cargo fmt --check"
+
+[tasks.clippy]
+description = "Rust 린트 (clippy, 경고를 에러로)"
+dir = "apps/desktop/src-tauri"
+run = "cargo clippy -- -D warnings"
+
+[tasks.rust-test]
+description = "Rust 테스트"
+dir = "apps/desktop/src-tauri"
+run = "cargo test"
+
+# --- 통합 게이트 (커밋 전 필수) ---
+[tasks.check]
+description = "포맷·린트·FSD·타입·테스트 게이트 (JS/TS + Rust, 수정 없이 검증)"
+depends = ["fmt-check", "lint", "fsd-lint", "typecheck", "test", "rust-fmt-check", "clippy", "rust-test"]
