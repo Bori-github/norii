@@ -63,13 +63,15 @@
 | 영역 | 도구 (패키지) | 버전 | 비고 |
 |---|---|---|---|
 | JS/TS 린트 | oxlint (`oxlint`) | 1.72.0 | Oxc 패밀리 (Vite/Rolldown과 정렬) |
-| JS/TS 포맷 | oxfmt (`oxfmt`) | **0.57.0 (베타)** | 0.x — 유일한 1.0 미만. 버전 정확 핀 + 업그레이드 시 diff 확인 |
+| JS/TS 포맷 | oxfmt (`oxfmt`) | **0.57.0 (베타)** | 0.x — 스택의 1.0 미만 둘 중 하나(다른 하나는 tauri-plugin-webdriver). 버전 정확 핀 + 업그레이드 시 diff 확인 |
 | FSD 아키텍처 린트 | Steiger (`steiger`) | 0.5.13 | FSD 공식 린터. 레이어 참조·Public API 강제 (→ [프론트엔드 아키텍처](frontend-architecture.md)) |
 | 경로 별칭 | vite-tsconfig-paths (`vite-tsconfig-paths`) | 6.1.1 | tsconfig `paths`(@app~@shared)를 Vite에 반영 |
 | 타입 체크 | TypeScript (`tsc --noEmit`) | 6.0.3 | (애플리케이션 스택과 동일) |
 | JS/TS 테스트 | Vitest (`vitest`) | 4.1.9 | Vite 8 네이티브 |
-| 컴포넌트 테스트 | `@testing-library/react` | 16.3.2 | React 컴포넌트 테스트 |
-| DOM 환경 | `happy-dom` | 20.10.6 | Vitest용 경량 DOM (jsdom보다 빠름) |
+| 컴포넌트/렌더 환경 | `@vitest/browser` + `playwright`(WebKit) | browser 4.1.9 · playwright 1.61.1 | Playwright의 패치된 WebKit 렌더 — WebKit 기반이나 시스템 WKWebView와 동일하진 않음. happy-dom 대체 (→ [테스트 전략](testing.md#레이어별--무엇을-어디서-테스트하나)) |
+| 컴포넌트 쿼리 | `@testing-library/react` | 16.3.2 | 역할·텍스트 기반 쿼리 |
+| 실앱 E2E | `tauri-plugin-webdriver` (Choochmeque · MIT) | **0.2.1 · 2026-02 (pre-1.0)** | 임베디드 W3C WebDriver — macOS WKWebView 지원. 대안: 공식 임베디드 provider `@wdio/tauri-service`·CrabNebula(상용). **운영 동일 E2E** |
+| IPC 타입 계약 | `tauri-specta` | 1.0.2 | Rust 커맨드 → TS 타입 생성 (계약 드리프트 차단) |
 | 커버리지 | `@vitest/coverage-v8` | 4.1.9 | 커버리지 측정 (V8 기반) |
 | Rust 포맷 | rustfmt (`cargo fmt`) | Rust 툴체인 기본 | 별도 설치 없음 |
 | Rust 린트 | Clippy (`cargo clippy`) | Rust 툴체인 기본 | `-D warnings` |
@@ -77,7 +79,7 @@
 | Git 훅 | lefthook (`lefthook`) | 2.1.9 | 커밋 전 게이트 자동화 |
 | 커밋 린트 | commitlint (`@commitlint/cli`·`@commitlint/config-conventional`) | 21.2.0 | Conventional Commits 검증 (→ [커밋 컨벤션](../rules/commit-convention.md)) |
 
-> oxfmt만 0.x(베타)다. 광범위 채택(Vue.js·Turborepo·Sentry 등)됐으나 1.0 미만이라 버전을 정확히 핀하고 업그레이드 시 포맷 diff를 확인한다. 상세·리스크 관리는 [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것).
+> 스택의 1.0 미만 도구는 둘(oxfmt·tauri-plugin-webdriver)뿐이다. oxfmt는 광범위 채택(Vue.js·Turborepo·Sentry 등)됐으나 1.0 미만이라 버전을 정확히 핀하고 업그레이드 시 포맷 diff를 확인한다. 상세·리스크 관리는 [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것).
 
 ## 결정 근거 (why)
 

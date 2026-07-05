@@ -15,6 +15,7 @@ norii는 가볍고 빠른 로컬 우선(local-first) 마크다운 **소스 뷰**
 - [기술 스택](.claude/docs/tech-stack.md)
 - [비목표와 경계 규칙](.claude/rules/non-goals.md)
 - [실제 구현 계획](.claude/docs/implementation-plan.md)
+- [테스트 전략 · TDD](.claude/docs/testing.md)
 
 ## 설계 문서
 

@@ -23,8 +23,10 @@ norii에서 작업하는 사람과 에이전트가 따르는 필수 규칙이다
 
 ## 품질 게이트
 
-- 커밋 전 `mise run check`를 통과시킨다 — JS/TS(oxfmt·oxlint·tsc·Vitest) + Rust(cargo fmt·clippy·test)를 수정 없이 검증한다(→ [코드 품질 전략](../docs/code-quality.md) · [개발 명령](../docs/development-commands.md)).
-- 한글 IME 입력은 초기부터 수동 확인 체크리스트에 포함한다(→ [에디터 전략](../docs/editor-strategy.md)).
+- **TDD 기본**: 신규 기능·커맨드·상태 전이·파서 로직은 **실패하는 테스트를 먼저** 쓰고 구현한다(→ [테스트 전략 · TDD](../docs/testing.md)).
+- **테스트는 설명 가능해야 한다**: 새 기능의 테스트는 **왜 필요한지·무엇을 보장하는지·어디까지 커버하는지(경계)**를 드러낸다. 설명 못 하는 테스트는 다시 쓴다(→ [테스트 전략](../docs/testing.md#테스트는-스스로를-설명한다)).
+- 커밋 전 `mise run check`를 통과시킨다 — JS/TS(oxfmt·oxlint·Steiger·tsc·Vitest) + Rust(cargo fmt·clippy·test)를 수정 없이 검증한다(→ [코드 품질 전략](../docs/code-quality.md) · [개발 명령](../docs/development-commands.md)).
+- 한글 IME 입력은 위험 영역이므로 실제 WKWebView E2E로 자동 검증한다(→ [테스트 전략](../docs/testing.md#위험-영역은-실제-앱으로-검증-핵심) · [에디터 전략](../docs/editor-strategy.md)).
 - 자동 검증이 불가능한 영역은 그 이유와 수동 검증 방법을 PR·문서에 남긴다.
 
 ## 성능 규칙
