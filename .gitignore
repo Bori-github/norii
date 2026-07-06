@@ -17,6 +17,9 @@ styled-system/
 .turbo/
 *.tsbuildinfo
 
+# Test coverage (생성물)
+coverage/
+
 # Logs
 *.log
 npm-debug.log*

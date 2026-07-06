@@ -1,0 +1,9 @@
+{
+  "name": "@norii/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "description": "워크스페이스 공유 TypeScript 설정 — 루트 tsconfig.base.json(엄격 옵션의 단일 출처)을 용도별 프리셋으로 확장한다",
+  "files": [
+    "*.json"
+  ]
+}

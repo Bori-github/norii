@@ -5,7 +5,12 @@
 [tools]
 node = "24"
 rust = "stable"
-pnpm = "11"
+# 기본(aqua) 백엔드는 Intel mac(darwin/amd64)용 pnpm을 지원하지 않아 npm 백엔드로 설치한다.
+"npm:pnpm" = "11.10.0"
+
+[env]
+# 태스크가 oxlint·oxfmt·steiger·turbo를 맨 이름으로 호출하므로 워크스페이스 실행 파일 경로를 PATH에 추가한다.
+_.path = ["{{config_root}}/node_modules/.bin"]
 
 [tasks.dev]
 description = "데스크탑 앱 개발 모드 실행 (Vite + Tauri)"
@@ -59,4 +64,13 @@ run = "cargo test"
 # --- 통합 게이트 (커밋 전 필수) ---
 [tasks.check]
 description = "포맷·린트·FSD·타입·테스트 게이트 (JS/TS + Rust, 수정 없이 검증)"
-depends = ["fmt-check", "lint", "fsd-lint", "typecheck", "test", "rust-fmt-check", "clippy", "rust-test"]
+depends = [
+  "fmt-check",
+  "lint",
+  "fsd-lint",
+  "typecheck",
+  "test",
+  "rust-fmt-check",
+  "clippy",
+  "rust-test",
+]

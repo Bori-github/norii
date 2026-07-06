@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+# lefthook은 postinstall로 Git 훅을 설치하므로 빌드 스크립트 실행을 허용한다.
+allowBuilds:
+  lefthook: true
