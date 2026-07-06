@@ -64,7 +64,7 @@
 | 영역 | 도구 (패키지) | 버전 | 비고 |
 |---|---|---|---|
 | JS/TS 린트 | oxlint (`oxlint`) | 1.72.0 | Oxc 패밀리 (Vite/Rolldown과 정렬) |
-| JS/TS 포맷 | oxfmt (`oxfmt`) | **0.57.0 (베타)** | 0.x — 스택의 1.0 미만 둘 중 하나(다른 하나는 tauri-plugin-webdriver). 버전 정확 핀 + 업그레이드 시 diff 확인 |
+| JS/TS 포맷 | oxfmt (`oxfmt`) | **0.57.0 (베타)** | 0.x pre-1.0(목록·관리 규칙은 아래 노트가 단일 출처). 버전 정확 핀 + 업그레이드 시 diff 확인 |
 | FSD 아키텍처 린트 | Steiger (`steiger`) | 0.5.13 | FSD 공식 린터. 레이어 참조·Public API 강제 (→ [프론트엔드 아키텍처](frontend-architecture.md)) |
 | 경로 별칭 | vite-tsconfig-paths (`vite-tsconfig-paths`) | 6.1.1 | tsconfig `paths`(@app~@shared)를 Vite에 반영 |
 | 타입 체크 | TypeScript (`tsc --noEmit`) | 6.0.3 | (애플리케이션 스택과 동일) |

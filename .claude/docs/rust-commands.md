@@ -33,18 +33,19 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 //   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
 
 #[tauri::command]
-async fn read_dir_tree(root: String, depth: u32) -> Result<Vec<TreeNode>, AppError>;
-// TreeNode { path, name, kind: "dir"|"file", isSymlink?: bool, children?: TreeNode[] }
-// depth: 한 번에 읽을 깊이 (거대 트리는 레벨별 lazy 로딩 → document-model.md)
+async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
+// TreeNode { path, name, kind: "dir"|"file", is_symlink?: bool }
+// (TS에는 rename_all=camelCase로 isSymlink로 노출 → 아래 원칙)
+// 한 호출 = 그 폴더 "한 단계"의 항목 목록 (VS Code의 fetchChildren과 동일한 레벨별 lazy).
+// 응답에 중첩이 없으므로 빈 폴더 = 빈 배열이고, 트리 조립과 "아직 안 읽음" 상태는
+// 프론트 모델이 담당한다(→ document-model.md). 호출당 한 단계라 순환 심링크가 폭주할 수 없다.
 // 반환 규칙(결정론 — 파일 처리 동작은 VS Code(MIT)를 참고, → ../rules/prior-art.md):
-// - children 부재 = 아직 읽지 않음(lazy), [] = 읽었고 빈 폴더
 // - 필터: 디렉터리는 전부, 파일은 .md/.markdown만 (확장자 대소문자 무시)
 // - 정렬: 디렉터리 우선 → 자연 정렬 → 동률이면 원본 이름의 코드포인트 비교로 확정.
 //   자연 정렬: 이름을 숫자/비숫자 구간으로 분할해 숫자 구간은 수치 비교,
 //   비숫자 구간은 대소문자 무시 코드포인트 비교 (2.md < 10.md)
 // - 숨김 항목(이름이 '.'으로 시작)은 제외
-// - 심볼릭 링크: isSymlink로 표시하고 일반 항목처럼 펼친다(lazy 1단계 읽기라 순환이
-//   폭주하지 않음). 단 depth > 1 선읽기는 심링크 디렉터리 안으로 내려가지 않는다.
+// - 심볼릭 링크: is_symlink로 표시하고 일반 항목처럼 다룬다.
 //   대상이 없는(깨진) 링크도 표시하며, 열면 AppError::NotFound.
 //   루트 밖을 가리키는 링크는 펼칠 때 canonicalize 스코프 검증이 거부한다(→ 권한)
 
@@ -109,7 +110,7 @@ plugin-log           통합 로깅 (→ error-handling.md)
    - 불필요한 플러그인·커맨드 노출 차단
 
 2. 커맨드 내부 경로 검증  ← 실제 스코프 강제는 여기 있다
-   - open/save/read_dir_tree는 요청 경로를 canonicalize(정규화)한 뒤
+   - open/save/read_dir는 요청 경로를 canonicalize(정규화)한 뒤
    - Rust가 보유한 "허용 루트 목록"(다이얼로그 선택분 · 연 루트 폴더)의
      하위인지 확인, 아니면 AppError로 거부
    - canonicalize로 심볼릭 링크를 통한 스코프 탈출도 차단

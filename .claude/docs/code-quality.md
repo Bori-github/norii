@@ -45,6 +45,8 @@ mise run check   # 아래를 모두 검증 (수정하지 않고 확인만)
 
 **원칙**: 게이트는 코드를 **수정하지 않는다.** 포맷 적용은 `mise run fmt`(oxfmt 쓰기)로 따로 한다. 게이트는 `fmt-check`로 **검증만** 한다 — 그래야 CI에서 예상치 못한 변경이 생기지 않는다.
 
+M0에서 **`docs-drift`**(계약 문서 ↔ 코드 기계 대조)가 구현되면 이 게이트에 편입된다(→ [개발 명령](development-commands.md#문서-코드-드리프트-검사-docs-drift)).
+
 ## 타입 엄격도 (tsconfig)
 
 TypeScript는 **strict 계열을 전부 켠다.** 타입 안전이 품질의 1차 방어선이다. `tsconfig.base.json`에 공통으로 둔다.

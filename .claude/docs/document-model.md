@@ -25,12 +25,13 @@ interface TreeNode {
   name: string;
   kind: 'dir' | 'file';
   isSymlink?: boolean;       // 심볼릭 링크 — 사이드바에서 배지로 표시
-  children?: TreeNode[];     // dir일 때만. 부재 = 아직 안 읽음(lazy), [] = 빈 폴더
+  children?: TreeNode[];     // 프론트가 조립하는 트리 상태. 부재 = 아직 안 읽음, [] = 빈 폴더.
+                             // read_dir 응답(한 단계 목록)에는 이 필드가 없다 (→ rust-commands.md)
 }
 
 interface WorkspaceState {
   rootDir: string | null;    // 사이드바에 표시할 루트 폴더
-  fileTree: TreeNode[];      // Rust read_dir_tree 결과
+  fileTree: TreeNode[];      // read_dir(한 단계 목록) 결과를 프론트가 조립한 트리
   tabs: Tab[];
   activeTabId: string | null;
   recentFiles: string[];
@@ -41,12 +42,12 @@ interface WorkspaceState {
 
 ## 파일 트리 (사이드바)
 
-- 루트 폴더를 열면 Rust `read_dir_tree`가 재귀적으로 트리를 만들어 반환한다(→ [Rust 커맨드 계약](rust-commands.md)).
-- 트리에는 **디렉터리 전부와 `.md`/`.markdown` 파일만** 표시한다. 필터·정렬·숨김·심볼릭 링크의 결정론적 규칙은 [Rust 커맨드 계약](rust-commands.md)의 `read_dir_tree` 반환 규칙을 단일 출처로 둔다.
+- 루트 폴더를 열면 Rust `read_dir`가 루트 **한 단계**를 반환하고, 폴더를 펼칠 때마다 그 폴더 한 단계를 다시 읽는다(레벨별 lazy — VS Code와 동일, → [Rust 커맨드 계약](rust-commands.md)).
+- 트리에는 **디렉터리 전부와 `.md`/`.markdown` 파일만** 표시한다. 필터·정렬·숨김·심볼릭 링크의 결정론적 규칙은 [Rust 커맨드 계약](rust-commands.md)의 `read_dir` 반환 규칙을 단일 출처로 둔다.
 - 중첩 폴더 = 중첩 페이지. 접기/펼치기.
 - 파일 클릭 → 탭으로 연다.
 - **전체 인덱싱이 아니라 단순 트리 표시**다 — 파일 내용을 읽어 색인하지 않는다. 이 선이 [비목표](../rules/non-goals.md)의 PKM/vault 인덱싱과 norii를 가른다.
-- 단, 항목 수가 매우 많은 트리는 한 번에 전부 재귀로 읽으면 초기 비용이 크다 → **레벨별 lazy 로딩**(폴더를 펼칠 때 그 하위만 읽기)으로 막는다. `read_dir_tree`는 깊이 제한 인자를 받는다.
+- 호출당 한 단계만 읽으므로 거대 트리에서도 초기 비용이 상수다. 트리 조립과 "아직 안 읽음" 상태는 프론트 모델(`children` 부재)이 담당한다.
 - 외부에서 파일이 생성/삭제됐을 때 트리를 어떻게 갱신할지(폴더 감시·포커스 시 재읽기·수동 새로고침)는 열린 결정이다(→ [실제 구현 계획](implementation-plan.md#열린-결정-open-decisions)). 열린 파일의 watch와 별개 문제다.
 
 ## 다중 탭 규칙
