@@ -39,6 +39,9 @@ mise run test         # Vitest (테스트)
 mise run rust-fmt-check  # cargo fmt --check
 mise run clippy          # cargo clippy -D warnings
 mise run rust-test       # cargo test
+
+# 실앱 E2E (check 미포함 — CI에서 실행)
+mise run e2e             # tauri-plugin-webdriver 실앱 E2E (→ testing.md)
 ```
 
 `mise run check`는 위 검증 태스크(`fmt-check`·`lint`·`fsd-lint`·`typecheck`·`test`·`rust-fmt-check`·`clippy`·`rust-test`)를 모두 실행한다. 포맷을 **수정**하는 건 `mise run fmt`뿐이고, 게이트는 검증만 한다.
