@@ -64,7 +64,7 @@ widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소
 ## 통합
 
 - Panda는 **PostCSS 플러그인**(`@pandacss/dev/postcss`)으로 동작한다. Vite의 PostCSS 파이프라인에 얹는다.
-- 코드 생성: `panda codegen`(빌드·dev 시). `@pandacss/dev` 버전은 [기술 스택](tech-stack.md#애플리케이션-스택)에 핀한다.
+- 코드 생성: `panda codegen`(postinstall·빌드·dev 시 — → [개발 명령](development-commands.md#사전-준비)). `@pandacss/dev` 버전은 [기술 스택](tech-stack.md#애플리케이션-스택)에 핀한다.
 
 ## 규칙
 

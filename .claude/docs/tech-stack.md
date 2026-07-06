@@ -53,7 +53,8 @@
 | `serde` / `serde_json` | 1.0.228 | IPC 직렬화·역직렬화 |
 | `thiserror` | 2.0.18 | `AppError` 정의 (→ [에러 처리와 로깅](error-handling.md)) |
 | `notify` | 8.2.0 | 파일 외부 변경 감시(watch) (→ [Rust 커맨드 계약](rust-commands.md)) |
-| `encoding_rs` | 0.8.35 | 인코딩 처리 (UTF-8 확정, BOM) |
+| `encoding_rs` | 0.8.35 | 인코딩 변환(레거시 → UTF-8)·BOM 처리 (→ [파일 생명주기 정책](file-lifecycle.md#인코딩-정책)) |
+| `chardetng` | 1.0.0 | 인코딩 감지 — Firefox 감지기, encoding_rs와 짝으로 설계됨 |
 | `tauri` / `tauri-build` | 2.x | Tauri 코어 (애플리케이션 스택의 Tauri와 동일 릴리스) |
 
 ## 코드 품질
@@ -79,7 +80,7 @@
 | Git 훅 | lefthook (`lefthook`) | 2.1.9 | 커밋 전 게이트 자동화 |
 | 커밋 린트 | commitlint (`@commitlint/cli`·`@commitlint/config-conventional`) | 21.2.0 | Conventional Commits 검증 (→ [커밋 컨벤션](../rules/commit-convention.md)) |
 
-> **스택의 1.0 미만 도구는 셋 — oxfmt · tauri-plugin-webdriver · tauri-specta(2.0.0-rc). 이 목록은 이 문서(위 표)를 단일 출처로 둔다.** 셋 모두 버전을 정확히 핀하고 정식판 도달 시 재확인한다(추적 → [실제 구현 계획 — 열린 결정](implementation-plan.md#열린-결정-open-decisions)). 도구별 리스크 관리는 각 전략 문서를 단일 출처로 둔다: oxfmt → [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것), tauri-plugin-webdriver → [테스트 전략](testing.md#성숙도-주의).
+> **스택의 1.0 미만 개발·테스트 도구는 셋 — oxfmt · tauri-plugin-webdriver · tauri-specta(2.0.0-rc). 이 목록은 이 문서(위 표)를 단일 출처로 둔다.** 셋 모두 버전을 정확히 핀하고 정식판 도달 시 재확인한다(추적 → [실제 구현 계획 — 열린 결정](implementation-plan.md#열린-결정-open-decisions)). 도구별 리스크 관리는 각 전략 문서를 단일 출처로 둔다: oxfmt → [코드 품질 전략](code-quality.md#oxfmt-성숙도-알아둘-것), tauri-plugin-webdriver → [테스트 전략](testing.md#성숙도-주의).
 
 ## 결정 근거 (why)
 

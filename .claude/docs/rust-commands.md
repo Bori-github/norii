@@ -8,20 +8,54 @@
 
 ```rust
 #[tauri::command]
-async fn open_file(path: String) -> Result<FileContent, AppError>;
-// FileContent { text: String, encoding: String, eol: String, mtime: u64 }
+async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
+// FileContent { text: String, encoding: String, has_bom: bool,
+//               eol: String, eol_mixed: bool, mtime: u64, hash: String }
+// - text는 항상 UTF-8. 비UTF-8(EUC-KR 등)은 감지 후 변환해 반환하고,
+//   encoding에 감지된 원본 인코딩("utf-8"|"euc-kr"…)을 담는다 (파이프라인 → file-lifecycle.md)
+// - encoding_override 지정 시 파이프라인 전 단계(BOM 스니핑 포함)를 건너뛰고 전체 바이트를
+//   그 인코딩으로 디코드한다(수동 재해석, "Reopen with Encoding"류). 이름은 WHATWG 라벨
+//   ("euc-kr"·"utf-16le" 등, encoding_rs 표준) — 알 수 없는 라벨은 AppError::Encoding.
+//   None이면 파이프라인이 판정한다
+// - BOM은 text에서 제거하고 has_bom으로 알린다
+// - eol은 다수결로 판정한 "lf"|"crlf" (동률이면 lf). eol_mixed는 원본 개행이 판정 결과와
+//   완전히 일치하지 않음(혼합·CR-only) — 저장 시 재작성되므로 정규화 승인 대상 (→ file-lifecycle.md)
+// - hash는 디스크 바이트의 내용 해시 — 에코 억제·충돌 검사의 기준값 (→ file-lifecycle.md)
 
 #[tauri::command]
-async fn save_file(path: String, text: String, eol: String) -> Result<SaveResult, AppError>;
-// SaveResult { mtime: u64 }
+async fn save_file(path: String, text: String, eol: String, has_bom: bool,
+                   expected_hash: Option<String>) -> Result<SaveResult, AppError>;
+// SaveResult { mtime: u64, hash: String }
+// - 항상 UTF-8로 쓴다. has_bom=true면 BOM을 다시 붙인다(원본 유지)
+// - 경로를 canonicalize해 심볼릭 링크의 "실제 대상"에 저장한다(링크를 일반 파일로 교체하지 않음)
+// - 원자적 쓰기: 대상과 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename
+// - 디스크 내용 해시 ≠ expected_hash면 쓰지 않고 AppError::Conflict 반환
+//   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
 
 #[tauri::command]
 async fn read_dir_tree(root: String, depth: u32) -> Result<Vec<TreeNode>, AppError>;
-// TreeNode { path, name, kind: "dir"|"file", children? }
+// TreeNode { path, name, kind: "dir"|"file", isSymlink?: bool, children?: TreeNode[] }
 // depth: 한 번에 읽을 깊이 (거대 트리는 레벨별 lazy 로딩 → document-model.md)
+// 반환 규칙(결정론 — 파일 처리 동작은 VS Code(MIT)를 참고, → ../rules/prior-art.md):
+// - children 부재 = 아직 읽지 않음(lazy), [] = 읽었고 빈 폴더
+// - 필터: 디렉터리는 전부, 파일은 .md/.markdown만 (확장자 대소문자 무시)
+// - 정렬: 디렉터리 우선 → 자연 정렬 → 동률이면 원본 이름의 코드포인트 비교로 확정.
+//   자연 정렬: 이름을 숫자/비숫자 구간으로 분할해 숫자 구간은 수치 비교,
+//   비숫자 구간은 대소문자 무시 코드포인트 비교 (2.md < 10.md)
+// - 숨김 항목(이름이 '.'으로 시작)은 제외
+// - 심볼릭 링크: isSymlink로 표시하고 일반 항목처럼 펼친다(lazy 1단계 읽기라 순환이
+//   폭주하지 않음). 단 depth > 1 선읽기는 심링크 디렉터리 안으로 내려가지 않는다.
+//   대상이 없는(깨진) 링크도 표시하며, 열면 AppError::NotFound.
+//   루트 밖을 가리키는 링크는 펼칠 때 canonicalize 스코프 검증이 거부한다(→ 권한)
 
 #[tauri::command]
 async fn watch_paths(paths: Vec<String>) -> Result<(), AppError>;
+// 감시 대상 전체를 선언적으로 교체한다(누적 아님) — 호출 시 이전 감시는 모두 해제.
+// 탭 목록이 바뀔 때마다 열린 경로 전체를 다시 선언하므로 별도 unwatch 커맨드가 없다.
+// 구현(계약): 파일이 아니라 부모 디렉터리를 감시하고 경로로 필터한다 — 외부 에디터의
+// 원자적 저장(rename 교체)에도 감시가 끊기지 않는다(VS Code와 동일 전략).
+// 삭제 감지는 짧은 유예(100ms) 후 존재를 재확인한다 — 다시 존재하면 file-changed,
+// 정말 없으면 그때 file-removed (원자적 저장의 순간 삭제를 삭제로 오판하지 않음)
 // 외부 변경 시 프론트로 이벤트 emit (아래 이벤트 계약 참조)
 
 #[tauri::command]
@@ -34,18 +68,19 @@ async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppErr
 ## 이벤트 계약 (Rust → 웹뷰)
 
 ```text
-file-changed   { path, mtime }   외부에서 파일이 수정됨 → 프론트가 리로드/충돌 처리
-file-removed   { path }          열려 있던 파일이 삭제/이동됨
+file-changed   { path, mtime, hash }   외부에서 파일이 수정됨 (hash는 이벤트 처리 시점의 디스크 내용 해시)
+file-removed   { path }                열려 있던 파일이 삭제/이동됨
 ```
 
-외부 변경 처리 정책(리로드·충돌 안내)의 단일 출처는 [파일 생명주기 정책](file-lifecycle.md).
+자기 저장도 `file-changed`를 발생시킨다 — 프론트는 이벤트의 hash가 탭의 `lastSavedHash`와 같으면 자기 에코로 무시한다. 이 규칙과 외부 변경 처리 정책(리로드·충돌 안내)의 단일 출처는 [파일 생명주기 정책](file-lifecycle.md).
 
 ## 원칙
 
 - **본문은 저장/열기 시점에만 오간다.** 키 입력마다 `save_file`을 호출하지 않는다. dirty 추적은 웹뷰에서 한다(→ [문서 모델](document-model.md)).
 - 커맨드는 실패를 `AppError`로 명시 반환한다. 파일 없음·권한 없음·디스크 꽉 참 등을 사용자에게 피드백할 수 있게 한다.
 - 커맨드 인자·반환 타입은 **tauri-specta**로 Rust→TS 타입을 생성해, 프론트와의 직렬화·`AppError` 매핑 계약 드리프트를 컴파일 타임에 차단한다(→ [테스트 전략](testing.md)).
-- 인코딩은 UTF-8 확정, 개행은 파일의 기존 EOL을 유지한다(→ [파일 생명주기 정책](file-lifecycle.md)).
+- 필드 표기: Rust 구조체는 snake_case, TS 타입은 camelCase다 — serde `rename_all = "camelCase"`로 직렬화를 통일하고 tauri-specta가 이를 TS에 반영한다(예: `eol_mixed` ↔ `eolMixed`).
+- 저장 인코딩은 항상 UTF-8(비UTF-8은 열 때 변환), 개행은 판정된 EOL을 유지한다(→ [파일 생명주기 정책](file-lifecycle.md)).
 
 ## 구현 크레이트·플러그인
 
@@ -55,7 +90,8 @@ file-removed   { path }          열려 있던 파일이 삭제/이동됨
 serde / serde_json   커맨드 인자·반환의 직렬화
 thiserror            AppError 정의 (→ error-handling.md)
 notify               파일 외부 변경 감시(watch_paths)
-encoding_rs          인코딩 처리 (UTF-8·BOM)
+encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
+chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
 plugin-store         설정·세션 상태 저장 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)

@@ -70,7 +70,7 @@ Rust (Tauri core)
 열기:   파일 선택 → invoke(open_file) → Rust가 읽어 반환 → 새 탭 생성, CM6 로드
 편집:   CM6 docChanged → Zustand dirty=true            (Rust 호출 없음)
 프리뷰: 문서 변경 → 디바운스 → markdown-it → DOMPurify → 프리뷰 DOM   (IPC 없음)
-저장:   Cmd+S → invoke(save_file, 본문) → Rust가 디스크에 씀 → dirty=false
+저장:   자동 저장(디바운스) 또는 Cmd+S → invoke(save_file, 본문) → Rust가 디스크에 씀 → dirty=false
 ```
 
 - 웹뷰(프론트) 내부 구조는 FSD를 따른다 — 레이어·슬라이스·참조 규칙은 [프론트엔드 아키텍처](frontend-architecture.md). Tauri IPC는 `shared/ipc`에 모은다.
