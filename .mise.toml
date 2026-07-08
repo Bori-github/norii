@@ -63,6 +63,12 @@ description = "Rust 테스트"
 dir = "apps/desktop/src-tauri"
 run = "cargo test"
 
+# --- 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행) ---
+[tasks.e2e]
+description = "실앱 E2E 스모크 (tauri-plugin-webdriver — 개발 빌드 앱이 실행 중이어야 함)"
+dir = "apps/desktop"
+run = "pnpm test:e2e"
+
 # --- 문서-코드 정합 ---
 [tasks.docs-drift]
 description = "문서-코드 드리프트 검사 (계약 문서 ↔ 코드 기계 대조)"

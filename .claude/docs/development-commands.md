@@ -40,8 +40,9 @@ mise run rust-fmt-check  # cargo fmt --check
 mise run clippy          # cargo clippy -D warnings
 mise run rust-test       # cargo test
 
-# 실앱 E2E (check 미포함 — CI에서 실행)
-mise run e2e             # tauri-plugin-webdriver 실앱 E2E (→ testing.md)
+# 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
+mise run dev &           # 1) 개발 빌드 앱을 띄운다 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
+mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
 ```
 
 `mise run check`는 위 검증 태스크(`fmt-check`·`lint`·`fsd-lint`·`typecheck`·`test`·`rust-fmt-check`·`clippy`·`rust-test`)를 모두 실행한다. 포맷을 **수정**하는 건 `mise run fmt`뿐이고, 게이트는 검증만 한다.

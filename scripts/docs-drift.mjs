@@ -142,7 +142,8 @@ function checkTechStackCargo(problems) {
     for (const raw of read(file).split("\n")) {
       const line = raw.trim();
       if (line.startsWith("[")) {
-        inDeps = line === "[dependencies]" || line === "[build-dependencies]";
+        // [dependencies]·[build-dependencies]·[dev-dependencies]·[target.'...'.dependencies] 포함.
+        inDeps = line.endsWith("dependencies]");
         continue;
       }
       if (!inDeps || line === "" || line.startsWith("#")) {

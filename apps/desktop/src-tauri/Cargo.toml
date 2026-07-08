@@ -17,3 +17,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+
+# 개발 빌드 전용 — 임베디드 WebDriver 서버로 실앱 E2E를 구동한다(→ .claude/docs/testing.md).
+# cfg(debug_assertions)라 릴리스 빌드에는 포함되지 않는다.
+[target.'cfg(debug_assertions)'.dependencies]
+tauri-plugin-webdriver = "0.2.1"
