@@ -63,9 +63,14 @@ description = "Rust 테스트"
 dir = "apps/desktop/src-tauri"
 run = "cargo test"
 
+# --- 문서-코드 정합 ---
+[tasks.docs-drift]
+description = "문서-코드 드리프트 검사 (계약 문서 ↔ 코드 기계 대조)"
+run = "node scripts/docs-drift.mjs"
+
 # --- 통합 게이트 (커밋 전 필수) ---
 [tasks.check]
-description = "포맷·린트·FSD·타입·테스트 게이트 (JS/TS + Rust, 수정 없이 검증)"
+description = "포맷·린트·FSD·타입·테스트·드리프트 게이트 (JS/TS + Rust, 수정 없이 검증)"
 depends = [
   "fmt-check",
   "lint",
@@ -75,4 +80,5 @@ depends = [
   "rust-fmt-check",
   "clippy",
   "rust-test",
+  "docs-drift",
 ]

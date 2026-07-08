@@ -49,10 +49,10 @@ mise run e2e             # tauri-plugin-webdriver 실앱 E2E (→ testing.md)
 ## 문서-코드 드리프트 검사 (docs-drift)
 
 ```sh
-mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (M0에서 구현 → check에 편입)
+mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-drift.mjs)
 ```
 
-문서-코드 간극을 성실함이 아니라 **게이트가 잡는다**. 대조 대상은 [작업 규칙](../rules/project-rules.md)의 계약 문서 중 기계 대조 가능한 두 표면이다:
+`mise run check` 게이트에 편입돼 있다. 구현은 `scripts/docs-drift.mjs`(의존성 없는 Node 스크립트)다. 문서-코드 간극을 성실함이 아니라 **게이트가 잡는다**. 대조 대상은 [작업 규칙](../rules/project-rules.md)의 계약 문서 중 기계 대조 가능한 두 표면이다:
 
 - Rust 소스의 `#[tauri::command]` 함수명이 [Rust 커맨드 계약](rust-commands.md)에 등재됐는지 — **코드 → 문서 단방향 검사**다. 계약 없는 커맨드는 게이트 실패이고, 문서에만 있는 커맨드는 아직 미구현 계약으로 허용한다(개발 진행 중 게이트가 항상 빨간불이 되지 않게)
 - [기술 스택](tech-stack.md) 표에 적힌 버전이 `package.json`·`Cargo.toml`의 실제 핀과 일치하는지 — **단방향 검사**다. 표에 없는 의존성에 등재를 요구하지 않는다(요구하면 모든 의존성 추가가 게이트에 걸리는 과잉 검사가 된다)
