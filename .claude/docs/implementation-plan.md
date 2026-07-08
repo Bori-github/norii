@@ -52,6 +52,7 @@ tauri-specta 2.0  rc 핀 → 정식 2.0 도달 시 재확인            (→ tec
 트리 외부 변경    사이드바 트리의 외부 생성/삭제 반영 방식 — M4 (→ document-model.md)
 프리뷰 디바운스   구체 값은 M3에서 실측으로 확정              (→ preview-strategy.md)
 번들 크기 측정    무엇을(.app/dmg) 어떻게 측정할지 — 측정 기반은 M0 (→ platform-strategy.md)
+i18n 도입         현재 미도입(UI 문자열은 shared/config 상수). 다국어 필요 시 도입 (→ frontend-architecture.md)
 ```
 
 ## 성공 기준 (현재 단계)

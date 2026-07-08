@@ -105,6 +105,17 @@ matrix (확장 시):
 
 Rust 빌드는 캐시(예: `Swatinem/rust-cache`)로 가속한다. 릴리스 빌드·서명은 별도 워크플로로 분리한다(→ [플랫폼 전략](platform-strategy.md)).
 
+## 의존성 자동 갱신 (Renovate)
+
+의존성 업데이트는 사람이 챙기지 않고 **Renovate**(Mend 호스티드 GitHub App)가 PR로 올린다. norii는 **정확한 버전 핀이 많고**(→ [기술 스택](tech-stack.md)) **베타 의존성**(oxfmt 0.x·Steiger pre-1.0·tauri-plugin-webdriver·tauri-specta rc)을 쓰므로, 새 릴리스를 놓치지 않고 추적하는 실익이 크다.
+
+- 루트 `renovate.json`이 단일 출처다. 설계 의도에 맞춰 규칙을 둔다:
+  - **그룹핑** — 관련 패키지를 묶어 PR 홍수를 막는다(예: `@codemirror/*`, `@tauri-apps/*`, 린트·포맷 툴링).
+  - **자동 머지 범위 한정** — devDependencies의 patch/minor 등 저위험만 CI 그린 시 자동 머지 후보로 두고, major·런타임 의존성은 사람이 검토한다.
+  - **베타 의존성 주의 라벨** — 0.x·rc·pre-1.0 핀은 별도 라벨을 달아 [열린 결정](implementation-plan.md#열린-결정-open-decisions)의 재확인 항목(oxfmt 1.0·tauri-specta 2.0 등)과 연결한다.
+- Renovate PR도 `mise run check` 게이트를 CI에서 통과해야 머지된다 — 자동 갱신이 품질 게이트를 우회하지 않는다.
+- 커밋 메시지는 [커밋 컨벤션](../rules/commit-convention.md)의 `build(deps):` 형식에 맞춘다(Renovate `commitMessagePrefix`로 강제).
+
 ## 실제 앱 E2E (운영 동일)
 
 위험 영역(에디터·한글 IME·데이터 유실 왕복)은 **실제 Tauri 앱**(실제 Rust + 웹뷰 + IPC)에서 끝단까지 테스트하며, 실행이 느린 E2E는 로컬 게이트가 아니라 CI에서 돈다. 도구(`tauri-plugin-webdriver`)·macOS 지원·레이어별 방법론은 [테스트 전략 · TDD](testing.md)를 단일 출처로 둔다.

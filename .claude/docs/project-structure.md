@@ -19,6 +19,7 @@ norii/
   .oxlintrc.json             oxlint 룰 설정
   lefthook.yml               Git 훅 (pre-commit: oxlint/oxfmt · commit-msg: commitlint)
   commitlint.config.js       Conventional Commits 규칙 (→ .claude/rules/commit-convention.md)
+  renovate.json              의존성 자동 갱신 규칙 (그룹핑·자동머지 범위 → code-quality.md)
   package.json               루트 (private)
   tsconfig.base.json
   LICENSE                    MIT (© 2026 bori)

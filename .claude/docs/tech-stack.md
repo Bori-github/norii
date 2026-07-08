@@ -81,6 +81,7 @@
 | Rust 테스트        | `cargo test`                                                     | Rust 툴체인 기본                                  | —                                                                                                                                                                   |
 | Git 훅             | lefthook (`lefthook`)                                            | 2.1.9                                             | 커밋 전 게이트 자동화                                                                                                                                               |
 | 커밋 린트          | commitlint (`@commitlint/cli`·`@commitlint/config-conventional`) | 21.2.0                                            | Conventional Commits 검증 (→ [커밋 컨벤션](../rules/commit-convention.md))                                                                                          |
+| 의존성 자동 갱신   | Renovate (Mend 호스티드 GitHub App)                              | 호스티드 (버전 핀 없음)                           | 설정 스키마 `renovate.json`. 의존성 업데이트를 PR로 추적 (→ [코드 품질 전략](code-quality.md#의존성-자동-갱신-renovate))                                            |
 
 ## 결정 근거 (why)
 
