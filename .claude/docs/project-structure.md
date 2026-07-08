@@ -27,6 +27,7 @@ norii/
   AGENTS.md                  문서 인덱스 + 핵심 원칙
   scripts/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
+    bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)

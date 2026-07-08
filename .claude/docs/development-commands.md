@@ -43,6 +43,10 @@ mise run rust-test       # cargo test
 # 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
 mise run dev &           # 1) 개발 빌드 앱을 띄운다 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
 mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
+
+# 번들 크기 측정 (check 미포함 — 빌드 산출물 필요)
+mise run build           # 프론트엔드 dist 생성 (또는 mac에서 tauri build로 .app/.dmg)
+mise run bundle-size     # 목표 <15MB 대비 측정 (→ platform-strategy.md)
 ```
 
 `mise run check`는 위 검증 태스크(`fmt-check`·`lint`·`fsd-lint`·`typecheck`·`test`·`rust-fmt-check`·`clippy`·`rust-test`)를 모두 실행한다. 포맷을 **수정**하는 건 `mise run fmt`뿐이고, 게이트는 검증만 한다.
