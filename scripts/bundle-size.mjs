@@ -5,7 +5,7 @@
 //   (2) 프론트엔드 dist — 우리가 직접 제어하는 하위 신호. 매 `vite build`마다 측정 가능.
 // check 게이트에는 넣지 않는다(빌드 산출물이 있어야 하므로). `mise run build` 후 실행한다.
 // 앱 번들이 예산을 넘으면 exit 1(추세 관리·CI 게이팅용), 없으면 안내 후 exit 0.
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -15,7 +15,12 @@ const FRONTEND_DIST = "apps/desktop/dist";
 const BUNDLE_DIR = "apps/desktop/src-tauri/target/release/bundle";
 
 function sizeOf(path) {
-  const stat = statSync(path);
+  // lstat으로 심볼릭 링크를 따라가지 않는다 — macOS .app은 내부 링크(Versions/Current 등)를
+  // 담으므로, 링크를 따라가면 실제 파일이 중복 집계되거나 깨진 링크에서 statSync가 던진다.
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink()) {
+    return 0;
+  }
   if (!stat.isDirectory()) {
     return stat.size;
   }
