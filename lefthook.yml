@@ -6,7 +6,8 @@ pre-commit:
   jobs:
     - name: oxfmt (변경 파일 포맷 검증)
       glob: "*.{js,jsx,ts,tsx,json,jsonc,yaml,yml,css,md}"
-      run: pnpm exec oxfmt --check {staged_files}
+      # 스테이징 파일이 전부 oxfmt ignore 대상(.claude/** 등)일 때 커밋이 막히지 않도록 한다
+      run: pnpm exec oxfmt --check --no-error-on-unmatched-pattern {staged_files}
     - name: oxlint (변경 파일 린트)
       glob: "*.{js,jsx,ts,tsx}"
       run: pnpm exec oxlint {staged_files}

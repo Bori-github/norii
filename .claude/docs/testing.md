@@ -65,7 +65,7 @@ norii에서 가장 위험하고 고유한 것 — **한글 IME**와 **데이터 
 
 ## 성숙도 주의
 
-macOS 실앱 E2E 경로는 하나가 아니다 — 공식 임베디드 provider(`@wdio/tauri-service`), CrabNebula 상용 포크(macOS는 유료 키), 그리고 `Choochmeque/tauri-plugin-webdriver`가 있다. norii는 그중 **MIT·무료·임베디드**인 `Choochmeque/tauri-plugin-webdriver`(Rust crate `tauri-plugin-webdriver`, **pre-1.0 커뮤니티** — 버전 핀과 스택의 1.0 미만 도구 목록은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다)를 채택한다. 유사명 패키지(`tauri-plugin-webdriver-automation`, `@wdio/tauri-service`)와 혼동하지 않게 정확한 crate·출처를 핀한다. 불안정·정체 시 공식 임베디드 provider나 CrabNebula로 대체하거나 해당 시나리오의 수동 검증 절차와 사유를 기록한다(→ [작업 규칙](../rules/project-rules.md)).
+macOS 실앱 E2E 경로는 하나가 아니다 — 공식 임베디드 provider(`@wdio/tauri-service`), CrabNebula 상용 포크(macOS는 유료 키), 그리고 `Choochmeque/tauri-plugin-webdriver`가 있다. norii는 그중 **MIT·무료·임베디드**인 `Choochmeque/tauri-plugin-webdriver`(Rust crate `tauri-plugin-webdriver`, **pre-1.0 커뮤니티** — 버전 핀은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다)를 채택한다. 유사명 패키지(`tauri-plugin-webdriver-automation`, `@wdio/tauri-service`)와 혼동하지 않게 정확한 crate·출처를 핀한다. 불안정·정체 시 공식 임베디드 provider나 CrabNebula로 대체하거나 해당 시나리오의 수동 검증 절차와 사유를 기록한다(→ [작업 규칙](../rules/project-rules.md)).
 
 ## 게이트·로드맵·커버리지
 

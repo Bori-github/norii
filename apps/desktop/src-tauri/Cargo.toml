@@ -1,0 +1,19 @@
+# Rust 백엔드 — 파일 I/O·감시·다이얼로그 담당(마일스톤 M1부터).
+# 버전 핀의 단일 출처 역할: .claude/docs/tech-stack.md 표와 함께 갱신한다.
+[package]
+name = "norii"
+version = "0.1.0"
+description = "가볍고 빠른 로컬 우선 마크다운 소스 뷰 에디터"
+license = "MIT"
+edition = "2021"
+
+[lib]
+# 향후 Tauri 2 모바일 타깃 재사용을 위해 라이브러리로 분리한다 (플랫폼 전략).
+name = "norii_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

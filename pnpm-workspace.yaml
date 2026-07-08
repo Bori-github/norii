@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
-# lefthook은 postinstall로 Git 훅을 설치하므로 빌드 스크립트 실행을 허용한다.
+# Git 훅 설치는 루트 prepare 스크립트(lefthook install)가 담당한다.
+# 의존성 빌드 스크립트는 허용하지 않는다(공급망 정책) — lefthook postinstall은 의도적으로 끈다.
 allowBuilds:
-  lefthook: true
+  lefthook: false

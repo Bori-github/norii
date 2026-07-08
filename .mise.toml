@@ -35,7 +35,9 @@ run = "oxfmt --check ."
 
 [tasks.fsd-lint]
 description = "FSD 아키텍처 검증 (steiger — 레이어 참조·Public API·구조)"
-run = "steiger apps/desktop/src"
+# steiger는 cosmiconfig로 cwd에서 위로만 config를 탐색하므로, steiger.config.ts가 있는 앱 디렉터리에서 실행한다.
+dir = "apps/desktop"
+run = "steiger src"
 
 [tasks.typecheck]
 description = "타입 체크 (tsc, 패키지별)"

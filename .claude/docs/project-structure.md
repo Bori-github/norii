@@ -21,7 +21,7 @@ norii/
   commitlint.config.js       Conventional Commits 규칙 (→ .claude/rules/commit-convention.md)
   package.json               루트 (private)
   tsconfig.base.json
-  LICENSE                    MIT (© 2026 ohah)
+  LICENSE                    MIT (© 2026 bori)
   CLAUDE.md                  Claude 진입점 → AGENTS.md
   AGENTS.md                  문서 인덱스 + 핵심 원칙
   .claude/
@@ -45,6 +45,7 @@ norii/
       index.html
       vite.config.ts          vite-tsconfig-paths로 @app~@shared 별칭 반영
       tsconfig.app.json       FSD 레이어 path alias 정의
+      tsconfig.json           편집기용 위임 설정 — tsconfig.app.json을 extends (언어 서버는 이 이름만 자동 탐색)
       steiger.config.ts       FSD 린트 설정
       panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design-system.md)
       postcss.config.cjs      Panda PostCSS 플러그인
