@@ -1,0 +1,26 @@
+{
+  "name": "@norii/editor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CodeMirror 6 래퍼 — 마크다운 소스 편집 확장 구성. 플랫폼 무관 (→ .claude/docs/project-structure.md)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.10.4",
+    "@codemirror/lang-markdown": "6.5.0",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/search": "6.7.1",
+    "@codemirror/state": "6.7.0",
+    "@codemirror/view": "6.43.5"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}
