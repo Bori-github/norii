@@ -27,11 +27,13 @@
 | 언어                   | TypeScript (`typescript`)                            | 6.0.3                                                | 타입 안전                                                                                                             |
 | 에디터 코어            | CodeMirror 6 (`@codemirror/state`·`view`·`commands`) | state 6.7.0 · view 6.43.5 · commands 6.10.4          | 소스 편집·하이라이팅·폴딩. 증분 파서 내장. 대용량 가상화.                                                             |
 | 마크다운 언어          | `@codemirror/lang-markdown`                          | 6.5.0                                                | 하이라이팅 + 폴딩용 Lezer 파서 (내장)                                                                                 |
-| 에디터 확장            | `@codemirror/language`·`search`·`autocomplete`       | language 6.12.4 · search 6.7.1 · autocomplete 6.20.3 | 폴딩(language)·문서 내 검색·자동완성                                                                                  |
+| 에디터 확장            | `@codemirror/language`·`search`                       | language 6.12.4 · search 6.7.1                       | 폴딩(language)·문서 내 검색                                                                                           |
 | 프리뷰 파서            | markdown-it (`markdown-it`)                          | 14.3.0                                               | 마크다운 → HTML. GFM·플러그인 생태계. 웹뷰에서 실행.                                                                  |
 | Sanitizer              | DOMPurify (`dompurify`)                              | 3.4.11                                               | XSS 방어 (필수)                                                                                                       |
 | 상태 관리              | Zustand (`zustand`)                                  | 5.0.14                                               | 탭·문서·설정 상태 (경량)                                                                                              |
 | 스타일 / 디자인 시스템 | Panda CSS (`@pandacss/dev`)                          | 1.11.4                                               | 프로젝트 내부 DS — 토큰·시맨틱·recipe·제로 런타임 (→ [디자인 시스템](design-system.md))                               |
+
+> **예정(미설치)**: `@codemirror/autocomplete`(확인된 최신 6.20.3)는 자동완성 기능을 도입할 때 추가한다([에디터 전략](editor-strategy.md#확장-구성-초기)의 "필요 시"). 이 표는 **실제 설치된 핀**의 단일 출처이므로, 설치 전까지 버전 열에 넣지 않는다(→ `docs-drift` 검사가 표↔핀을 단방향 대조).
 
 ## Tauri 플러그인 (네이티브 기능)
 
