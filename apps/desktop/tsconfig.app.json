@@ -11,7 +11,8 @@
       "@widgets/*": ["./src/widgets/*"],
       "@features/*": ["./src/features/*"],
       "@entities/*": ["./src/entities/*"],
-      "@shared/*": ["./src/shared/*"]
+      "@shared/*": ["./src/shared/*"],
+      "styled-system/*": ["./styled-system/*"]
     }
   },
   "include": ["src", "vite.config.ts"]
