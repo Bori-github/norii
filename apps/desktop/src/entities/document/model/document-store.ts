@@ -29,6 +29,8 @@ interface DocumentActions {
   setLastSavedHash(tabId: string, hash: string): void;
   /** Untitled 첫 저장에서 경로 확정 — title도 파일명으로 갱신된다. */
   assignPath(tabId: string, path: string): void;
+  /** 디스크 리로드 후 파일 유래 메타 반영 — 리로드 직후는 디스크와 동일하므로 dirty 해제. */
+  updateFileMeta(tabId: string, file: FileContent): void;
 }
 
 export type DocumentStore = DocumentState & DocumentActions;
@@ -136,6 +138,19 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
   assignPath(tabId, path) {
     set((state) => ({
       tabs: updateTab(state.tabs, tabId, { filePath: path, title: fileNameOf(path) }),
+    }));
+  },
+
+  updateFileMeta(tabId, file) {
+    set((state) => ({
+      tabs: updateTab(state.tabs, tabId, {
+        sourceEncoding: file.encoding,
+        hasBom: file.hasBom,
+        eol: file.eol,
+        eolMixed: file.eolMixed,
+        lastSavedHash: file.hash,
+        isDirty: false,
+      }),
     }));
   },
 }));

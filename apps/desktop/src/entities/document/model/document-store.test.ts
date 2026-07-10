@@ -127,6 +127,30 @@ describe("cycleActiveTab", () => {
   });
 });
 
+// 집행: document-model.md#상태-구조 + file-lifecycle.md#외부-변경-처리(리로드).
+// 왜: 충돌 해소의 "디스크 버전으로 되돌리기"는 본문뿐 아니라 파일 메타(EOL·BOM·해시)도
+//     디스크 기준으로 되돌려야 다음 저장이 올바른 형식으로 나간다.
+// 보장: updateFileMeta가 파일 유래 메타만 갱신하고 dirty를 해제한다(리로드 = 디스크와 동일).
+// 경계: 실제 디스크 리로드(IPC)는 feature·E2E 소관 — 상태 반영만 다룬다.
+describe("updateFileMeta", () => {
+  it("파일 유래 메타를 갱신하고 dirty를 해제한다", () => {
+    const store = useDocumentStore.getState();
+    const id = store.openFileTab("/vault/doc.md", fileContent());
+    useDocumentStore.getState().setDirty(id, true);
+
+    useDocumentStore
+      .getState()
+      .updateFileMeta(id, fileContent({ eol: "crlf", hasBom: true, hash: "hash-9" }));
+
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      eol: "crlf",
+      hasBom: true,
+      lastSavedHash: "hash-9",
+      isDirty: false,
+    });
+  });
+});
+
 // 집행: document-model.md#상태-구조 — isDirty·lastSavedHash·경로 확정(Untitled 첫 저장).
 // 왜: dirty 표시(●)·충돌 검사 기준값·타이틀이 이 전이에 달려 있다.
 // 보장: 개별 전이가 대상 탭에만 적용되고 title이 파일명으로 갱신된다.
