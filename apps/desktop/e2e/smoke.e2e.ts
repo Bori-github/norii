@@ -28,8 +28,9 @@ afterAll(async () => {
   await browser?.deleteSession();
 });
 
-it("실제 앱이 뜨고 마크다운 에디터가 렌더된다 (스모크)", async () => {
-  const editor = await browser.$(".cm-editor");
-  await editor.waitForExist({ timeout: 15000 });
-  expect(await editor.isExisting()).toBe(true);
+it("실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다 (스모크)", async () => {
+  // M1부터 시작 화면은 "열린 문서 없음" 빈 상태다 — 에디터는 탭을 열어야 마운트된다.
+  const emptyState = await browser.$('[data-testid="empty-state"]');
+  await emptyState.waitForExist({ timeout: 15000 });
+  expect(await emptyState.isExisting()).toBe(true);
 });
