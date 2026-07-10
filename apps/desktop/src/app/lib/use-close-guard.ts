@@ -5,7 +5,7 @@ import { useDocumentStore } from "@entities/document";
 import { saveTabNow } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 import { logger } from "@shared/lib";
-import { useNoticeStore } from "@shared/ui";
+import { useConfirmStore } from "@shared/ui";
 
 import { planCloseDefense } from "./close-defense";
 
@@ -41,15 +41,16 @@ export function useCloseGuard(): void {
           logger.warn(`종료 방어: 플러시 실패 ${failedCount}건 — 종료 보류`);
         }
         // Untitled dirty 또는 플러시 실패 — 사용자 확인 없이 종료하면 유실이다.
-        useNoticeStore.getState().pushNotice(STRINGS.quitDirtyBody, [
-          {
-            label: STRINGS.quitDiscardLabel,
-            onPress: () => {
-              void getCurrentWindow().destroy();
-            },
+        // 인앱 모달인 이유는 file-lifecycle.md#종료-방어를 단일 출처로 둔다.
+        useConfirmStore.getState().requestConfirm({
+          title: STRINGS.quitDirtyTitle,
+          body: STRINGS.quitDirtyBody,
+          confirmLabel: STRINGS.quitDiscardLabel,
+          cancelLabel: STRINGS.closeCancelLabel,
+          onConfirm: () => {
+            void getCurrentWindow().destroy();
           },
-          { label: STRINGS.closeCancelLabel, onPress: () => {} },
-        ]);
+        });
       } finally {
         defending = false;
       }

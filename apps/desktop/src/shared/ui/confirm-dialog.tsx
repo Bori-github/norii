@@ -1,0 +1,96 @@
+import { useEffect, useRef } from "react";
+import { css } from "styled-system/css";
+
+import { useConfirmStore } from "./confirm-store";
+
+const dialogClass = css({
+  margin: "auto",
+  maxWidth: "sm",
+  padding: "5",
+  border: "1px solid",
+  borderColor: "border",
+  borderRadius: "md",
+  background: "bg.surface",
+  color: "text",
+  boxShadow: "lg",
+  _backdrop: { background: "rgba(0, 0, 0, 0.4)" },
+});
+
+const bodyClass = css({
+  marginTop: "2",
+  fontSize: "sm",
+  color: "text.muted",
+  whiteSpace: "pre-line",
+});
+
+const actionsClass = css({
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "2",
+  marginTop: "4",
+});
+
+const buttonClass = css({
+  paddingX: "3",
+  paddingY: "1.5",
+  border: "1px solid",
+  borderColor: "border",
+  borderRadius: "sm",
+  cursor: "pointer",
+  background: "transparent",
+  fontSize: "sm",
+  _hover: { background: "bg.canvas" },
+});
+
+const dangerButtonClass = css({
+  color: "accent",
+  fontWeight: "medium",
+});
+
+// 인앱 확인 모달 — 표준 <dialog>가 포커스 트랩·Esc(cancel 이벤트)를 기본 제공한다.
+// 비차단이라 E2E가 버튼을 직접 클릭해 검증할 수 있다(→ file-lifecycle.md#종료-방어).
+export function ConfirmDialog() {
+  const pending = useConfirmStore((state) => state.pending);
+  const settle = useConfirmStore((state) => state.settle);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (pending && dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }, [pending]);
+
+  if (!pending) {
+    return null;
+  }
+  return (
+    <dialog
+      ref={dialogRef}
+      className={dialogClass}
+      data-testid="confirm-dialog"
+      onCancel={() => settle(false)} // Esc — settle이 중복 호출을 무시하므로 close와 겹쳐도 안전.
+    >
+      <strong>{pending.title}</strong>
+      <p className={bodyClass}>{pending.body}</p>
+      <div className={actionsClass}>
+        <button
+          type="button"
+          className={buttonClass}
+          data-testid="confirm-cancel"
+          onClick={() => settle(false)}
+        >
+          {pending.cancelLabel}
+        </button>
+        <button
+          type="button"
+          className={`${buttonClass} ${dangerButtonClass}`}
+          data-testid="confirm-accept"
+          onClick={() => settle(true)}
+        >
+          {pending.confirmLabel}
+        </button>
+      </div>
+    </dialog>
+  );
+}

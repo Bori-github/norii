@@ -1,7 +1,7 @@
 import { findTab, getTabText, setTabText, useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
-import { notifyIpcError, useNoticeStore } from "@shared/ui";
+import { notifyIpcError, useConfirmStore } from "@shared/ui";
 
 import { AUTOSAVE_DELAY_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
@@ -180,18 +180,33 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     return;
   }
   if (tab.filePath === null) {
-    // 저장할 경로가 없다 — 조용히 버리면 데이터 유실이므로 반드시 확인을 받는다.
-    useNoticeStore.getState().pushNotice(STRINGS.closeDirtyUntitledBody, [
-      { label: STRINGS.closeDiscardLabel, onPress: () => cleanupAndRemove(tabId) },
-      { label: STRINGS.closeCancelLabel, onPress: () => {} },
-    ]);
+    // 저장할 경로가 없다 — 조용히 버리면 데이터 유실이므로 확인 다이얼로그를 띄운다
+    // (→ document-model.md 다중 탭 규칙 · 인앱 모달인 이유는 file-lifecycle.md#종료-방어).
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.closeDirtyUntitledTitle,
+      body: STRINGS.closeDirtyUntitledBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
     return;
   }
   const outcome = await saveTabNow(tabId);
   if (outcome === "saved" || outcome === "skipped") {
     cleanupAndRemove(tabId);
+    return;
   }
-  // conflict·error·cancelled — 탭을 열어 둔다. 배너가 다음 행동을 안내한다.
+  if (outcome === "error") {
+    // 저장 실패 — 닫기를 강행할지 사용자가 정한다(→ document-model.md "저장 실패는 확인 다이얼로그").
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.saveFailedTitle,
+      body: STRINGS.closeSaveFailedBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
+  }
+  // conflict — 탭을 열어 두고 충돌 배너가 선택을 안내한다.
 }
 
 function cleanupAndRemove(tabId: string): void {

@@ -1,7 +1,7 @@
 import { css } from "styled-system/css";
 
 import { ConflictBanner } from "@features/save-file";
-import { NoticeBanner } from "@shared/ui";
+import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
 import { TabBar } from "@widgets/tab-bar";
 
@@ -20,6 +20,7 @@ export function EditorPage() {
       <NoticeBanner />
       <ConflictBanner />
       <EditorPane />
+      <ConfirmDialog />
     </div>
   );
 }

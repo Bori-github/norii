@@ -25,6 +25,7 @@ export const STRINGS = {
   closeDirtyUntitledTitle: "저장되지 않은 새 문서",
   closeDirtyUntitledBody:
     "저장되지 않은 새 문서가 있습니다. 저장하지 않고 닫으면 내용이 사라집니다.",
+  closeSaveFailedBody: "저장하지 못했습니다. 저장하지 않고 닫으면 마지막 편집이 사라집니다.",
   closeDiscardLabel: "저장하지 않고 닫기",
   closeCancelLabel: "취소",
 
