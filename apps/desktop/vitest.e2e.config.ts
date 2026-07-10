@@ -8,5 +8,8 @@ export default defineConfig({
     include: ["e2e/**/*.e2e.ts"],
     testTimeout: 30_000,
     hookTimeout: 30_000,
+    // 시나리오는 앱 상태를 공유하고 마지막 시나리오(종료 방어)는 앱을 종료시키므로
+    // 파일 병렬 실행을 끈다 — 실행 순서가 파일명(사전순)으로 결정적이어야 한다.
+    fileParallelism: false,
   },
 });

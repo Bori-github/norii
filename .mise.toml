@@ -18,6 +18,8 @@ run = "pnpm --filter desktop tauri dev"
 
 [tasks.dev-webdriver]
 description = "E2E용 개발 실행 — webdriver 피처를 켜 임베디드 WebDriver(127.0.0.1:4445) 기동"
+# E2E 허용 루트 — 테스트(e2e/*.e2e.ts)와 같은 기본값을 공유한다(다이얼로그 대체 입구).
+env = { NORII_E2E_SCOPE_ROOT = "/tmp/norii-e2e" }
 run = "pnpm --filter desktop tauri dev --features webdriver"
 
 [tasks.build]

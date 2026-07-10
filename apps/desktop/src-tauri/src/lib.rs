@@ -48,8 +48,10 @@ pub fn run() {
         .setup(|app| {
             // E2E는 네이티브 다이얼로그를 자동화할 수 없어, webdriver 빌드에 한해 환경변수로
             // 허용 루트를 주입한다(다이얼로그 대체 입구). 일반·릴리스 빌드에는 없는 경로다.
+            // 루트가 없으면 만들어 준다 — 테스트가 앱 기동 전에 디렉터리를 준비할 필요가 없게.
             #[cfg(feature = "webdriver")]
             if let Ok(root) = std::env::var("NORII_E2E_SCOPE_ROOT") {
+                let _ = std::fs::create_dir_all(&root);
                 if let Ok(canonical) = std::fs::canonicalize(&root) {
                     use tauri::Manager;
                     app.state::<scope::FileScope>().allow(canonical);
