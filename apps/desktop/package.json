@@ -9,14 +9,18 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "codegen": "panda codegen",
     "postinstall": "panda codegen --silent",
+    "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "tauri": "tauri"
   },
   "dependencies": {
     "@norii/editor": "workspace:*",
     "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-dialog": "2.7.1",
+    "@tauri-apps/plugin-log": "2.8.0",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "zustand": "5.0.14"
   },
   "devDependencies": {
     "@pandacss/dev": "1.11.4",
