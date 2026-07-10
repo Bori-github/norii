@@ -33,6 +33,7 @@ norii/
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
+    commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
 
   apps/
     desktop/                 Tauri 데스크탑 앱

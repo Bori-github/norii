@@ -16,6 +16,9 @@ norii는 **Conventional Commits**를 따르되, **요약(subject)은 한국어**
 
 - `type`은 **영문 소문자**, `scope`는 선택.
 - 요약은 **한국어**, 명령형·간결하게. **마침표 없음**, 50자 내외 권장(최대 72자).
+- **요약을 영문 고유명사로 시작하지 않는다** — commitlint `subject-case`가 대문자 영문 시작을 거부한다. 영문 이름으로 시작할 내용이면 한국어 단어를 앞에 둔다(예: `Renovate 도입` → `의존성 자동 갱신 Renovate 도입`).
+- **본문은 각 줄 100자 이내** — commitlint `body-max-line-length` 기본값.
+- 마지막 줄에 `Co-Authored-By: Claude <모델명> <noreply@anthropic.com>` 트레일러를 붙인다(모델명은 현재 실행 모델).
 - 관련 PR/이슈는 요약 끝에 `(#12)`로 붙일 수 있다.
 
 ## 타입 (type)
@@ -66,7 +69,7 @@ BREAKING CHANGE: 프리뷰 설정 키 이름 변경 (mathEnabled → katex)
 ## PR 제목·라벨
 
 - **PR 제목도 커밋과 동일한 `type(scope): 한국어 요약` 형식**을 따른다. squash 병합을 하면 PR 제목이 그대로 `main`의 커밋 메시지가 되는데, 그 커밋은 GitHub이 만들어 로컬 commitlint 훅을 거치지 않으므로 제목 단계에서 규칙을 지킨다.
-- **변경 유형은 라벨로 표시**한다(feat·fix·docs·refactor·perf·test·build·ci·chore) — 제목에 이미 타입이 있으니 본문 중복을 피하고, 필터·집계가 되게 라벨을 쓴다.
+- **변경 유형은 라벨로 표시**한다 — 위 [타입](#타입-type) 표의 이름을 그대로 라벨로 둔다(`feat`…`revert` 전부 일치). 제목에 이미 타입이 있으니 본문 체크박스 대신 라벨을 써서 필터·집계가 되게 한다.
 - PR 본문은 [PR 템플릿](../../.github/pull_request_template.md)을 따른다.
 
 ## 강제 (Enforcement)
@@ -75,6 +78,6 @@ BREAKING CHANGE: 프리뷰 설정 키 이름 변경 (mathEnabled → katex)
 
 - 타입·형식은 commitlint가 강제한다.
 - 요약을 한국어로 쓰는 것은 이 문서의 팀 규칙이다(commitlint는 언어를 검사하지 않음).
-- 커밋 메시지 작성은 전역 `commit-message` 스킬로 생성할 수 있으며, 생성 결과도 이 컨벤션을 따른다.
+- 이 컨벤션을 실행하는 프로젝트 커맨드로 `/commit`(커밋)·`/pr`(PR 생성)이 있다(`.claude/commands/`). 전역 `commit-message` 스킬로도 생성할 수 있으며, 어느 쪽이든 결과는 이 컨벤션을 따른다.
 
 버전 핀은 [기술 스택 — 코드 품질](../docs/tech-stack.md#코드-품질)을 단일 출처로 둔다.
