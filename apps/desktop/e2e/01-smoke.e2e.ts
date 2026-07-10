@@ -29,6 +29,12 @@ afterAll(async () => {
 });
 
 it("실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다 (스모크)", async () => {
+  // 이전 스펙 실행이 남긴 탭 상태를 지운다 — M1은 세션 복원이 없어 리로드가 곧 초기화다.
+  // execute 콜백은 항상 null을 반환한다(플러그인이 Promise·undefined를 직렬화하지 못함).
+  await browser.execute(() => {
+    location.reload();
+    return null;
+  });
   // M1부터 시작 화면은 "열린 문서 없음" 빈 상태다 — 에디터는 탭을 열어야 마운트된다.
   const emptyState = await browser.$('[data-testid="empty-state"]');
   await emptyState.waitForExist({ timeout: 15000 });
