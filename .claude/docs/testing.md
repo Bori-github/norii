@@ -41,7 +41,7 @@ Refactor → 테스트를 초록으로 유지하며 정리
 |---|---|---|
 | 순수 로직 (파서 파이프라인·폴드 범위 계산·상태 리듀서) | Vitest (Node) | **환경 의존이 없음** — 동일 입력→동일 출력이라 Node에서도 운영과 결과가 같다. "가벼워서"가 아니라 "환경 무관이라서" 여기 둔다. |
 | 컴포넌트·렌더 (`shared/ui`·`widgets`) | **Vitest Browser Mode (WebKit)** | 실제 렌더·계산된 CSS·측정값이 필요. happy-dom 대체. Playwright WebKit은 WebKit 기반이나 시스템 WKWebView와 동일하진 않다 — 운영 동일 충실도는 실앱 E2E 계층에서만 얻는다. |
-| **에디터 · 한글 IME · 데이터 유실 왕복 (위험 영역)** | **tauri-plugin-webdriver (실제 Tauri 앱)** | 실제 WKWebView 조합(composition) 이벤트, 실제 Rust 파일 I/O 왕복. **실제 앱 전체를 띄워 — 실행은 가장 느리지만 운영과 동일하게.** |
+| **에디터 · 한글 IME · 데이터 유실 왕복 (위험 영역)** | **tauri-plugin-webdriver (실제 Tauri 앱) + WebdriverIO 클라이언트** | 실제 WKWebView 조합(composition) 이벤트, 실제 Rust 파일 I/O 왕복. **실제 앱 전체를 띄워 — 실행은 가장 느리지만 운영과 동일하게.** 클라이언트는 `webdriverio` programmatic `remote()`를 Vitest 안에서 구동한다(테스트러너 없이 경량). 플러그인은 **`webdriver` Cargo 피처** 뒤에 두어(optional dependency), E2E 실행 시 `tauri dev --features webdriver`로만 컴파일·기동한다 — 일반 개발·릴리스 빌드에는 포함되지 않는다. |
 | Rust 백엔드 (커맨드·인코딩·watch) | `cargo test` + 실제 임시 디렉터리 파일 I/O | 백엔드는 이 자체가 운영 동일. |
 | IPC 계약 (Rust ↔ 프론트) | **tauri-specta** (Rust→TS 타입 생성) | 직렬화·`AppError` 매핑 드리프트를 **컴파일 타임에 차단**. |
 
@@ -65,7 +65,7 @@ norii에서 가장 위험하고 고유한 것 — **한글 IME**와 **데이터 
 
 ## 성숙도 주의
 
-macOS 실앱 E2E 경로는 하나가 아니다 — 공식 임베디드 provider(`@wdio/tauri-service`), CrabNebula 상용 포크(macOS는 유료 키), 그리고 `Choochmeque/tauri-plugin-webdriver`가 있다. norii는 그중 **MIT·무료·임베디드**인 `Choochmeque/tauri-plugin-webdriver`(Rust crate `tauri-plugin-webdriver`, **pre-1.0 커뮤니티** — 버전 핀과 스택의 1.0 미만 도구 목록은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다)를 채택한다. 유사명 패키지(`tauri-plugin-webdriver-automation`, `@wdio/tauri-service`)와 혼동하지 않게 정확한 crate·출처를 핀한다. 불안정·정체 시 공식 임베디드 provider나 CrabNebula로 대체하거나 해당 시나리오의 수동 검증 절차와 사유를 기록한다(→ [작업 규칙](../rules/project-rules.md)).
+macOS 실앱 E2E 경로는 하나가 아니다 — 공식 임베디드 provider(`@wdio/tauri-service`), CrabNebula 상용 포크(macOS는 유료 키), 그리고 `Choochmeque/tauri-plugin-webdriver`가 있다. norii는 그중 **MIT·무료·임베디드**인 `Choochmeque/tauri-plugin-webdriver`(Rust crate `tauri-plugin-webdriver`, **pre-1.0 커뮤니티** — 버전 핀은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다)를 채택한다. 유사명 패키지(`tauri-plugin-webdriver-automation`, `@wdio/tauri-service`)와 혼동하지 않게 정확한 crate·출처를 핀한다. 불안정·정체 시 공식 임베디드 provider나 CrabNebula로 대체하거나 해당 시나리오의 수동 검증 절차와 사유를 기록한다(→ [작업 규칙](../rules/project-rules.md)).
 
 ## 게이트·로드맵·커버리지
 

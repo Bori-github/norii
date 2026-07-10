@@ -19,14 +19,21 @@ norii/
   .oxlintrc.json             oxlint 룰 설정
   lefthook.yml               Git 훅 (pre-commit: oxlint/oxfmt · commit-msg: commitlint)
   commitlint.config.js       Conventional Commits 규칙 (→ .claude/rules/commit-convention.md)
+  renovate.json              의존성 자동 갱신 규칙 (그룹핑·자동머지 범위 → code-quality.md)
   package.json               루트 (private)
   tsconfig.base.json
-  LICENSE                    MIT (© 2026 ohah)
+  LICENSE                    MIT (© 2026 bori)
   CLAUDE.md                  Claude 진입점 → AGENTS.md
   AGENTS.md                  문서 인덱스 + 핵심 원칙
+  .github/
+    pull_request_template.md PR 본문 템플릿 (→ .claude/rules/commit-convention.md)
+  scripts/
+    docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
+    bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
+    commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
 
   apps/
     desktop/                 Tauri 데스크탑 앱
@@ -39,12 +46,15 @@ norii/
         shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types)
       src-tauri/             Rust 백엔드
         src/                 커맨드·파일 I/O·감시 구현
-        Cargo.toml
+        Cargo.toml           (webdriver 피처로 tauri-plugin-webdriver 선택 포함 → testing.md)
         tauri.conf.json
         capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)
+      e2e/                    실앱 E2E 스모크 (webdriverio + 임베디드 WebDriver → testing.md)
+      vitest.e2e.config.ts    E2E 전용 Vitest 설정 (빠른 test 게이트와 분리)
       index.html
       vite.config.ts          vite-tsconfig-paths로 @app~@shared 별칭 반영
       tsconfig.app.json       FSD 레이어 path alias 정의
+      tsconfig.json           편집기용 위임 설정 — tsconfig.app.json을 extends (언어 서버는 이 이름만 자동 탐색)
       steiger.config.ts       FSD 린트 설정
       panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design-system.md)
       postcss.config.cjs      Panda PostCSS 플러그인

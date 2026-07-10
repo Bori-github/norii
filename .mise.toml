@@ -5,11 +5,20 @@
 [tools]
 node = "24"
 rust = "stable"
-pnpm = "11"
+# 기본(aqua) 백엔드는 Intel mac(darwin/amd64)용 pnpm을 지원하지 않아 npm 백엔드로 설치한다.
+"npm:pnpm" = "11.10.0"
+
+[env]
+# 태스크가 oxlint·oxfmt·steiger·turbo를 맨 이름으로 호출하므로 워크스페이스 실행 파일 경로를 PATH에 추가한다.
+_.path = ["{{config_root}}/node_modules/.bin"]
 
 [tasks.dev]
 description = "데스크탑 앱 개발 모드 실행 (Vite + Tauri)"
 run = "pnpm --filter desktop tauri dev"
+
+[tasks.dev-webdriver]
+description = "E2E용 개발 실행 — webdriver 피처를 켜 임베디드 WebDriver(127.0.0.1:4445) 기동"
+run = "pnpm --filter desktop tauri dev --features webdriver"
 
 [tasks.build]
 description = "데스크탑 앱 릴리스 빌드"
@@ -30,7 +39,9 @@ run = "oxfmt --check ."
 
 [tasks.fsd-lint]
 description = "FSD 아키텍처 검증 (steiger — 레이어 참조·Public API·구조)"
-run = "steiger apps/desktop/src"
+# steiger는 cosmiconfig로 cwd에서 위로만 config를 탐색하므로, steiger.config.ts가 있는 앱 디렉터리에서 실행한다.
+dir = "apps/desktop"
+run = "steiger src"
 
 [tasks.typecheck]
 description = "타입 체크 (tsc, 패키지별)"
@@ -56,7 +67,33 @@ description = "Rust 테스트"
 dir = "apps/desktop/src-tauri"
 run = "cargo test"
 
+# --- 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행) ---
+[tasks.e2e]
+description = "실앱 E2E 스모크 (tauri-plugin-webdriver — 개발 빌드 앱이 실행 중이어야 함)"
+dir = "apps/desktop"
+run = "pnpm test:e2e"
+
+# --- 번들 크기 측정 (check 미포함 — 빌드 산출물 필요) ---
+[tasks.bundle-size]
+description = "번들 크기 측정 (프론트엔드 dist + 앱 번들, 목표 <15MB — build 후 실행)"
+run = "node scripts/bundle-size.mjs"
+
+# --- 문서-코드 정합 ---
+[tasks.docs-drift]
+description = "문서-코드 드리프트 검사 (계약 문서 ↔ 코드 기계 대조)"
+run = "node scripts/docs-drift.mjs"
+
 # --- 통합 게이트 (커밋 전 필수) ---
 [tasks.check]
-description = "포맷·린트·FSD·타입·테스트 게이트 (JS/TS + Rust, 수정 없이 검증)"
-depends = ["fmt-check", "lint", "fsd-lint", "typecheck", "test", "rust-fmt-check", "clippy", "rust-test"]
+description = "포맷·린트·FSD·타입·테스트·드리프트 게이트 (JS/TS + Rust, 수정 없이 검증)"
+depends = [
+  "fmt-check",
+  "lint",
+  "fsd-lint",
+  "typecheck",
+  "test",
+  "rust-fmt-check",
+  "clippy",
+  "rust-test",
+  "docs-drift",
+]

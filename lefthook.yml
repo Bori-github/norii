@@ -1,0 +1,18 @@
+# Git 훅 — 커밋 전 자동화의 단일 출처는 .claude/docs/code-quality.md#lefthook-커밋-전-자동화
+# 2단 구조: 커밋 훅은 변경 파일만 빠르게 검사하고, 전체 게이트(mise run check)는 지속적 통합에서 강제한다.
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: oxfmt (변경 파일 포맷 검증)
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,yaml,yml,css,md}"
+      # 스테이징 파일이 전부 oxfmt ignore 대상(.claude/** 등)일 때 커밋이 막히지 않도록 한다
+      run: pnpm exec oxfmt --check --no-error-on-unmatched-pattern {staged_files}
+    - name: oxlint (변경 파일 린트)
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm exec oxlint {staged_files}
+
+commit-msg:
+  jobs:
+    - name: commitlint (커밋 컨벤션 검증)
+      run: pnpm exec commitlint --edit {1}

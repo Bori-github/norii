@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+# Git 훅 설치는 루트 prepare 스크립트(lefthook install)가 담당한다.
+# 의존성 빌드 스크립트는 허용하지 않는다(공급망 정책) — lefthook postinstall은 의도적으로 끈다.
+allowBuilds:
+  # esbuild는 prebuilt 플랫폼 바이너리(@esbuild/*)로 동작하므로 postinstall이 불필요하다.
+  # Panda의 config 번들링이 esbuild를 쓰지만 빌드 스크립트 없이 정상 동작한다.
+  esbuild: false
+  # edgedriver·geckodriver는 webdriverio가 끌어오는 브라우저 드라이버 매니저다.
+  # norii는 브라우저가 아니라 Tauri 임베디드 WebDriver(WKWebView)에 붙으므로 이 드라이버가 불필요하다.
+  edgedriver: false
+  geckodriver: false
+  lefthook: false

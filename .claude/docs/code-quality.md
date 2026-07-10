@@ -21,7 +21,7 @@ norii의 코드 품질 도구와 게이트의 단일 출처다. 도구 버전은
 
 ## oxfmt 성숙도 (알아둘 것)
 
-oxfmt는 현재 **0.x(베타)** 다(스택의 1.0 미만 도구 목록은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다). 다만 Vue.js·Turborepo·Sentry 등 광범위하게 채택됐고 활발히 개선 중이다. **리스크 관리**:
+oxfmt는 현재 **0.x(베타)** 다(버전 핀은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다). 다만 Vue.js·Turborepo·Sentry 등 광범위하게 채택됐고 활발히 개선 중이다. **리스크 관리**:
 
 - 버전을 정확히 핀하고(→ [기술 스택](tech-stack.md#코드-품질)), 업그레이드 시 포맷 diff를 확인한다.
 - 만약 oxfmt가 특정 파일 타입에서 불안정하면, 그 타입만 임시로 다른 포매터로 우회하고 문서에 기록한다.
@@ -40,12 +40,15 @@ mise run check   # 아래를 모두 검증 (수정하지 않고 확인만)
   ├─ test            turbo test (vitest)    JS/TS 테스트
   ├─ rust-fmt-check  cargo fmt --check      Rust 포맷 검증
   ├─ clippy          cargo clippy -D warnings  Rust 린트
-  └─ rust-test       cargo test             Rust 테스트
+  ├─ rust-test       cargo test             Rust 테스트
+  └─ docs-drift      node scripts/docs-drift.mjs  문서-코드 정합
 ```
 
 **원칙**: 게이트는 코드를 **수정하지 않는다.** 포맷 적용은 `mise run fmt`(oxfmt 쓰기)로 따로 한다. 게이트는 `fmt-check`로 **검증만** 한다 — 그래야 CI에서 예상치 못한 변경이 생기지 않는다.
 
-M0에서 **`docs-drift`**(계약 문서 ↔ 코드 기계 대조)가 구현되면 이 게이트에 편입된다(→ [개발 명령](development-commands.md#문서-코드-드리프트-검사-docs-drift)).
+**oxfmt 검증 범위**: 다섯 경로를 제외한다(`.oxfmtrc.json`이 단일 출처). ① `.claude/**` — 설계 문서 원문을 포매터가 재작성하지 않게 한다. ② `.github/**` — PR/이슈 템플릿은 플레이스홀더 구조(빈 불릿·주석)를 가진 저작 콘텐츠라 포매터가 재작성하면 깨진다. ③ `**/src-tauri/gen/**` — Tauri가 빌드마다 재생성하는 산출물이라 검증 의미가 없다(버전 관리에서도 제외). ④ `**/styled-system/**` — Panda가 생성하는 디자인 시스템 코드(→ [디자인 시스템](design-system.md#fsd-배치)). ⑤ `**/dist/**` — 빌드 산출물. 생성물 제외 기준은 oxlint(`.oxlintrc.json`)와 맞춘다.
+
+**`docs-drift`**(계약 문서 ↔ 코드 기계 대조)가 이 게이트에 편입돼 있다(→ [개발 명령](development-commands.md#문서-코드-드리프트-검사-docs-drift)).
 
 ## 타입 엄격도 (tsconfig)
 
@@ -102,6 +105,17 @@ matrix (확장 시):
 ```
 
 Rust 빌드는 캐시(예: `Swatinem/rust-cache`)로 가속한다. 릴리스 빌드·서명은 별도 워크플로로 분리한다(→ [플랫폼 전략](platform-strategy.md)).
+
+## 의존성 자동 갱신 (Renovate)
+
+의존성 업데이트는 사람이 챙기지 않고 **Renovate**(Mend 호스티드 GitHub App)가 PR로 올린다. norii는 **정확한 버전 핀이 많고**(→ [기술 스택](tech-stack.md)) **베타 의존성**(oxfmt 0.x·Steiger pre-1.0·tauri-plugin-webdriver·tauri-specta rc)을 쓰므로, 새 릴리스를 놓치지 않고 추적하는 실익이 크다.
+
+- 루트 `renovate.json`이 단일 출처다. 설계 의도에 맞춰 규칙을 둔다:
+  - **그룹핑** — 관련 패키지를 묶어 PR 홍수를 막는다(예: `@codemirror/*`, `@tauri-apps/*`, 린트·포맷 툴링).
+  - **자동 머지 범위 한정** — devDependencies의 patch/minor 등 저위험만 CI 그린 시 자동 머지 후보로 두고, major·런타임 의존성은 사람이 검토한다.
+  - **베타 의존성 주의 라벨** — 0.x·rc·pre-1.0 핀은 별도 라벨을 달아 [열린 결정](implementation-plan.md#열린-결정-open-decisions)의 재확인 항목(oxfmt 1.0·tauri-specta 2.0 등)과 연결한다.
+- Renovate PR도 `mise run check` 게이트를 CI에서 통과해야 머지된다 — 자동 갱신이 품질 게이트를 우회하지 않는다.
+- 커밋 메시지는 [커밋 컨벤션](../rules/commit-convention.md)의 `build(deps):` 형식에 맞춘다(Renovate `commitMessagePrefix`로 강제).
 
 ## 실제 앱 E2E (운영 동일)
 

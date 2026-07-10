@@ -1,0 +1,27 @@
+# Rust 백엔드 — 파일 I/O·감시·다이얼로그 담당(마일스톤 M1부터).
+# 버전 핀의 단일 출처 역할: .claude/docs/tech-stack.md 표와 함께 갱신한다.
+[package]
+name = "norii"
+version = "0.1.0"
+description = "가볍고 빠른 로컬 우선 마크다운 소스 뷰 에디터"
+license = "MIT"
+edition = "2021"
+
+[lib]
+# 향후 Tauri 2 모바일 타깃 재사용을 위해 라이브러리로 분리한다 (플랫폼 전략).
+name = "norii_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[features]
+# 실앱 E2E 하네스용 — `tauri dev --features webdriver`로 켜면 임베디드 WebDriver(127.0.0.1:4445)가
+# 기동한다(→ .claude/docs/testing.md). 피처를 켜야만 아래 optional 크레이트가 컴파일된다.
+webdriver = ["dep:tauri-plugin-webdriver"]
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# optional이라 webdriver 피처를 켤 때만 컴파일·링크된다 — 일반 개발·릴리스 빌드에는 포함되지 않는다.
+# (cfg(debug_assertions)는 의존성 선택에 지원되지 않아 릴리스에 새어 들어가므로 피처로 게이팅한다.)
+tauri-plugin-webdriver = { version = "0.2.1", optional = true }

@@ -40,8 +40,20 @@ mise run rust-fmt-check  # cargo fmt --check
 mise run clippy          # cargo clippy -D warnings
 mise run rust-test       # cargo test
 
-# 실앱 E2E (check 미포함 — CI에서 실행)
-mise run e2e             # tauri-plugin-webdriver 실앱 E2E (→ testing.md)
+# 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
+mise run dev-webdriver & # 1) webdriver 피처를 켠 개발 빌드 앱 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
+mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
+
+# 번들 크기 측정 (check 미포함 — 빌드 산출물 필요)
+# 현재(M0)는 프론트엔드 dist 측정만 유효하다. 앱 번들(.app)은 아래 참고.
+pnpm --filter desktop build   # vite 빌드 → dist 생성 (빠름)
+mise run bundle-size          # dist 측정 · 앱 번들 있으면 15MB 예산과 비교 (→ platform-strategy.md)
+
+# 실제 .app 크기(15MB 예산의 대상)를 재려면 번들링을 켜서 릴리스 빌드한다 (느림):
+#   pnpm --filter desktop tauri build --bundles app   # → target/release/bundle/macos/*.app
+#   mise run bundle-size
+# 번들링 상시화·서명·CI 측정은 배포 단계(M6, → platform-strategy.md)에서 다룬다.
+# 주의: `mise run build`는 프론트가 아니라 풀 tauri 릴리스 빌드다(bundle.active:false라 .app 미생성).
 ```
 
 `mise run check`는 위 검증 태스크(`fmt-check`·`lint`·`fsd-lint`·`typecheck`·`test`·`rust-fmt-check`·`clippy`·`rust-test`)를 모두 실행한다. 포맷을 **수정**하는 건 `mise run fmt`뿐이고, 게이트는 검증만 한다.
@@ -49,10 +61,10 @@ mise run e2e             # tauri-plugin-webdriver 실앱 E2E (→ testing.md)
 ## 문서-코드 드리프트 검사 (docs-drift)
 
 ```sh
-mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (M0에서 구현 → check에 편입)
+mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-drift.mjs)
 ```
 
-문서-코드 간극을 성실함이 아니라 **게이트가 잡는다**. 대조 대상은 [작업 규칙](../rules/project-rules.md)의 계약 문서 중 기계 대조 가능한 두 표면이다:
+`mise run check` 게이트에 편입돼 있다. 구현은 `scripts/docs-drift.mjs`(의존성 없는 Node 스크립트)다. 문서-코드 간극을 성실함이 아니라 **게이트가 잡는다**. 대조 대상은 [작업 규칙](../rules/project-rules.md)의 계약 문서 중 기계 대조 가능한 두 표면이다:
 
 - Rust 소스의 `#[tauri::command]` 함수명이 [Rust 커맨드 계약](rust-commands.md)에 등재됐는지 — **코드 → 문서 단방향 검사**다. 계약 없는 커맨드는 게이트 실패이고, 문서에만 있는 커맨드는 아직 미구현 계약으로 허용한다(개발 진행 중 게이트가 항상 빨간불이 되지 않게)
 - [기술 스택](tech-stack.md) 표에 적힌 버전이 `package.json`·`Cargo.toml`의 실제 핀과 일치하는지 — **단방향 검사**다. 표에 없는 의존성에 등재를 요구하지 않는다(요구하면 모든 의존성 추가가 게이트에 걸리는 과잉 검사가 된다)
