@@ -25,6 +25,8 @@ norii/
   LICENSE                    MIT (© 2026 bori)
   CLAUDE.md                  Claude 진입점 → AGENTS.md
   AGENTS.md                  문서 인덱스 + 핵심 원칙
+  .github/
+    pull_request_template.md PR 본문 템플릿 (→ .claude/rules/commit-convention.md)
   scripts/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)

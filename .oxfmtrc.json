@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".claude/**", "**/src-tauri/gen/**", "**/styled-system/**", "**/dist/**"]
+  "ignorePatterns": [
+    ".claude/**",
+    ".github/**",
+    "**/src-tauri/gen/**",
+    "**/styled-system/**",
+    "**/dist/**"
+  ]
 }

@@ -63,6 +63,12 @@ feat(preview): KaTeX 수식 렌더 지원
 BREAKING CHANGE: 프리뷰 설정 키 이름 변경 (mathEnabled → katex)
 ```
 
+## PR 제목·라벨
+
+- **PR 제목도 커밋과 동일한 `type(scope): 한국어 요약` 형식**을 따른다. squash 병합을 하면 PR 제목이 그대로 `main`의 커밋 메시지가 되는데, 그 커밋은 GitHub이 만들어 로컬 commitlint 훅을 거치지 않으므로 제목 단계에서 규칙을 지킨다.
+- **변경 유형은 라벨로 표시**한다(feat·fix·docs·refactor·perf·test·build·ci·chore) — 제목에 이미 타입이 있으니 본문 중복을 피하고, 필터·집계가 되게 라벨을 쓴다.
+- PR 본문은 [PR 템플릿](../../.github/pull_request_template.md)을 따른다.
+
 ## 강제 (Enforcement)
 
 **commitlint**(`@commitlint/config-conventional`)로 검증하고, **lefthook `commit-msg` 훅**이 매 커밋에 이를 실행한다(→ [코드 품질 전략](../docs/code-quality.md#lefthook-커밋-전-자동화)). 규칙 위반 시 커밋이 거부된다.
