@@ -15,10 +15,13 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+# 실앱 E2E 하네스용 — `tauri dev --features webdriver`로 켜면 임베디드 WebDriver(127.0.0.1:4445)가
+# 기동한다(→ .claude/docs/testing.md). 피처를 켜야만 아래 optional 크레이트가 컴파일된다.
+webdriver = ["dep:tauri-plugin-webdriver"]
+
 [dependencies]
 tauri = { version = "2", features = [] }
-
-# 개발 빌드 전용 — 임베디드 WebDriver 서버로 실앱 E2E를 구동한다(→ .claude/docs/testing.md).
-# cfg(debug_assertions)라 릴리스 빌드에는 포함되지 않는다.
-[target.'cfg(debug_assertions)'.dependencies]
-tauri-plugin-webdriver = "0.2.1"
+# optional이라 webdriver 피처를 켤 때만 컴파일·링크된다 — 일반 개발·릴리스 빌드에는 포함되지 않는다.
+# (cfg(debug_assertions)는 의존성 선택에 지원되지 않아 릴리스에 새어 들어가므로 피처로 게이팅한다.)
+tauri-plugin-webdriver = { version = "0.2.1", optional = true }

@@ -43,7 +43,7 @@ norii/
         shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types)
       src-tauri/             Rust 백엔드
         src/                 커맨드·파일 I/O·감시 구현
-        Cargo.toml           (개발 빌드 전용 tauri-plugin-webdriver 포함 → testing.md)
+        Cargo.toml           (webdriver 피처로 tauri-plugin-webdriver 선택 포함 → testing.md)
         tauri.conf.json
         capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)
       e2e/                    실앱 E2E 스모크 (webdriverio + 임베디드 WebDriver → testing.md)

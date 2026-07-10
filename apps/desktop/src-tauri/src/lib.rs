@@ -5,9 +5,9 @@
 pub fn run() {
     let builder = tauri::Builder::default();
 
-    // 개발 빌드에서만 임베디드 WebDriver 서버(127.0.0.1:4445)를 켠다 — 실앱 E2E 하네스용.
-    // 릴리스 빌드에는 플러그인도 크레이트도 포함되지 않는다(→ .claude/docs/testing.md).
-    #[cfg(debug_assertions)]
+    // webdriver 피처를 켠 빌드에서만 임베디드 WebDriver 서버(127.0.0.1:4445)를 켠다 — 실앱 E2E용.
+    // 피처를 끄면 플러그인도 크레이트도 컴파일되지 않는다(→ .claude/docs/testing.md).
+    #[cfg(feature = "webdriver")]
     let builder = builder.plugin(tauri_plugin_webdriver::init());
 
     builder
