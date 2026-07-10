@@ -49,6 +49,8 @@ tauri-specta 2.0  rc 핀 → 정식 2.0 도달 시 재확인            (→ tec
 원격 이미지       프리뷰에서 http(s) 이미지 로드 허용 여부   (→ security.md)
 커버리지 임계값   도입 시점·수치                              (→ testing.md)
 인코딩 수동 선택  encoding_override는 계약에 있음 — 배너 UI 노출 시점 (→ file-lifecycle.md)
+널 바이트 판정 강화 홀짝 일관성만의 UTF-16 판정은 관대(널 1개도 UTF-16 분류) — M2 변환 도입 전 오판(바이너리→깨진 텍스트) 방지 규칙 확정 (→ file-lifecycle.md)
+경로 정규화 비교   스코프 허용 루트 비교가 바이트 단위 — 대소문자·NFC/NFD가 다른 입구(M4 트리·M5 세션 복원) 추가 전 비교 전략 확정 (→ rust-commands.md)
 트리 외부 변경    사이드바 트리의 외부 생성/삭제 반영 방식 — M4 (→ document-model.md)
 프리뷰 디바운스   구체 값은 M3에서 실측으로 확정              (→ preview-strategy.md)
 번들 크기 임계값  앱 번들 15MB 예산 확정. 프론트엔드 dist 하드 임계값 도입 여부는 열림 (→ platform-strategy.md)
