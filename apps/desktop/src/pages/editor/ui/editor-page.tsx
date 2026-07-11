@@ -1,6 +1,6 @@
 import { css } from "styled-system/css";
 
-import { ConflictBanner } from "@features/save-file";
+import { ConflictBanner, MissingFileBanner } from "@features/save-file";
 import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
 import { NormalizationBanner } from "@widgets/normalization-banner";
@@ -21,6 +21,7 @@ export function EditorPage() {
       <NoticeBanner />
       <NormalizationBanner />
       <ConflictBanner />
+      <MissingFileBanner />
       <EditorPane />
       <ConfirmDialog />
     </div>

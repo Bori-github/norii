@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
-import { requestCloseTab } from "@features/save-file";
+import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 
 const barClass = css({
@@ -36,6 +36,8 @@ const tabClass = css({
 
 const dirtyClass = css({ color: "accent", fontSize: "xs" });
 
+const warningClass = css({ fontSize: "xs" });
+
 const closeClass = css({
   border: "none",
   background: "transparent",
@@ -54,6 +56,10 @@ export function TabBar() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const activateTab = useDocumentStore((state) => state.activateTab);
   const cycleActiveTab = useDocumentStore((state) => state.cycleActiveTab);
+  // 충돌·삭제 배너는 활성 탭 전용 — 비활성 탭의 그 상태는 ⚠ 배지가 유일한 신호다
+  // (→ file-lifecycle.md#외부-변경-처리 비활성 탭의 충돌 표시).
+  const conflictTabIds = useConflictStore((state) => state.conflictTabIds);
+  const missingTabIds = useMissingFileStore((state) => state.missingTabIds);
   const barRef = useRef<HTMLDivElement>(null);
   const focusPendingRef = useRef(false);
 
@@ -113,6 +119,19 @@ export function TabBar() {
           onKeyDown={(event) => onTabKeyDown(event, tab.id)}
         >
           <span>{tab.title}</span>
+          {(conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id)) && (
+            <span
+              className={warningClass}
+              data-testid="tab-warning"
+              aria-label={
+                conflictTabIds.includes(tab.id)
+                  ? STRINGS.conflictBadgeLabel
+                  : STRINGS.missingBadgeLabel
+              }
+            >
+              ⚠
+            </span>
+          )}
           {tab.isDirty && (
             <span className={dirtyClass} aria-label={STRINGS.dirtyIndicatorLabel}>
               ●

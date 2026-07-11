@@ -29,6 +29,12 @@ export const STRINGS = {
   reopenDirtyBody: "다시 열면 저장되지 않은 편집이 사라지고 디스크의 원본을 다시 읽습니다.",
   reopenConfirmLabel: "다시 열기",
 
+  conflictBadgeLabel: "외부 변경 충돌 — 탭을 열어 확인하세요",
+  missingBadgeLabel: "파일이 디스크에서 삭제됨 — 탭을 열어 확인하세요",
+  missingFileBody:
+    "이 파일이 디스크에서 삭제되었습니다. 편집 내용은 탭에 남아 있고, 자동 저장은 멈췄습니다.",
+  missingFileRecreate: "저장해서 새로 생성",
+
   conflictTitle: "외부 변경 충돌",
   conflictBody:
     "이 파일이 밖에서 수정되었습니다. 어느 버전을 유지할까요?\n" +
