@@ -1,4 +1,10 @@
-import { findTab, getTabText, setTabText, useDocumentStore } from "@entities/document";
+import {
+  findTab,
+  getTabText,
+  needsNormalizationApproval,
+  setTabText,
+  useDocumentStore,
+} from "@entities/document";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -22,19 +28,42 @@ const autosave = createAutosaveScheduler({
   },
 });
 
-/** 에디터가 문서 변경을 알린다 — 자동 저장 예약. Untitled는 대상이 아니다(경로 없음). */
+/**
+ * 에디터가 문서 변경을 알린다 — 자동 저장 예약. Untitled(경로 없음)와 정규화 미승인 탭은
+ * 대상이 아니다 — 미승인 탭의 저장은 원본 바이트를 재작성하므로 사용자 승인 전까지
+ * 자동 저장이 건드리지 않는다(→ file-lifecycle.md#자동-저장).
+ */
 export function noteDocumentChanged(tabId: string): void {
   const tab = findTab(tabId);
-  if (!tab || tab.filePath === null) {
+  if (!tab || tab.filePath === null || needsNormalizationApproval(tab)) {
     return;
   }
   autosave.noteChange(tabId);
 }
 
+/** 배너의 정규화 승인 — 승인 순간부터 이 탭도 자동 저장 대상이므로 밀린 변경을 예약한다. */
+export function approveTabNormalization(tabId: string): void {
+  const tab = findTab(tabId);
+  if (!tab) {
+    return;
+  }
+  useDocumentStore.getState().approveNormalization(tabId);
+  if (tab.isDirty) {
+    autosave.noteChange(tabId);
+  }
+}
+
 async function autosaveFlush(tabId: string): Promise<void> {
   const tab = findTab(tabId);
   // 충돌 중 일시 중지는 스케줄러가 보장하지만, 예약과 해소가 겹칠 수 있어 여기서도 거른다.
-  if (!tab || tab.filePath === null || !tab.isDirty || isTabInConflict(tabId)) {
+  // 미승인 검사도 마지막 관문으로 반복한다(예약 후 리로드로 승인이 원점 복귀할 수 있다).
+  if (
+    !tab ||
+    tab.filePath === null ||
+    !tab.isDirty ||
+    isTabInConflict(tabId) ||
+    needsNormalizationApproval(tab)
+  ) {
     return;
   }
   await saveTabNow(tabId);
@@ -64,6 +93,12 @@ async function performSave(
   }
   // 이 저장이 대기 중인 자동 저장을 대신한다 — 이중 저장을 막는다.
   autosave.discard(tabId);
+  // 여기 도달한 미승인 탭의 저장은 수동(Cmd+S·다른 이름으로 저장)뿐이다 — 자동 저장·종료
+  // 플러시·탭 닫기는 미승인 탭을 걸러낸다. 첫 수동 저장은 정규화 승인이다
+  // (→ file-lifecycle.md#자동-저장).
+  if (needsNormalizationApproval(tab)) {
+    useDocumentStore.getState().approveNormalization(tabId);
+  }
 
   let path = tab.filePath;
   let expectedHash = tab.lastSavedHash;
@@ -107,6 +142,10 @@ async function performSave(
       store.assignPath(tabId, path);
     }
     store.setLastSavedHash(tabId, result.hash);
+    // 저장 성공 = 디스크가 UTF-8·판정 EOL로 통일됐다 — 정규화 메타를 해제한다(변환은 1회).
+    if (tab.sourceEncoding !== "utf-8" || tab.eolMixed) {
+      store.markNormalized(tabId);
+    }
     // 저장이 나가는 동안 추가 편집이 있었으면 dirty를 유지한다(그 편집은 아직 미저장).
     if (getTabText(tabId) === text) {
       store.setDirty(tabId, false);
@@ -194,6 +233,18 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     useConfirmStore.getState().requestConfirm({
       title: STRINGS.closeDirtyUntitledTitle,
       body: STRINGS.closeDirtyUntitledBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
+    return;
+  }
+  if (needsNormalizationApproval(tab)) {
+    // 미승인 탭을 플러시하면 닫기가 정규화 승인을 우회해 무단 변환하게 된다 — 반드시
+    // 다이얼로그다(→ file-lifecycle.md#종료-방어 · document-model.md#다중-탭-규칙).
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.closeUnapprovedTitle,
+      body: STRINGS.closeUnapprovedBody,
       confirmLabel: STRINGS.closeDiscardLabel,
       cancelLabel: STRINGS.closeCancelLabel,
       onConfirm: () => cleanupAndRemove(tabId),

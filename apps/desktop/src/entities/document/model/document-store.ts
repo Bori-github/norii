@@ -31,6 +31,10 @@ interface DocumentActions {
   assignPath(tabId: string, path: string): void;
   /** 디스크 리로드 후 파일 유래 메타 반영 — 리로드 직후는 디스크와 동일하므로 dirty 해제. */
   updateFileMeta(tabId: string, file: FileContent): void;
+  /** 정규화 승인 — 배너 승인·첫 수동 저장이 부른다. 승인은 탭 상태다 (→ file-lifecycle.md#자동-저장). */
+  approveNormalization(tabId: string): void;
+  /** 승인 후 첫 저장 성공 — 디스크가 UTF-8·판정 EOL로 통일됐다. 변환은 1회로 끝난다(배너 해제). */
+  markNormalized(tabId: string): void;
 }
 
 export type DocumentStore = DocumentState & DocumentActions;
@@ -67,6 +71,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
       hasBom: file.hasBom,
       eol: file.eol,
       eolMixed: file.eolMixed,
+      normalizationApproved: false,
       lastSavedHash: file.hash,
     };
     set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }));
@@ -86,6 +91,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
       // 새 문서는 모든 플랫폼에서 LF (→ file-lifecycle.md#eol-정책).
       eol: "lf",
       eolMixed: false,
+      normalizationApproved: false,
       lastSavedHash: null,
     };
     set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }));
@@ -157,9 +163,21 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
         hasBom: file.hasBom,
         eol: file.eol,
         eolMixed: file.eolMixed,
+        // 디스크를 다시 읽었다 — 파일이 여전히 정규화 대상이면 승인도 다시 받는다.
+        normalizationApproved: false,
         lastSavedHash: file.hash,
         isDirty: false,
       }),
+    }));
+  },
+
+  approveNormalization(tabId) {
+    set((state) => ({ tabs: updateTab(state.tabs, tabId, { normalizationApproved: true }) }));
+  },
+
+  markNormalized(tabId) {
+    set((state) => ({
+      tabs: updateTab(state.tabs, tabId, { sourceEncoding: "utf-8", eolMixed: false }),
     }));
   },
 }));

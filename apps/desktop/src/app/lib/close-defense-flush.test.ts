@@ -14,6 +14,7 @@ function tab(overrides: Partial<Tab>): Tab {
     hasBom: false,
     eol: "lf",
     eolMixed: false,
+    normalizationApproved: false,
     lastSavedHash: "hash",
     ...overrides,
   };

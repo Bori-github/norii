@@ -10,4 +10,5 @@ export {
   unregisterTabTextHandle,
 } from "./model/text-access";
 export type { TabTextHandle } from "./model/text-access";
+export { needsNormalizationApproval } from "./model/types";
 export type { Tab } from "./model/types";

@@ -4,6 +4,7 @@ import type { FileContent } from "@shared/ipc";
 
 import { useDocumentStore } from "./document-store";
 import { getInitialText, resetTabTextRegistry } from "./text-access";
+import { needsNormalizationApproval } from "./types";
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
@@ -149,6 +150,65 @@ describe("updateFileMeta", () => {
       lastSavedHash: "hash-9",
       isDirty: false,
     });
+  });
+});
+
+// 집행: file-lifecycle.md#자동-저장(정규화 승인) + document-model.md#상태-구조.
+// 왜: 승인 판정이 틀리면 자동 저장이 사용자가 입력하지 않은 바이트 변경(인코딩 변환·개행
+//     통일)을 무단으로 디스크에 쓴다 — M2 파일 강건성의 안전 핵심이다.
+// 보장: 승인 필요 판정(비UTF-8·혼합 EOL), 승인 전이(approveNormalization), 승인 후 첫 저장
+//       성공의 메타 갱신(markNormalized — 변환은 1회로 끝난다), 리로드 시 승인 원점 복귀.
+// 경계: 승인이 자동 저장을 실제로 여닫는 흐름은 save 기능 테스트가, 배너 UI는 위젯이 다룬다.
+describe("정규화 승인", () => {
+  it("비UTF-8 또는 혼합 EOL 탭만 승인이 필요하다", () => {
+    const store = useDocumentStore.getState();
+    const plain = store.openFileTab("/vault/plain.md", fileContent());
+    const legacy = useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+    const mixed = useDocumentStore
+      .getState()
+      .openFileTab("/vault/mixed.md", fileContent({ eolMixed: true }));
+
+    const tabs = useDocumentStore.getState().tabs;
+    expect(needsNormalizationApproval(tabs.find((tab) => tab.id === plain)!)).toBe(false);
+    expect(needsNormalizationApproval(tabs.find((tab) => tab.id === legacy)!)).toBe(true);
+    expect(needsNormalizationApproval(tabs.find((tab) => tab.id === mixed)!)).toBe(true);
+  });
+
+  it("approveNormalization 후에는 승인이 더 필요하지 않다", () => {
+    const id = useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+    useDocumentStore.getState().approveNormalization(id);
+    const tab = useDocumentStore.getState().tabs[0]!;
+    expect(tab.normalizationApproved).toBe(true);
+    expect(needsNormalizationApproval(tab)).toBe(false);
+  });
+
+  it("markNormalized는 인코딩·혼합 EOL 메타를 정규화 완료 상태로 만든다", () => {
+    const id = useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr", eolMixed: true }));
+    useDocumentStore.getState().markNormalized(id);
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      sourceEncoding: "utf-8",
+      eolMixed: false,
+    });
+  });
+
+  it("updateFileMeta(디스크 리로드)는 승인을 원점으로 되돌린다", () => {
+    const id = useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+    useDocumentStore.getState().approveNormalization(id);
+
+    // 디스크를 다시 읽었다 — 파일은 여전히 EUC-KR이므로 승인도 다시 받아야 한다.
+    useDocumentStore.getState().updateFileMeta(id, fileContent({ encoding: "euc-kr" }));
+
+    const tab = useDocumentStore.getState().tabs[0]!;
+    expect(tab.normalizationApproved).toBe(false);
+    expect(needsNormalizationApproval(tab)).toBe(true);
   });
 });
 

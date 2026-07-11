@@ -34,8 +34,11 @@ import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
+import { AUTOSAVE_DELAY_MS } from "../config";
 import { useConflictStore } from "./conflict-store";
 import {
+  approveTabNormalization,
+  noteDocumentChanged,
   requestCloseTab,
   resolveConflictKeepDisk,
   resolveConflictKeepMine,
@@ -131,6 +134,69 @@ describe("저장 중 추가 편집", () => {
   });
 });
 
+// 집행: file-lifecycle.md#자동-저장(정규화 승인) — "저장이 원본 바이트를 재작성하는 탭은
+//       자동 저장이 꺼진 채 열린다…승인하거나 첫 수동 저장을 하면 승인된다…승인 후 첫 저장이
+//       성공하면 탭 메타를 갱신한다(변환은 1회로 끝난다)".
+// 왜: 이 게이트가 없으면 EUC-KR·혼합 EOL 파일을 여는 순간 자동 저장이 사용자 동의 없이
+//     원본 바이트를 재작성한다 — "저장 전까지 원본 불변" 안전망이 깨진다.
+// 보장: 미승인 탭은 디바운스가 지나도 저장되지 않고, 수동 저장은 승인으로 간주되며,
+//       배너 승인은 밀린 변경의 자동 저장을 예약하고, 저장 성공 후 배너 근거 메타가 해제된다.
+// 경계: Rust가 실제로 비UTF-8을 열어 주는 것은 M2 백엔드 단위(변환) 소관 — 여기는 메타가
+//       이미 탭에 실렸다고 가정한 상태 전이만 다룬다. 배너 UI 연결은 위젯 소관.
+describe("정규화 승인 게이팅", () => {
+  function openLegacyTab(): string {
+    return useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+  }
+
+  it("미승인 탭은 디바운스가 지나도 자동 저장되지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const id = openLegacyTab();
+      useDocumentStore.getState().setDirty(id, true);
+      noteDocumentChanged(id);
+
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      expect(saveFile).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("수동 저장(Cmd+S)은 승인이다 — 저장 성공 후 정규화 메타가 해제된다", async () => {
+    const id = openLegacyTab();
+    useDocumentStore.getState().setDirty(id, true);
+    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+
+    await expect(saveTabNow(id)).resolves.toBe("saved");
+
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      normalizationApproved: true,
+      sourceEncoding: "utf-8",
+      eolMixed: false,
+      isDirty: false,
+    });
+  });
+
+  it("배너 승인은 밀린 변경의 자동 저장을 예약한다", async () => {
+    vi.useFakeTimers();
+    try {
+      const id = openLegacyTab();
+      useDocumentStore.getState().setDirty(id, true);
+      noteDocumentChanged(id); // 승인 전 — 예약되지 않는다.
+
+      approveTabNormalization(id);
+      saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      expect(saveFile).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 // 집행: document-model.md#다중-탭-규칙(탭 닫기) — 플러시 후 닫기·Untitled 확인·실패 시 유지.
 //       + 적대적 리뷰 P1: "saved" 후 dirty 재확인 없이 닫으면 저장 중 편집이 유실된다.
 // 왜: 닫기는 본문이 버려지는 지점 — 여기의 분기 하나하나가 유실 방어선이다.
@@ -169,6 +235,19 @@ describe("requestCloseTab", () => {
 
     expect(useDocumentStore.getState().tabs).toHaveLength(1);
     expect(useConfirmStore.getState().pending?.title).toBe("저장되지 않은 새 문서");
+    expect(saveFile).not.toHaveBeenCalled();
+  });
+
+  it("정규화 미승인 dirty 탭은 저장(무단 변환) 없이 확인을 요청하고 탭을 유지한다", async () => {
+    const id = useDocumentStore
+      .getState()
+      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+    useDocumentStore.getState().setDirty(id, true);
+
+    await requestCloseTab(id);
+
+    expect(useDocumentStore.getState().tabs).toHaveLength(1);
+    expect(useConfirmStore.getState().pending?.title).toBe("변환 승인 대기 중인 문서");
     expect(saveFile).not.toHaveBeenCalled();
   });
 
