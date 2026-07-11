@@ -176,6 +176,22 @@ struct FileRemovedPayload {
     path: String,
 }
 
+/// 감시 대상 해석 — 저장과 같은 해석(canonicalize, 없으면 부모 기준)을 쓴다: 삭제됐다
+/// 재생성될 파일도 계속 감시해야 한다. 스코프 검증은 open/save와 동일한 원칙이다
+/// (→ rust-commands.md#권한). 커맨드 밖에서 검증을 테스트하기 위해 분리한다.
+fn resolve_watch_targets(
+    scope: &FileScope,
+    paths: Vec<String>,
+) -> Result<HashMap<PathBuf, String>, AppError> {
+    let mut targets = HashMap::new();
+    for original in paths {
+        let canonical = resolve_save_target(Path::new(&original))?;
+        scope.ensure_allowed(&canonical)?;
+        targets.insert(canonical, original);
+    }
+    Ok(targets)
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn watch_paths(
@@ -184,14 +200,7 @@ pub async fn watch_paths(
     scope: State<'_, FileScope>,
     paths: Vec<String>,
 ) -> Result<(), AppError> {
-    let mut targets = HashMap::new();
-    for original in paths {
-        // 저장과 같은 해석(canonicalize, 없으면 부모 기준)을 쓴다 — 삭제됐다 재생성될 파일도
-        // 계속 감시해야 한다. 스코프 검증은 open/save와 동일한 원칙(→ rust-commands.md#권한).
-        let canonical = resolve_save_target(Path::new(&original))?;
-        scope.ensure_allowed(&canonical)?;
-        targets.insert(canonical, original);
-    }
+    let targets = resolve_watch_targets(&scope, paths)?;
     watcher
         .lock()
         .expect("SharedWatcher는 포이즌되지 않는다")
@@ -338,6 +347,26 @@ mod tests {
                 path: path.to_string_lossy().into_owned()
             }
         );
+    }
+
+    // 집행: rust-commands.md#권한-capabilities — 감시도 open/save와 같은 커맨드 내부 스코프
+    //       검증을 거친다.
+    // 왜: 감시는 파일 내용 해시를 이벤트로 내보낸다 — 허용 루트 밖 경로가 통과하면 웹뷰가
+    //     보호 구역 밖 파일의 변경·존재를 관찰할 수 있다. 기존 테스트는 코어(replace)만 타서
+    //     이 검증의 회귀를 잡지 못했다(리뷰 지적).
+    // 보장: 허용 루트 밖 경로의 감시 선언은 Permission으로 거부된다.
+    // 경계: 이벤트 발생 시점의 심볼릭 링크 재검증은 후속 단위에서 다룬다(해시 노출 수준).
+    #[test]
+    fn 허용_루트_밖_경로의_감시_선언은_거부된다() {
+        let dir = tempfile::tempdir().unwrap();
+        let scope = crate::scope::FileScope::default();
+        scope.allow(fs::canonicalize(dir.path()).unwrap());
+        let outside = tempfile::tempdir().unwrap();
+        let secret = outside.path().join("secret.md");
+        fs::write(&secret, "밖\n").unwrap();
+
+        let result = resolve_watch_targets(&scope, vec![secret.to_string_lossy().into_owned()]);
+        assert!(matches!(result, Err(AppError::Permission(_))));
     }
 
     // 집행: rust-commands.md watch_paths — "감시 대상 전체를 선언적으로 교체한다(누적 아님) —
