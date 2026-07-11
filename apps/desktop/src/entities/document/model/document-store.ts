@@ -36,7 +36,8 @@ interface DocumentActions {
 export type DocumentStore = DocumentState & DocumentActions;
 
 function fileNameOf(path: string): string {
-  const name = path.split("/").at(-1);
+  // Windows canonical 경로(\\?\C:\...)까지 고려해 양쪽 구분자를 다룬다(→ platform-strategy.md).
+  const name = path.split(/[/\\]/).at(-1);
   return name && name.length > 0 ? name : path;
 }
 
@@ -128,7 +129,15 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
   },
 
   setDirty(tabId, isDirty) {
-    set((state) => ({ tabs: updateTab(state.tabs, tabId, { isDirty }) }));
+    set((state) => {
+      // 이미 같은 값이면 상태를 만들지 않는다 — docChanged는 매 키 입력마다 오므로,
+      // 무조건 새 배열을 만들면 타이핑 내내 스토어 구독자(탭바)가 리렌더된다.
+      const tab = state.tabs.find((candidate) => candidate.id === tabId);
+      if (!tab || tab.isDirty === isDirty) {
+        return state;
+      }
+      return { tabs: updateTab(state.tabs, tabId, { isDirty }) };
+    });
   },
 
   setLastSavedHash(tabId, hash) {

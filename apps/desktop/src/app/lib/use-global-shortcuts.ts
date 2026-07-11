@@ -4,6 +4,7 @@ import { useDocumentStore } from "@entities/document";
 import { openFileInteractive } from "@features/open-file";
 import { requestCloseTab, saveTabAs, saveTabNow } from "@features/save-file";
 import { isPrimaryModifier } from "@shared/lib";
+import { useConfirmStore } from "@shared/ui";
 
 // 앱 전역 단축키 — 표의 단일 출처: editor-strategy.md#단축키-계약.
 // CM6 내부 키맵(검색·히스토리)은 에디터가 처리하고, 여기는 앱 전역 동작만 다룬다.
@@ -11,6 +12,11 @@ import { isPrimaryModifier } from "@shared/lib";
 export function useGlobalShortcuts(): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // 확인 모달이 떠 있는 동안은 전역 단축키를 멈춘다 — showModal의 inert는 window
+      // capture 리스너를 막지 못해, 대기 중 Cmd+W가 떠 있는 확인을 교체해 버릴 수 있다.
+      if (useConfirmStore.getState().pending) {
+        return;
+      }
       // 다음/이전 탭 — Ctrl+Tab / Ctrl+Shift+Tab (모든 플랫폼 공통).
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();

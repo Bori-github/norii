@@ -21,16 +21,17 @@ interface NoticeState {
   dismissNotice(id: string): void;
 }
 
-export const useNoticeStore = create<NoticeState>()((set) => ({
+export const useNoticeStore = create<NoticeState>()((set, get) => ({
   notices: [],
   pushNotice(message, actions) {
+    // 같은 메시지가 이미 떠 있으면 쌓지 않고 그 알림의 id를 돌려준다(자동 저장 반복 실패 등).
+    // 새 id를 만들어 돌려주면 존재하지 않는 알림을 가리키는 함정이 된다.
+    const existing = get().notices.find((notice) => notice.message === message);
+    if (existing) {
+      return existing.id;
+    }
     const id = crypto.randomUUID();
-    set((state) => ({
-      // 같은 메시지가 이미 떠 있으면 쌓지 않는다(자동 저장 반복 실패 등).
-      notices: state.notices.some((notice) => notice.message === message)
-        ? state.notices
-        : [...state.notices, { id, message, actions }],
-    }));
+    set((state) => ({ notices: [...state.notices, { id, message, actions }] }));
     return id;
   },
   dismissNotice(id) {
