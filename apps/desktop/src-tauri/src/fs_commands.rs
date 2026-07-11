@@ -216,7 +216,7 @@ fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     Ok(())
 }
 
-fn mtime_millis(metadata: &fs::Metadata) -> u64 {
+pub(crate) fn mtime_millis(metadata: &fs::Metadata) -> u64 {
     metadata
         .modified()
         .ok()

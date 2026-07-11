@@ -6,6 +6,7 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	openFile: (path: string, encodingOverride: string | null) => typedError<FileContent, AppError>(__TAURI_INVOKE("open_file", { path, encodingOverride })),
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
+	watchPaths: (paths: string[]) => typedError<null, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
 };
