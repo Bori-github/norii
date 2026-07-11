@@ -18,6 +18,17 @@ export const STRINGS = {
   saveAsAlreadyOpenBody:
     "이미 열려 있는 파일로는 저장할 수 없습니다. 해당 파일의 탭에서 편집해 주세요.",
 
+  // 정규화 승인 배너 — "저장 시 무엇이 바뀌는지"를 알린다 (→ file-lifecycle.md#자동-저장).
+  normalizationEncodingBody: (encoding: string) =>
+    `${encoding.toUpperCase()} 인코딩으로 감지되었습니다. 저장하면 UTF-8로 변환됩니다.`,
+  normalizationEolBody: (eol: string) =>
+    `줄바꿈이 일정하지 않습니다. 저장하면 ${eol.toUpperCase()}로 통일됩니다.`,
+  normalizationApproveLabel: "저장 시 변환 허용",
+  reopenEncodingLabel: "다른 인코딩으로 다시 열기",
+  reopenDirtyTitle: "편집 중인 문서 다시 열기",
+  reopenDirtyBody: "다시 열면 저장되지 않은 편집이 사라지고 디스크의 원본을 다시 읽습니다.",
+  reopenConfirmLabel: "다시 열기",
+
   conflictTitle: "외부 변경 충돌",
   conflictBody:
     "이 파일이 밖에서 수정되었습니다. 어느 버전을 유지할까요?\n" +

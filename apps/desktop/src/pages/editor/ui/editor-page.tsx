@@ -3,6 +3,7 @@ import { css } from "styled-system/css";
 import { ConflictBanner } from "@features/save-file";
 import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
+import { NormalizationBanner } from "@widgets/normalization-banner";
 import { TabBar } from "@widgets/tab-bar";
 
 const pageClass = css({
@@ -18,6 +19,7 @@ export function EditorPage() {
     <div className={pageClass}>
       <TabBar />
       <NoticeBanner />
+      <NormalizationBanner />
       <ConflictBanner />
       <EditorPane />
       <ConfirmDialog />
