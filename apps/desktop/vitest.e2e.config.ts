@@ -8,5 +8,8 @@ export default defineConfig({
     include: ["e2e/**/*.e2e.ts"],
     testTimeout: 30_000,
     hookTimeout: 30_000,
+    // 병렬을 꺼도 파일 간 실행 순서는 보장되지 않는다(실측 — 사전순 아님). 따라서 E2E는
+    // 한 파일 정책을 유지한다 — 순서 규칙의 단일 출처는 e2e/file-lifecycle.e2e.ts 헤더 주석.
+    fileParallelism: false,
   },
 });

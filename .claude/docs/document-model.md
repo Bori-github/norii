@@ -55,7 +55,7 @@ interface WorkspaceState {
 ```text
 새 문서:   filePath=null, title="Untitled", 첫 저장 시 다이얼로그로 경로 확정
 파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭
-탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙)
+탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
 활성 탭:   activeTabId. 에디터/프리뷰는 활성 탭 문서를 표시
 ```
 

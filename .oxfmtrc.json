@@ -5,6 +5,7 @@
     ".github/**",
     "**/src-tauri/gen/**",
     "**/styled-system/**",
-    "**/dist/**"
+    "**/dist/**",
+    "**/shared/ipc/bindings.ts"
   ]
 }

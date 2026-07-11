@@ -65,6 +65,8 @@ norii에서 가장 위험하고 고유한 것 — **한글 IME**와 **데이터 
 
 ## 성숙도 주의
 
+**확인된 한계(0.2.1 실측)**: 이 플러그인은 WebDriver 키 액션의 **수정자 키(Meta/Ctrl)를 매핑하지 않는다** — `Cmd+S` 같은 단축키를 E2E에서 합성할 수 없고, `browser.keys()`의 일반 텍스트도 CM6에 닿지 않는다(**`element.addValue()`만** insertText로 전달됨). 따라서 E2E 시나리오는 동작 트리거를 dev 전용 훅(`window.noriiE2e`)·UI 클릭으로 구성하고, **단축키 계약은 수동 검증 대상**이다 — 검증 방법: `mise run dev`에서 실제 키보드로 [단축키 계약](editor-strategy.md#단축키-계약) 표의 각 항목을 확인한다.
+
 macOS 실앱 E2E 경로는 하나가 아니다 — 공식 임베디드 provider(`@wdio/tauri-service`), CrabNebula 상용 포크(macOS는 유료 키), 그리고 `Choochmeque/tauri-plugin-webdriver`가 있다. norii는 그중 **MIT·무료·임베디드**인 `Choochmeque/tauri-plugin-webdriver`(Rust crate `tauri-plugin-webdriver`, **pre-1.0 커뮤니티** — 버전 핀은 [기술 스택](tech-stack.md#코드-품질)을 단일 출처로 둔다)를 채택한다. 유사명 패키지(`tauri-plugin-webdriver-automation`, `@wdio/tauri-service`)와 혼동하지 않게 정확한 crate·출처를 핀한다. 불안정·정체 시 공식 임베디드 provider나 CrabNebula로 대체하거나 해당 시나리오의 수동 검증 절차와 사유를 기록한다(→ [작업 규칙](../rules/project-rules.md)).
 
 ## 게이트·로드맵·커버리지

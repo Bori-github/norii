@@ -60,6 +60,8 @@ export default defineConfig({
           bg: {
             canvas: { value: { base: "{colors.gray.50}", _dark: "{colors.gray.950}" } },
             surface: { value: { base: "{colors.white}", _dark: "{colors.gray.900}" } },
+            // 모달 뒤 딤 오버레이 — 다크에서는 표면 대비가 낮아 더 짙게 깔아 구분한다.
+            overlay: { value: { base: "rgba(0, 0, 0, 0.4)", _dark: "rgba(0, 0, 0, 0.6)" } },
           },
           text: {
             DEFAULT: { value: { base: "{colors.gray.900}", _dark: "{colors.gray.100}" } },

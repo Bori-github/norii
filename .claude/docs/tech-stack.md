@@ -54,7 +54,14 @@
 
 | 크레이트                | 버전    | 용도                                                                                         |
 | ----------------------- | ------- | -------------------------------------------------------------------------------------------- |
-| `serde` / `serde_json`  | 1.0.228 | IPC 직렬화·역직렬화                                                                          |
+| `serde`                 | 1.0.228 | IPC 직렬화·역직렬화                                                                          |
+| `serde_json`            | 1.0.150 | 테스트의 직렬화 형태 검증(dev) — serde와 버전 라인이 다름에 주의                             |
+| `sha2`                  | 0.10.9  | 내용 해시(SHA-256) — 저장 충돌 검사·에코 억제 기준값 (→ [파일 생명주기 정책](file-lifecycle.md)) |
+| `tempfile`              | 3.24.0  | 원자적 쓰기의 임시 파일 + 테스트 임시 디렉터리 (→ [파일 생명주기 정책](file-lifecycle.md))   |
+| `log`                   | 0.4.x   | 로깅 파사드 — plugin-log의 레벨 필터 타입. 사실상 동결된 크레이트라 범위 핀                     |
+| `tauri-specta`          | 2.0.0-rc.25 | Rust 커맨드 → TS 바인딩 생성 (코드 품질 표의 IPC 타입 계약과 동일 항목)                  |
+| `specta`                | 2.0.0-rc.25 | tauri-specta의 타입 도출 코어 — rc 버전을 tauri-specta와 맞춰 핀                          |
+| `specta-typescript`     | 0.0.12  | TS 내보내기 백엔드 (pre-1.0)                                                                 |
 | `thiserror`             | 2.0.18  | `AppError` 정의 (→ [에러 처리와 로깅](error-handling.md))                                    |
 | `notify`                | 8.2.0   | 파일 외부 변경 감시(watch) (→ [Rust 커맨드 계약](rust-commands.md))                          |
 | `encoding_rs`           | 0.8.35  | 인코딩 변환(레거시 → UTF-8)·BOM 처리 (→ [파일 생명주기 정책](file-lifecycle.md#인코딩-정책)) |
