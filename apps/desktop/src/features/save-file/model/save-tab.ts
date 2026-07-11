@@ -1,7 +1,7 @@
 import { findTab, getTabText, setTabText, useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
-import { notifyIpcError, useConfirmStore } from "@shared/ui";
+import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
 
 import { AUTOSAVE_DELAY_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
@@ -78,6 +78,15 @@ async function performSave(
       return "error";
     }
     if (picked === null) {
+      return "cancelled";
+    }
+    // 이미 다른 탭이 연 경로로는 저장하지 않는다 — 같은 파일을 두 탭이 편집하면 서로의
+    // 저장이 충돌 핑퐁을 일으키고 상호 파괴한다(중복 탭 금지 → document-model.md#다중-탭-규칙).
+    const alreadyOpen = useDocumentStore
+      .getState()
+      .tabs.some((other) => other.id !== tabId && other.filePath === picked);
+    if (alreadyOpen) {
+      useNoticeStore.getState().pushNotice(STRINGS.saveAsAlreadyOpenBody);
       return "cancelled";
     }
     path = picked;
@@ -191,22 +200,34 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     });
     return;
   }
-  const outcome = await saveTabNow(tabId);
-  if (outcome === "saved" || outcome === "skipped") {
-    cleanupAndRemove(tabId);
-    return;
+  // 저장 왕복 중 타이핑이 이어지면 dirty가 되살아난다 — "saved"만 믿고 닫으면 그 편집이
+  // 조용히 유실되므로, 깨끗해질 때까지 재저장한다(적대적 리뷰 P1). 상한 후에도 dirty면
+  // 닫지 않고 열어 둔다(사용자가 입력을 계속 중 — dirty ●가 상태를 알린다).
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const outcome = await saveTabNow(tabId);
+    if (outcome === "skipped") {
+      cleanupAndRemove(tabId);
+      return;
+    }
+    if (outcome === "error") {
+      // 저장 실패 — 닫기를 강행할지 사용자가 정한다(→ document-model.md "저장 실패는 확인 다이얼로그").
+      useConfirmStore.getState().requestConfirm({
+        title: STRINGS.saveFailedTitle,
+        body: STRINGS.closeSaveFailedBody,
+        confirmLabel: STRINGS.closeDiscardLabel,
+        cancelLabel: STRINGS.closeCancelLabel,
+        onConfirm: () => cleanupAndRemove(tabId),
+      });
+      return;
+    }
+    if (outcome !== "saved") {
+      return; // conflict·cancelled — 탭을 열어 두고 배너·사용자가 다음을 정한다.
+    }
+    if (!findTab(tabId)?.isDirty) {
+      cleanupAndRemove(tabId);
+      return;
+    }
   }
-  if (outcome === "error") {
-    // 저장 실패 — 닫기를 강행할지 사용자가 정한다(→ document-model.md "저장 실패는 확인 다이얼로그").
-    useConfirmStore.getState().requestConfirm({
-      title: STRINGS.saveFailedTitle,
-      body: STRINGS.closeSaveFailedBody,
-      confirmLabel: STRINGS.closeDiscardLabel,
-      cancelLabel: STRINGS.closeCancelLabel,
-      onConfirm: () => cleanupAndRemove(tabId),
-    });
-  }
-  // conflict — 탭을 열어 두고 충돌 배너가 선택을 안내한다.
 }
 
 function cleanupAndRemove(tabId: string): void {
