@@ -42,6 +42,7 @@ import {
   requestCloseTab,
   resolveConflictKeepDisk,
   resolveConflictKeepMine,
+  saveTabAs,
   saveTabNow,
 } from "./save-tab";
 
@@ -176,6 +177,58 @@ describe("정규화 승인 게이팅", () => {
       sourceEncoding: "utf-8",
       eolMixed: false,
       isDirty: false,
+    });
+  });
+
+  // 집행: file-lifecycle.md#자동-저장 — 승인은 "첫 수동 저장"으로 성립한다. 저장이 성립하지
+  //       않았는데(취소·실패) 승인만 남으면, 이후 자동 저장이 사용자 동의 없이 원본 바이트를
+  //       재작성한다 — M2 승인 관문의 우회다(리뷰 P1-2: 테스트+적대적 교차 확인).
+  // 보장: 다이얼로그 취소·저장 실패는 승인을 남기지 않고, 승인은 저장 성공 시에만 기록된다.
+  // 경계: 배너 버튼 승인(명시적 클릭)은 저장 없이도 즉시 승인이다 — 별도 테스트가 다룬다.
+  it("다른 이름으로 저장을 취소하면 승인이 남지 않는다", async () => {
+    const id = openLegacyTab();
+    useDocumentStore.getState().setDirty(id, true);
+    showSaveDialog.mockResolvedValueOnce(null); // 사용자가 다이얼로그를 취소했다.
+
+    await expect(saveTabAs(id)).resolves.toBe("cancelled");
+
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      normalizationApproved: false,
+      sourceEncoding: "euc-kr",
+    });
+  });
+
+  it("저장이 실패하면 승인이 남지 않는다", async () => {
+    const id = openLegacyTab();
+    useDocumentStore.getState().setDirty(id, true);
+    saveFile.mockRejectedValueOnce(new IpcError("io", "디스크 오류"));
+
+    await expect(saveTabNow(id)).resolves.toBe("error");
+
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      normalizationApproved: false,
+      sourceEncoding: "euc-kr",
+    });
+  });
+
+  // 집행: file-lifecycle.md#자동-저장 — 승인 후 첫 저장 성공 시 메타 갱신(변환은 1회, 배너
+  //       해제). 충돌 해소의 "내 편집으로 덮어쓰기"도 저장 성공이므로 같은 규칙을 따라야
+  //       한다 — 아니면 디스크는 UTF-8인데 배너가 유령처럼 남는다(리뷰 P2).
+  // 보장: 미승인 탭의 충돌 덮어쓰기 성공이 승인·정규화 메타를 일반 저장과 동일하게 갱신한다.
+  // 경계: 덮어쓰기 자체의 강제 저장(expectedHash=null)은 기존 충돌 테스트가 다룬다.
+  it("충돌 덮어쓰기 성공도 승인·정규화 메타를 갱신한다", async () => {
+    const id = openLegacyTab();
+    useDocumentStore.getState().setDirty(id, true);
+    useConflictStore.getState().markConflict(id);
+    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+
+    await resolveConflictKeepMine(id);
+
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({
+      normalizationApproved: true,
+      sourceEncoding: "utf-8",
+      eolMixed: false,
+      lastSavedHash: "hash-2",
     });
   });
 

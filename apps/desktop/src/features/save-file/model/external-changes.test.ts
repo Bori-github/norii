@@ -29,8 +29,9 @@ vi.mock("@tauri-apps/plugin-log", () => ({
   info: vi.fn(async () => {}),
 }));
 
-import { getTabText, resetTabTextRegistry, useDocumentStore } from "@entities/document";
+import { getTabText, resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import type { FileContent } from "@shared/ipc";
+import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
 import { AUTOSAVE_DELAY_MS } from "../config";
@@ -118,6 +119,50 @@ describe("handleFileChanged", () => {
     await handleFileChanged({ path: "/vault/other.md", mtime: 2_000, hash: "hash-9" });
     expect(openFile).not.toHaveBeenCalled();
     expect(useConflictStore.getState().conflictTabIds).toHaveLength(0);
+  });
+
+  // 집행: file-lifecycle.md#외부-변경-처리 — 리로드는 "잃을 것이 없을" 때만 조용하다.
+  // 왜: dirty 검사와 디스크 재읽기(IPC 왕복) 사이에 타이핑이 시작되면, 재확인 없는 리로드가
+  //     그 입력을 통째로 덮어쓰고 dirty까지 지운다 — 배너도 undo도 없는 무통보 유실이다
+  //     (리뷰 P1-1: 본체+적대적 교차 확인).
+  // 보장: 리로드 IPC 중 편집이 생기면 본문을 교체하지 않고 충돌 분기로 전환한다.
+  // 경계: 리로드 완료 후의 타이핑은 일반 편집 흐름이다 — 여기서 다루지 않는다.
+  it("리로드 IPC 중 타이핑이 시작되면 덮어쓰지 않고 충돌로 전환한다", async () => {
+    const id = openTab();
+    openFile.mockImplementationOnce(async () => {
+      // 재읽기 왕복 중 사용자가 타이핑을 시작했다.
+      setTabText(id, "리로드 중 입력");
+      useDocumentStore.getState().setDirty(id, true);
+      return fileContent({ text: "# 외부 수정\n", hash: "hash-2" });
+    });
+
+    await handleFileChanged({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
+
+    expect(getTabText(id)).toBe("리로드 중 입력"); // 입력이 보존된다.
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({ isDirty: true });
+    expect(useConflictStore.getState().conflictTabIds).toContain(id);
+  });
+
+  it("리로드가 실패하면 본문·해시를 그대로 두고 안내한다", async () => {
+    const id = openTab();
+    setTabText(id, "# 본문\n");
+    openFile.mockRejectedValueOnce(new IpcError("io", "읽기 실패"));
+
+    await handleFileChanged({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
+
+    expect(getTabText(id)).toBe("# 본문\n");
+    expect(useDocumentStore.getState().tabs[0]).toMatchObject({ lastSavedHash: "hash-1" });
+    expect(useNoticeStore.getState().notices).toHaveLength(1);
+  });
+
+  it("이미 충돌 안내 중이면 추가 이벤트를 무시한다 (사용자 선택 대기)", async () => {
+    const id = openTab();
+    useConflictStore.getState().markConflict(id);
+
+    await handleFileChanged({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
+
+    expect(openFile).not.toHaveBeenCalled();
+    expect(useConflictStore.getState().conflictTabIds).toEqual([id]);
   });
 });
 
@@ -224,5 +269,21 @@ describe("syncWatchedPaths", () => {
     useDocumentStore.getState().addUntitledTab();
     await syncWatchedPaths(useDocumentStore.getState().tabs);
     expect(watchPaths).toHaveBeenCalledWith([]);
+  });
+
+  // 집행: external-changes의 계약 주석 — "서명을 되돌려 다음 탭 변화에서 재시도한다".
+  // 왜: 실패 후 서명이 남으면 같은 경로 집합의 재선언이 영원히 건너뛰어져 세션 내내
+  //     감시가 조용히 죽는다(외부 변경 전부 미감지) — 회귀를 잡는 테스트가 없었다(리뷰).
+  // 보장: IPC 실패 후 같은 집합으로 다시 부르면 재시도(재호출)된다.
+  // 경계: 실패 원인(Rust 쪽 사정)은 다루지 않는다 — 프론트 재시도 계약만.
+  it("선언이 실패하면 같은 집합이라도 다음 호출에서 재시도한다", async () => {
+    openTab("/vault/a.md");
+    const tabs = useDocumentStore.getState().tabs;
+    watchPaths.mockRejectedValueOnce(new IpcError("io", "감시 실패"));
+
+    await syncWatchedPaths(tabs);
+    await syncWatchedPaths(tabs); // 같은 집합 — 실패했으므로 건너뛰지 않고 재시도해야 한다.
+
+    expect(watchPaths).toHaveBeenCalledTimes(2);
   });
 });

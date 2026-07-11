@@ -57,6 +57,17 @@ export async function handleFileChanged(payload: FileChangedPayload): Promise<vo
       // 조용히 리로드 — 편집 중이 아니므로 잃을 것이 없다.
       try {
         const file = await ipc.openFile(payload.path);
+        // 재읽기 왕복 중 타이핑이 시작됐을 수 있다 — 재확인 없이 본문을 교체하면
+        // 그 입력이 배너도 undo도 없이 사라진다(리뷰 P1-1). 편집이 생겼으면 충돌 분기로.
+        const latest = findTab(tabId);
+        if (!latest || latest.filePath !== payload.path) {
+          return;
+        }
+        if (latest.isDirty) {
+          useConflictStore.getState().markConflict(tabId);
+          autosave.pause(tabId);
+          return;
+        }
         setTabText(tabId, file.text);
         useDocumentStore.getState().updateFileMeta(tabId, file);
       } catch (error) {

@@ -9,8 +9,10 @@ export interface AutosaveScheduler {
   pause(tabId: string): void;
   /** 일시 중지 해제 — 중지 중 변경이 있었으면 다시 예약한다. */
   resume(tabId: string): void;
-  /** 예약 취소(탭 닫기·수동 저장이 대신 처리한 경우). */
+  /** 예약 취소(수동 저장이 대신 처리한 경우) — 일시 중지 상태는 유지한다. */
   discard(tabId: string): void;
+  /** 탭 제거 — 예약·밀린 변경·일시 중지를 모두 잊는다(닫힌 탭 id 누적 방지). */
+  forget(tabId: string): void;
 }
 
 interface Options {
@@ -67,6 +69,11 @@ export function createAutosaveScheduler({ delayMs, flush }: Options): AutosaveSc
     discard(tabId) {
       clearTimer(tabId);
       pendingWhilePaused.delete(tabId);
+    },
+    forget(tabId) {
+      clearTimer(tabId);
+      pendingWhilePaused.delete(tabId);
+      paused.delete(tabId);
     },
   };
 }
