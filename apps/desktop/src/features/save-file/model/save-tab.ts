@@ -12,6 +12,7 @@ import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
 import { AUTOSAVE_DELAY_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
 import { isTabInConflict, useConflictStore } from "./conflict-store";
+import { isTabFileMissing, useMissingFileStore } from "./missing-file-store";
 import { createSaveQueue } from "./save-queue";
 
 // 저장 오케스트레이션 — 정책의 단일 출처: file-lifecycle.md(자동 저장·충돌·탭 닫기 규칙).
@@ -19,9 +20,11 @@ import { createSaveQueue } from "./save-queue";
 
 export type SaveOutcome = "saved" | "cancelled" | "conflict" | "error" | "skipped";
 
-const saveQueue = createSaveQueue();
+/** feature 내부 공유(외부 변경 처리의 이벤트 지연) — Public API(index.ts)에는 노출하지 않는다. */
+export const saveQueue = createSaveQueue();
 
-const autosave = createAutosaveScheduler({
+/** feature 내부 공유(외부 변경 처리의 일시 중지·재개) — Public API에는 노출하지 않는다. */
+export const autosave = createAutosaveScheduler({
   delayMs: AUTOSAVE_DELAY_MS,
   flush: (tabId) => {
     void autosaveFlush(tabId);
@@ -128,6 +131,11 @@ async function performSave(
     // 새 경로 또는 명시적 덮어쓰기 — OS 다이얼로그가 이미 덮어쓰기를 확인했다(→ rust-commands.md).
     expectedHash = null;
   }
+  if (isTabFileMissing(tabId)) {
+    // 파일이 디스크에서 사라졌다 — 낡은 해시로는 Conflict만 난다. 명시적 저장은
+    // "새로 생성"이다(→ file-lifecycle.md#외부-변경-처리 file-removed).
+    expectedHash = null;
+  }
 
   try {
     const result = await ipc.saveFile({
@@ -142,6 +150,11 @@ async function performSave(
       store.assignPath(tabId, path);
     }
     store.setLastSavedHash(tabId, result.hash);
+    // 저장 성공 = 파일이 디스크에 다시 존재한다 — 삭제 표시를 끄고 자동 저장을 재개한다.
+    if (isTabFileMissing(tabId)) {
+      useMissingFileStore.getState().clearMissing(tabId);
+      autosave.resume(tabId);
+    }
     // 저장 성공 = 디스크가 UTF-8·판정 EOL로 통일됐다 — 정규화 메타를 해제한다(변환은 1회).
     if (tab.sourceEncoding !== "utf-8" || tab.eolMixed) {
       store.markNormalized(tabId);
@@ -284,5 +297,6 @@ export async function requestCloseTab(tabId: string): Promise<void> {
 function cleanupAndRemove(tabId: string): void {
   autosave.discard(tabId);
   useConflictStore.getState().clearConflict(tabId);
+  useMissingFileStore.getState().clearMissing(tabId);
   useDocumentStore.getState().removeTab(tabId);
 }
