@@ -125,7 +125,7 @@ Obsidian도 외부 변경 처리에서 골치를 앓는 영역이므로, 충돌 
 
 메모리와 저장은 **항상 UTF-8**이다. 그 위에서 레거시 파일을 다음 규칙으로 다룬다.
 
-열기 파이프라인의 분기는 결정론적이라 그대로 테스트 케이스가 된다. 아래 그림은 순서를 고정하고, 각 단계의 규칙은 이어지는 목록이 단일 출처다. **M1 범위**에서는 변환 대상(UTF-16·레거시 인코딩)과 재작성 대상(혼합 EOL)이 모두 거부이고, M2에서 그 거부가 "변환 + 배너 + 정규화 승인"으로 바뀐다.
+열기 파이프라인의 분기는 결정론적이라 그대로 테스트 케이스가 된다. 아래 그림은 순서를 고정하고, 각 단계의 규칙은 이어지는 목록이 단일 출처다. 변환 대상(UTF-16·레거시 인코딩)과 재작성 대상(혼합 EOL)은 모두 열리며, 저장의 재작성은 배너 + [정규화 승인](#자동-저장)을 거친다.
 
 ```mermaid
 flowchart TD
@@ -133,24 +133,27 @@ flowchart TD
     B -->|있음| B1[전 단계 건너뛰고<br/>그 인코딩으로 디코드]
     B -->|없음| C{BOM 있나?}
     C -->|UTF-8 BOM| C1[BOM 제거 · hasBom=true<br/>검증 실패 시 = 손상]
-    C -->|UTF-16 BOM| X1[M1: 거부<br/>M2: 변환]
+    C -->|UTF-16 BOM| X1[UTF-8로 변환<br/>검증 실패 시 = 손상]
     C -->|없음| D{앞 512B 널 바이트}
-    D -->|홀/짝 일관| X2[BOM 없는 UTF-16<br/>M1: 거부 · M2: 디코드 검증 후 변환<br/>U+FFFD 나오면 바이너리 거부]
+    D -->|홀/짝 일관| X2[BOM 없는 UTF-16<br/>디코드 검증 후 변환<br/>U+FFFD 나오면 바이너리 거부]
     D -->|불규칙| X3[바이너리 — 항상 거부]
     D -->|없음| E{UTF-8 엄격 검증}
-    E -->|실패| X4[레거시 인코딩<br/>M1: 거부 · M2: chardetng 변환]
+    E -->|실패| X4[레거시 인코딩<br/>chardetng 감지 · 변환]
     E -->|통과| F[EOL 판정<br/>LF/CRLF 다수결 · 동률 LF]
     C1 --> F
     B1 --> F
+    X1 --> F
+    X2 --> F
+    X4 --> F
     F --> G{원본 개행이 판정과 일치?}
-    G -->|불일치 혼합·CR-only| X5[M1: 거부<br/>M2: eolMixed + 정규화 승인]
+    G -->|불일치 혼합·CR-only| X5[eolMixed=true로 열림<br/>저장 재작성은 정규화 승인]
     G -->|일치| H[열기 성공<br/>본문은 LF 정규화해 CM6로]
 
-    style X1 fill:#ffe6e6
-    style X2 fill:#ffe6e6
+    style X1 fill:#fff4e6
+    style X2 fill:#fff4e6
     style X3 fill:#ffcccc
-    style X4 fill:#ffe6e6
-    style X5 fill:#ffe6e6
+    style X4 fill:#fff4e6
+    style X5 fill:#fff4e6
     style H fill:#e6ffe6
 ```
 
