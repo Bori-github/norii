@@ -19,7 +19,7 @@ norii에서 작업하는 사람과 에이전트가 따르는 필수 규칙이다
 
 - 규칙·설계를 바꿀 때는 코드보다 **문서(단일 출처)를 먼저 갱신**한다.
 - **문서 갱신은 완료 조건이다.** 문서가 규정한 동작을 바꾸는 변경은 문서를 **먼저, 늦어도 같은 커밋에서** 갱신한다. 문서 갱신 없이 들어간 동작 변경은 미완성이다.
-- **구현 세부는 계약 문서에만 둔다.** 계약 문서란 **앱의 런타임 동작을 규정하는, 코드와 1:1 대응되는 값·시그니처·정책을 담은 문서**다 — 현재 7곳: [Rust 커맨드 계약](../docs/rust-commands.md) · [문서 모델](../docs/document-model.md) · [에디터 전략 — 단축키 계약](../docs/editor-strategy.md#단축키-계약) · [기술 스택 버전 표](../docs/tech-stack.md) · [파일 생명주기 정책](../docs/file-lifecycle.md) · [보안 — CSP](../docs/security.md) · [프리뷰 전략](../docs/preview-strategy.md)(sanitize 정책·플러그인·mermaid securityLevel). 빌드 설정 서술(tsconfig 옵션·경로 별칭)은 제외한다 — 게이트가 실제 설정 파일로 돌므로 문서 드리프트가 동작 차이로 이어지지 않는다. 다른 문서는 링크만 한다. 이 기준을 충족하는 문서가 생기면 목록에 추가한다. 문서-코드 대조와 드리프트 검사(`docs-drift`)의 대상도 이 목록이다(→ [개발 명령](../docs/development-commands.md), [테스트 전략](../docs/testing.md)).
+- **구현 세부는 계약 문서에만 둔다.** 계약 문서란 **앱의 런타임 동작을 규정하는, 코드와 1:1 대응되는 값·시그니처·정책을 담은 문서**다 — 현재 8곳: [Rust 커맨드 계약](../docs/rust-commands.md) · [문서 모델](../docs/document-model.md) · [에디터 전략 — 단축키 계약](../docs/editor-strategy.md#단축키-계약) · [기술 스택 버전 표](../docs/tech-stack.md) · [파일 생명주기 정책](../docs/file-lifecycle.md) · [보안 — CSP](../docs/security.md) · [프리뷰 전략](../docs/preview-strategy.md)(sanitize 정책·플러그인·mermaid securityLevel) · [창 표면 계약](../docs/design/window-chrome.md)(transparent·windowEffects·폴백). 디자인 값(팔레트·타이포·간격 스케일)은 예외로 문서가 아니라 `panda.config.ts`가 소유한다 — 값을 문서에 복제하지 않는다(→ [디자인 시스템](../docs/design/design-system.md#이-문서의-경계)). 빌드 설정 서술(tsconfig 옵션·경로 별칭)은 제외한다 — 게이트가 실제 설정 파일로 돌므로 문서 드리프트가 동작 차이로 이어지지 않는다. 다른 문서는 링크만 한다. 이 기준을 충족하는 문서가 생기면 목록에 추가한다. 문서-코드 대조의 대상도 이 목록이다. 단 자동 검사(`docs-drift`)는 **기계 대조가 가능한 표면만** 돈다 — 나머지 계약은 마일스톤 종료 시 수동 대조한다(→ [개발 명령](../docs/development-commands.md), [테스트 전략](../docs/testing.md)).
 - 각 문서는 한 주제의 단일 출처다. 같은 사실을 여러 문서에 복제하지 않고 링크한다.
 - 새 설계 문서를 추가하면 [AGENTS.md](../../AGENTS.md) 인덱스에 연결한다.
 
@@ -43,3 +43,5 @@ norii에서 작업하는 사람과 에이전트가 따르는 필수 규칙이다
 - 번들 크기 목표 < 15MB를 측정·유지한다.
 - 커스텀 에디터 데코레이션은 뷰포트 범위에만 적용한다(전체 문서 금지).
 - 프리뷰는 디바운스한다. 매 키 입력마다 전체 재파싱하지 않는다.
+- **흐림은 스크롤하는 면 위에 겹치지 않는다.** `backdrop-filter`가 스크롤 중인 편집면 위에 걸리면 매 프레임 backdrop이 무효화된다(→ [DESIGN.md · 모션](../../DESIGN.md#모션-원칙)).
+- **창 유리는 idle 비용을 만든다.** 투명 창은 OS의 불투명 fast-path를 포기하므로, 뒤 창이 움직이면 norii가 idle이어도 재합성이 돈다. 창 효과 도입(M5) 시 idle GPU·전력 회귀를 측정하고, 측정 없이 "가볍다"를 주장하지 않는다.
