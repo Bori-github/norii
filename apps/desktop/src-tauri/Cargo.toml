@@ -31,6 +31,10 @@ thiserror = "2.0.18"
 sha2 = "0.10.9"
 # 원자적 쓰기의 임시 파일(같은 디렉터리에 쓰고 rename → file-lifecycle.md#저장-원자성과-충돌-검사)
 tempfile = "3.24.0"
+# 인코딩 변환(레거시 → UTF-8·UTF-16·BOM → file-lifecycle.md#인코딩-정책)
+encoding_rs = "0.8.35"
+# 인코딩 감지 — Firefox 감지기, encoding_rs와 짝으로 설계됨(파이프라인 4단계)
+chardetng = "1.0.0"
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-log = "2.8.0"
 # plugin-log의 레벨 필터 타입(log::LevelFilter)에 필요한 표준 로깅 파사드.

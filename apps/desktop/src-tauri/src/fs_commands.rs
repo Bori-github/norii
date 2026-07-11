@@ -85,15 +85,9 @@ pub fn open_file_impl(
     let bytes = fs::read(&canonical)?;
     let hash = content_hash(&bytes);
     let decoded = decode_document(&bytes, encoding_override)?;
+    // 혼합·CR-only는 eol_mixed=true로 열린다 — 저장의 개행 통일 재작성은 프론트의
+    // 정규화 승인을 거친다(→ file-lifecycle.md#eol-정책).
     let eol_info = detect_eol(&decoded.text);
-
-    // M1: 저장이 개행을 재작성하게 되는 파일(혼합·CR-only)은 거부한다
-    // (→ implementation-plan.md M1). M2에서 이 거부는 "열기 + 배너 + 정규화 승인"으로 바뀐다.
-    if eol_info.mixed {
-        return Err(AppError::Encoding(
-            "개행(LF/CRLF)이 혼합된 파일은 아직 지원되지 않습니다(M2에서 지원 예정)".into(),
-        ));
-    }
 
     let mtime = mtime_millis(&fs::metadata(&canonical)?);
     Ok(FileContent {
@@ -121,6 +115,17 @@ pub fn save_file_impl(
     // 위해서다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일은 부모를 canonicalize한다.
     let target = resolve_save_target(Path::new(path))?;
     scope.ensure_allowed(&target)?;
+
+    // 읽기 전용 거부(M2 확정) — rename은 디렉터리 권한만 검사해 파일 잠금을 우회하므로
+    // 명시적으로 검사한다. 사용자가 잠근 파일을 자동 저장이 조용히 고치지 않게 하는
+    // 규칙이다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일(메타 없음)은 통과.
+    if let Ok(metadata) = fs::metadata(&target) {
+        if metadata.permissions().readonly() {
+            return Err(AppError::Permission(
+                "파일이 읽기 전용입니다 — 쓰기 권한을 부여한 뒤 다시 저장하세요".into(),
+            ));
+        }
+    }
 
     // 충돌 검사 — 디스크 내용 해시가 탭이 마지막으로 알던 값과 다르면 쓰지 않는다.
     // 새 파일·강제 덮어쓰기는 expected_hash=None으로 검사를 건너뛴다(→ rust-commands.md).
@@ -416,23 +421,106 @@ mod tests {
         assert!(!escape.exists());
     }
 
-    // 집행: implementation-plan.md M1 — 혼합 EOL·CR-only 파일은 이 단계에서 열기를 거부한다.
-    // 왜: M1에는 정규화 승인 UI가 없어, 열리면 자동 저장이 무단 개행 재작성을 하게 된다.
-    // 보장: 혼합 EOL 파일의 open이 Encoding 에러로 거부되고 파일은 그대로다.
-    // 경계: M2에서 이 거부는 배너+승인 흐름으로 바뀐다 — 그때 이 테스트를 갱신한다.
+    // 집행: file-lifecycle.md#eol-정책 — 혼합 EOL은 eol_mixed로 표시해 열고(M2), 저장 시
+    //       판정 EOL(다수결)로 통일한다. 통일 재작성은 프론트의 정규화 승인을 거친다.
+    // 왜: 혼합 EOL 문서를 여는 것이 M2 파일 강건성의 목표이고, eol_mixed 플래그가
+    //     프론트 승인 게이트(자동 저장 차단·배너)의 유일한 근거다.
+    // 보장: 혼합 파일이 LF 정규화 본문 + eol_mixed=true + 다수결 판정으로 열리고,
+    //       저장하면 디스크 개행이 판정 EOL로 통일된다(승인 후 첫 저장 = 변환 1회).
+    // 경계: 승인 전 저장을 막는 것은 프론트 게이트 소관 — 커맨드는 항상 저장을 수행한다.
     #[test]
-    fn 혼합_eol_파일은_m1에서_열기를_거부한다() {
+    fn 혼합_eol_파일은_eol_mixed로_열리고_저장이_판정_eol로_통일한다() {
         let (dir, scope) = scoped_tempdir();
         let path = dir.path().join("mixed.md");
-        let original = "a\r\nb\nc\r\n";
-        fs::write(&path, original).unwrap();
+        fs::write(&path, "a\r\nb\nc\r\n").unwrap(); // CRLF 2 vs LF 1 → 판정 crlf
         let path = path.to_str().unwrap();
 
-        assert!(matches!(
-            open_file_impl(&scope, path, None),
-            Err(AppError::Encoding(_))
-        ));
-        assert_eq!(fs::read_to_string(path).unwrap(), original);
+        let opened = open_file_impl(&scope, path, None).unwrap();
+        assert_eq!(opened.text, "a\nb\nc\n");
+        assert_eq!(opened.eol, Eol::Crlf);
+        assert!(opened.eol_mixed);
+
+        save_file_impl(
+            &scope,
+            path,
+            &opened.text,
+            opened.eol,
+            opened.has_bom,
+            Some(&opened.hash),
+        )
+        .unwrap();
+        assert_eq!(fs::read(path).unwrap(), b"a\r\nb\r\nc\r\n");
+
+        // 통일 후 다시 열면 더는 혼합이 아니다 — 변환은 1회로 끝난다.
+        let reopened = open_file_impl(&scope, path, None).unwrap();
+        assert!(!reopened.eol_mixed);
+    }
+
+    // 집행: file-lifecycle.md#인코딩-정책 — "비UTF-8은 감지 후 변환해 열기…저장하기 전까지
+    //       파일은 바뀌지 않는다", 저장은 항상 UTF-8.
+    // 왜: EUC-KR 레거시 한글 문서의 열기→승인→저장이 M2의 대표 사용자 시나리오다.
+    // 보장: EUC-KR 파일이 변환되어 열리고(원본 불변), 저장하면 UTF-8 바이트로 통일되며,
+    //       다시 열면 utf-8로 판정된다.
+    // 경계: 승인 UI 흐름은 프론트·E2E 소관 — 여기는 커맨드 왕복만.
+    #[test]
+    fn euc_kr_파일은_변환해_열리고_저장하면_utf8이_된다() {
+        use crate::text_encoding::test_support::{EUC_KR_SAMPLE, EUC_KR_SAMPLE_TEXT};
+
+        let (dir, scope) = scoped_tempdir();
+        let path = dir.path().join("legacy.md");
+        fs::write(&path, EUC_KR_SAMPLE).unwrap();
+        let path = path.to_str().unwrap();
+
+        let opened = open_file_impl(&scope, path, None).unwrap();
+        assert_eq!(opened.text, EUC_KR_SAMPLE_TEXT);
+        assert_eq!(opened.encoding, "euc-kr");
+        // 열기만으로는 원본이 바뀌지 않는다.
+        assert_eq!(fs::read(path).unwrap(), EUC_KR_SAMPLE);
+
+        save_file_impl(
+            &scope,
+            path,
+            &opened.text,
+            opened.eol,
+            opened.has_bom,
+            Some(&opened.hash),
+        )
+        .unwrap();
+        assert_eq!(fs::read(path).unwrap(), EUC_KR_SAMPLE_TEXT.as_bytes());
+        assert_eq!(
+            open_file_impl(&scope, path, None).unwrap().encoding,
+            "utf-8"
+        );
+    }
+
+    // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 읽기 전용 거부(M2 확정 열린 결정)
+    //       + rust-commands.md save_file.
+    // 왜: 원자적 쓰기(rename)는 디렉터리 권한만 검사해 파일 잠금을 우회한다(E2E 실측) —
+    //     사용자가 일부러 잠근 파일을 자동 저장이 조용히 고치면 잠금의 의도가 깨진다.
+    // 보장: 쓰기 권한 없는 파일의 저장이 Permission으로 거부되고 내용·권한이 그대로다.
+    // 경계: 명시적 덮어쓰기 UI는 미도입(필요 시 추후) — 구제는 chmod 후 재저장이다.
+    #[test]
+    fn 읽기_전용_파일_저장은_permission으로_거부한다() {
+        let (dir, scope) = scoped_tempdir();
+        let path = dir.path().join("locked.md");
+        fs::write(&path, "잠긴 원본\n").unwrap();
+        let path_str = path.to_str().unwrap();
+        let opened = open_file_impl(&scope, path_str, None).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o444)).unwrap();
+
+        let result = save_file_impl(
+            &scope,
+            path_str,
+            "수정\n",
+            opened.eol,
+            false,
+            Some(&opened.hash),
+        );
+
+        assert!(matches!(result, Err(AppError::Permission(_))));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "잠긴 원본\n");
+        // 정리 — TempDir 삭제가 실패하지 않게 권한을 되돌린다.
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
     }
 
     // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 임시 파일에 "원본 권한을 복사한 뒤" rename.
