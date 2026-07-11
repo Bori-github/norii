@@ -10,10 +10,13 @@ export const STRINGS = {
 
   dirtyIndicatorLabel: "저장 대기",
   closeTabLabel: "탭 닫기",
+  dismissNoticeLabel: "알림 닫기",
+  tabListLabel: "열린 문서",
 
   openFailedTitle: "파일을 열 수 없습니다",
   saveFailedTitle: "저장하지 못했습니다",
-  saveFailedRetryHint: "다시 시도하거나 다른 위치에 저장해 주세요.",
+  saveAsAlreadyOpenBody:
+    "이미 열려 있는 파일로는 저장할 수 없습니다. 해당 파일의 탭에서 편집해 주세요.",
 
   conflictTitle: "외부 변경 충돌",
   conflictBody:

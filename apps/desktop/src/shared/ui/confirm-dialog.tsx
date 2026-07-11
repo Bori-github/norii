@@ -13,7 +13,7 @@ const dialogClass = css({
   background: "bg.surface",
   color: "text",
   boxShadow: "lg",
-  _backdrop: { background: "rgba(0, 0, 0, 0.4)" },
+  _backdrop: { background: "bg.overlay" },
 });
 
 const bodyClass = css({
@@ -42,7 +42,9 @@ const buttonClass = css({
   _hover: { background: "bg.canvas" },
 });
 
-const dangerButtonClass = css({
+// 확정 동작 버튼 — 현재는 강조 색(accent)으로 구분한다. 파괴적 동작 전용 danger 토큰
+// 도입 여부는 디자인 시스템이 커질 때 결정한다.
+const confirmButtonClass = css({
   color: "accent",
   fontWeight: "medium",
 });
@@ -69,10 +71,14 @@ export function ConfirmDialog() {
       ref={dialogRef}
       className={dialogClass}
       data-testid="confirm-dialog"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-body"
       onCancel={() => settle(false)} // Esc — settle이 중복 호출을 무시하므로 close와 겹쳐도 안전.
     >
-      <strong>{pending.title}</strong>
-      <p className={bodyClass}>{pending.body}</p>
+      <strong id="confirm-dialog-title">{pending.title}</strong>
+      <p id="confirm-dialog-body" className={bodyClass}>
+        {pending.body}
+      </p>
       <div className={actionsClass}>
         <button
           type="button"
@@ -84,7 +90,7 @@ export function ConfirmDialog() {
         </button>
         <button
           type="button"
-          className={`${buttonClass} ${dangerButtonClass}`}
+          className={`${buttonClass} ${confirmButtonClass}`}
           data-testid="confirm-accept"
           onClick={() => settle(true)}
         >
