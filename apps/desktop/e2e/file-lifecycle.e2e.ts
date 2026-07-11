@@ -136,6 +136,42 @@ it("지원하지 않는 인코딩 거부 — 비UTF-8 파일은 열리지 않고
   expect(Buffer.compare(await readFile(badPath), originalBytes)).toBe(0);
 });
 
+// 집행: file-lifecycle.md#외부-변경-처리 — "file-changed (해당 탭이 dirty): 충돌 안내 —
+//       디스크 버전 vs 편집 버전 선택" + "자동 병합은 하지 않는다".
+// 왜: 충돌에서 자동 저장이 외부 수정본을 조용히 덮어쓰면 Obsidian 자동 병합 사고의 재현이다.
+// 보장: 외부 수정 후 자동 저장은 디스크를 건드리지 않고 배너를 띄우며,
+//       "디스크 버전으로 되돌리기"가 본문을 교체하고 배너를 해제한다.
+// 경계: watch 이벤트 기반 감지(M2)는 다루지 않는다 — 저장 시 해시 검사 경로만.
+it("외부 변경 충돌 — 자동 저장이 덮어쓰지 않고 배너로 선택을 받는다", async () => {
+  const filePath = path.join(SCOPE_ROOT, "conflict.md");
+  await writeFile(filePath, "# 충돌 원본\n", "utf8");
+
+  await openInApp(filePath);
+  await typeIntoEditor("내 편집 ");
+  // 자동 저장 디바운스(2초) 안에 외부 프로세스가 같은 파일을 수정한다.
+  await writeFile(filePath, "# 외부 수정본\n", "utf8");
+
+  const banner = await browser.$('[data-testid="conflict-banner"]');
+  await banner.waitForExist({ timeout: 10_000 });
+  // 디스크에는 외부 수정본이 그대로다 — 자동 저장이 덮어쓰지 않았다.
+  expect(await readFile(filePath, "utf8")).toBe("# 외부 수정본\n");
+
+  await (await browser.$("button=디스크 버전으로 되돌리기")).click();
+  await browser.waitUntil(
+    async () => {
+      const text = await browser.execute(
+        () => document.querySelector(".cm-content")?.textContent ?? "",
+      );
+      return text.includes("외부 수정본") && !text.includes("내 편집");
+    },
+    { timeout: 5_000, timeoutMsg: "디스크 버전 리로드가 에디터에 반영되지 않았다" },
+  );
+  await browser.waitUntil(async () => !(await banner.isExisting()), {
+    timeout: 5_000,
+    timeoutMsg: "충돌 해소 후에도 배너가 남아 있다",
+  });
+});
+
 // 집행: file-lifecycle.md#종료-방어 — "종료 시 저장 대기 탭은 플러시. 데이터 유실 방지 최우선".
 // 왜: 자동 저장 디바운스(2초)가 남기는 유일한 유실 창이 "타이핑 직후 즉시 종료"다.
 // 보장: 편집 직후(디바운스 완료 전) 창을 닫아도 편집분이 디스크에 남는다.

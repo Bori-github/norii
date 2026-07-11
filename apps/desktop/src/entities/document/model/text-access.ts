@@ -55,3 +55,9 @@ export function clearTabText(tabId: string): void {
   handles.delete(tabId);
   initialTexts.delete(tabId);
 }
+
+/** 테스트 전용 — 모듈 전역 레지스트리 초기화(테스트 간 상태 누적 방지). */
+export function resetTabTextRegistry(): void {
+  handles.clear();
+  initialTexts.clear();
+}

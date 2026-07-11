@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { FileContent } from "@shared/ipc";
 
 import { useDocumentStore } from "./document-store";
-import { getInitialText } from "./text-access";
+import { getInitialText, resetTabTextRegistry } from "./text-access";
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
@@ -20,6 +20,7 @@ function fileContent(overrides: Partial<FileContent> = {}): FileContent {
 
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
+  resetTabTextRegistry(); // 모듈 전역 본문 레지스트리도 함께 초기화 — 테스트 간 누적 방지.
 });
 
 // 집행: document-model.md#다중-탭-규칙 — "새 문서: filePath=null, title=Untitled".

@@ -5,6 +5,7 @@ export {
   getInitialText,
   getTabText,
   registerTabTextHandle,
+  resetTabTextRegistry,
   setTabText,
   unregisterTabTextHandle,
 } from "./model/text-access";
