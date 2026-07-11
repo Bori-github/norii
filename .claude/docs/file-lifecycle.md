@@ -29,6 +29,59 @@ Obsidian처럼 저장을 자동화하되, **자동 병합은 채택하지 않는
 - **자동 병합은 하지 않는다.** Obsidian의 자동 병합(diff-match-patch)은 틀렸을 때 사용자 모르게 내용이 변형된 사례(노트 자가 삭제·내용 뒤섞임)가 보고돼 있다. 충돌은 항상 사용자가 명시적으로 선택한다(→ [외부 변경 처리](#외부-변경-처리)).
 - **실수 삭제 방어**: 자동 저장에서는 "저장 안 하면 그만"이라는 방어선이 사라진다. 세션 내 undo가 1차 방어이고, 주기 스냅샷(Obsidian File Recovery류) 도입은 열린 결정(→ [실제 구현 계획](implementation-plan.md)).
 
+## 저장 흐름 (전체 경로)
+
+편집이 디스크에 닿기까지 프론트 3계층과 Rust를 가로지른다. 각 단계의 정책은 이 문서의 해당 절이 단일 출처이고, 이 그림은 그 절들이 **어느 순서로 맞물리는지**를 고정한다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant E as 에디터(CM6)
+    participant S as 자동 저장 스케줄러
+    participant Q as 저장 큐(탭별 직렬화)
+    participant R as Rust save_file
+    participant D as 디스크
+
+    E->>S: docChanged (dirty=true)
+    Note over S: 타이핑이 이어지면 타이머 리셋<br/>(마지막 변경 기준 2초 디바운스)
+    S->>Q: 디바운스 만료 → 플러시 요청
+    Note over Q: 같은 탭의 이전 저장이 끝난 뒤 실행<br/>(앞 저장의 새 해시를 본 뒤 나가야 가짜 충돌이 없다)
+    Q->>R: saveFile(text, eol, hasBom, expectedHash)
+    Note over R: 전역 저장 잠금 획득
+    R->>D: 디스크 내용 해시 읽기
+    alt 해시 ≠ expectedHash (외부 변경)
+        R-->>Q: AppError::Conflict
+        Q-->>S: 자동 저장 일시 중지
+        Note over E: 충돌 배너 — 사용자가<br/>디스크/편집 버전을 선택 (자동 병합 금지)
+    else 해시 일치
+        R->>D: 임시 파일 쓰기 + fsync + rename (원자적)
+        R-->>Q: SaveResult(hash, mtime)
+        Note over Q: lastSavedHash 갱신.<br/>저장 중 추가 편집이 있었으면 dirty 유지
+    end
+```
+
+**종료·탭 닫기의 재확인 루프**: 저장 왕복(IPC) 중에도 타이핑은 계속될 수 있다. 그래서 닫기·종료는 `saved` 응답만 믿지 않고 **최신 dirty 상태를 다시 분류해 깨끗해질 때까지 재저장**한다(→ [종료 방어](#종료-방어)). 이 재확인이 없으면 저장이 나가는 수 초 동안의 편집이 조용히 사라진다.
+
+## 탭 상태 전이
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> clean
+    clean --> dirty: 편집
+    dirty --> saving: 디바운스 · Cmd+S · 닫기 플러시
+    saving --> clean: 성공
+    saving --> dirty: 성공했지만 저장 중 또 편집됨
+    saving --> conflict: 해시 불일치
+    saving --> error: 저장 실패
+    conflict --> saving: 내 편집 유지
+    conflict --> clean: 디스크 버전 유지
+    error --> dirty: 재시도
+```
+
+- `saving → dirty`(저장 중 추가 편집)가 **데이터 유실이 새던 자리**다 — 닫기·종료는 저장 성공 응답만 믿지 않고 dirty가 사라질 때까지 재저장한다(→ [종료 방어](#종료-방어)).
+- `conflict` 상태에서는 **자동 저장이 멈춘다.** 사용자가 디스크/편집 버전을 고를 때까지 유지된다(자동 병합 금지 → [자동 저장](#자동-저장)).
+
 ## 저장 원자성과 충돌 검사
 
 데이터 유실 방지의 핵심 두 규칙이다. 커맨드 시그니처는 [Rust 커맨드 계약](rust-commands.md)을 단일 출처로 둔다.
@@ -68,6 +121,36 @@ Obsidian도 외부 변경 처리에서 골치를 앓는 영역이므로, 충돌 
 ## 인코딩 정책
 
 메모리와 저장은 **항상 UTF-8**이다. 그 위에서 레거시 파일을 다음 규칙으로 다룬다.
+
+열기 파이프라인의 분기는 결정론적이라 그대로 테스트 케이스가 된다. 아래 그림은 순서를 고정하고, 각 단계의 규칙은 이어지는 목록이 단일 출처다. **M1 범위**에서는 변환 대상(UTF-16·레거시 인코딩)과 재작성 대상(혼합 EOL)이 모두 거부이고, M2에서 그 거부가 "변환 + 배너 + 정규화 승인"으로 바뀐다.
+
+```mermaid
+flowchart TD
+    A[파일 바이트] --> B{encoding_override?}
+    B -->|있음| B1[전 단계 건너뛰고<br/>그 인코딩으로 디코드]
+    B -->|없음| C{BOM 있나?}
+    C -->|UTF-8 BOM| C1[BOM 제거 · hasBom=true<br/>검증 실패 시 = 손상]
+    C -->|UTF-16 BOM| X1[M1: 거부<br/>M2: 변환]
+    C -->|없음| D{앞 512B 널 바이트}
+    D -->|홀/짝 일관| X2[BOM 없는 UTF-16<br/>M1: 거부 · M2: 변환]
+    D -->|불규칙| X3[바이너리 — 항상 거부]
+    D -->|없음| E{UTF-8 엄격 검증}
+    E -->|실패| X4[레거시 인코딩<br/>M1: 거부 · M2: chardetng 변환]
+    E -->|통과| F[EOL 판정<br/>LF/CRLF 다수결 · 동률 LF]
+    C1 --> F
+    B1 --> F
+    F --> G{원본 개행이 판정과 일치?}
+    G -->|불일치 혼합·CR-only| X5[M1: 거부<br/>M2: eolMixed + 정규화 승인]
+    G -->|일치| H[열기 성공<br/>본문은 LF 정규화해 CM6로]
+
+    style X1 fill:#ffe6e6
+    style X2 fill:#ffe6e6
+    style X3 fill:#ffcccc
+    style X4 fill:#ffe6e6
+    style X5 fill:#ffe6e6
+    style H fill:#e6ffe6
+```
+
 
 - **열기 파이프라인(순서 고정 — 각 단계가 결정론적 규칙이라 그대로 테스트 케이스가 된다)**:
   1. **BOM 스니핑** — UTF-8(`EF BB BF`)/UTF-16 LE(`FF FE`)/UTF-16 BE(`FE FF`) BOM이 있으면 그 인코딩으로 확정한다(UTF-16도 UTF-8로 변환해 연다).
