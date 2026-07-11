@@ -22,7 +22,13 @@ argument-hint: "[base 브랜치 — 생략 시 main]"
 4. **제목** — 지배적 변경으로 type 결정. 형식·subject-case 등은 [커밋 컨벤션](../rules/commit-convention.md)을 따른다.
 5. **라벨** — 변경 유형에 맞는 라벨을 고른다(라벨 세트는 [커밋 컨벤션](../rules/commit-convention.md)).
 6. **검증 상태** — `mise run check` 결과를 본문에 값으로 적는다(못 돌리면 그 이유). 실앱 E2E·번들 크기는 mac 실기 항목이라 통과/미검증 상태만 표기한다.
-7. **확인 후 생성** — 초안(제목·본문·라벨·담당자)을 사용자에게 보여주고 **승인받은 뒤에만** 실행한다:
+7. **데모 영상 (사용자에게 보이는 동작이 바뀐 PR이면 첨부)** — E2E 화면을 그대로 녹화해 붙인다. UI·동작 변경이 없는 PR(문서·리팩터링·내부 정리)은 건너뛴다.
+   - 앱 실행: `mise run dev-webdriver` (다른 터미널, 백그라운드)
+   - 녹화: `mise run demo` — E2E 시나리오를 실행하며 앱 창을 녹화한다(→ `scripts/record-demo.sh`)
+   - 업로드: `mise run upload-demo <파일>` — GitHub CDN URL을 받는다(리포에 바이너리를 커밋하지 않는다, → `scripts/upload-attachment.sh`)
+   - 받은 URL을 PR 본문의 "스크린샷 / 데모" 섹션에 그대로 넣는다(영상은 URL만 두면 GitHub이 플레이어로 렌더한다)
+   - 첫 실행에서 GitHub 로그인이 없다고 나오면 스크립트가 안내하는 한 줄을 실행해 한 번만 로그인한다 — 이후는 프로필에 저장돼 자동이다
+8. **확인 후 생성** — 초안(제목·본문·라벨·담당자·데모 영상)을 사용자에게 보여주고 **승인받은 뒤에만** 실행한다:
    - 브랜치가 원격에 없으면 먼저 `git push -u origin <branch>` (승인 후)
    - `gh pr create --base <base> --title "…" --body "…" --assignee @me` 후 `gh pr edit --add-label <label>`
    - 담당자는 `@me`(현재 인증 사용자)로 자동 배정한다 — 계정명을 하드코딩하지 않는다.

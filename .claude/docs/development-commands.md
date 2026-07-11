@@ -44,6 +44,11 @@ mise run rust-test       # cargo test
 mise run dev-webdriver & # 1) webdriver 피처를 켠 개발 빌드 앱 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
 mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
 
+# PR 데모 영상 (check 미포함 — 앱 실행·화면 기록 권한 필요, macOS 전용)
+mise run dev-webdriver &        # 1) E2E용 앱 실행
+mise run demo                   # 2) E2E 시나리오를 실행하며 앱 창을 녹화 → /tmp/norii-demo.mov
+mise run upload-demo <파일>     # 3) GitHub CDN 업로드 → PR에 붙일 URL 출력 (리포에 커밋하지 않는다)
+
 # 번들 크기 측정 (check 미포함 — 빌드 산출물 필요)
 # 현재(M0)는 프론트엔드 dist 측정만 유효하다. 앱 번들(.app)은 아래 참고.
 pnpm --filter desktop build   # vite 빌드 → dist 생성 (빠름)
@@ -68,6 +73,14 @@ mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-dri
 
 - Rust 소스의 `#[tauri::command]` 함수명이 [Rust 커맨드 계약](rust-commands.md)에 등재됐는지 — **코드 → 문서 단방향 검사**다. 계약 없는 커맨드는 게이트 실패이고, 문서에만 있는 커맨드는 아직 미구현 계약으로 허용한다(개발 진행 중 게이트가 항상 빨간불이 되지 않게)
 - [기술 스택](tech-stack.md) 표에 적힌 버전이 `package.json`·`Cargo.toml`의 실제 핀과 일치하는지 — **단방향 검사**다. 표에 없는 의존성에 등재를 요구하지 않는다(요구하면 모든 의존성 추가가 게이트에 걸리는 과잉 검사가 된다)
+
+## PR 데모 영상 (demo · upload-demo)
+
+사용자에게 보이는 동작이 바뀐 PR에는 데모 영상을 붙인다(→ [/pr 커맨드](../commands/pr.md)). **E2E 시나리오를 그대로 녹화**하는 것이 규칙이다 — 별도 데모 스크립트를 두면 테스트와 데모가 따로 낡는다. E2E가 늘면 데모도 자동으로 풍부해진다.
+
+- `mise run demo`(`scripts/record-demo.sh`) — 앱 창을 논리 좌표에 배치하고 `mise run e2e`를 실행하며 그 화면을 녹화한다. **좌표 주의**: WebDriver의 창 크기는 Retina 픽셀이고 `screencapture -R`은 논리 좌표다 — 섞으면 창 밖이 찍힌다. 그래서 창 배치는 AppleScript(논리 좌표)로 한다.
+- `mise run upload-demo <파일>`(`scripts/upload-attachment.sh`) — GitHub 자산 CDN에 올려 URL을 받는다. **리포에 영상 바이너리를 커밋하지 않기 위한 유일한 경로**다. 인증은 `agent-browser` 브라우저 프로필에 저장되며, 첫 실행에서 로그인이 없으면 스크립트가 한 줄 안내를 출력한다(이후 자동).
+- 전제: macOS **화면 기록 권한**(시스템 설정 → 개인정보 보호), `jq`, `agent-browser`. 권한·도구가 없으면 스크립트가 이유를 출력하고 멈춘다.
 
 ## 규칙
 
