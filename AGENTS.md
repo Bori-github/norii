@@ -21,7 +21,7 @@ norii는 가볍고 빠른 로컬 우선(local-first) 마크다운 **소스 뷰**
 
 - [초기 아키텍처](.claude/docs/architecture.md)
 - [프론트엔드 아키텍처(FSD)](.claude/docs/frontend-architecture.md)
-- [디자인 시스템(Panda CSS)](.claude/docs/design-system.md)
+- [디자인 시스템(Panda CSS)](.claude/docs/design/design-system.md)
 - [문서 모델(다중 탭 + 파일 트리)](.claude/docs/document-model.md)
 - [Rust 커맨드 계약(파일 I/O · IPC 경계)](.claude/docs/rust-commands.md)
 - [에디터 전략(CodeMirror 6 · 하이브리드 접기)](.claude/docs/editor-strategy.md)

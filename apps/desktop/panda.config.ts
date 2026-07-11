@@ -1,6 +1,6 @@
 import { defineConfig } from "@pandacss/dev";
 
-// 디자인 시스템 토큰·조건의 단일 출처(→ .claude/docs/design-system.md).
+// 디자인 시스템 토큰·조건의 단일 출처(→ .claude/docs/design/design-system.md).
 // 컴포넌트는 시맨틱 토큰만 참조하고, 원시값은 이 파일의 토큰 정의 계층에만 둔다.
 export default defineConfig({
   // 스타일 추출 대상 — FSD 레이어 전체.

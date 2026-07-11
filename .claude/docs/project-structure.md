@@ -56,7 +56,7 @@ norii/
       tsconfig.app.json       FSD 레이어 path alias 정의
       tsconfig.json           편집기용 위임 설정 — tsconfig.app.json을 extends (언어 서버는 이 이름만 자동 탐색)
       steiger.config.ts       FSD 린트 설정
-      panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design-system.md)
+      panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design/design-system.md)
       postcss.config.cjs      Panda PostCSS 플러그인
       styled-system/          Panda 생성물 (VCS 제외 — 빌드 시 생성)
       package.json

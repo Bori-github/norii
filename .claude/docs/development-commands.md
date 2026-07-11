@@ -11,7 +11,7 @@ pnpm install     # 워크스페이스 의존성 설치
 
 `mise install` 한 번으로 Node·Rust·pnpm이 프로젝트 고정 버전으로 세팅된다. 팀원·CI가 동일 환경을 재현한다.
 
-`pnpm install`은 postinstall 훅으로 **`panda codegen`**을 실행해 `styled-system/` 생성물을 만든다(VCS 제외 — → [디자인 시스템](design-system.md#fsd-배치)). 이 단계가 빠지면 clone 직후 `typecheck`·빌드가 생성물 부재로 실패한다.
+`pnpm install`은 postinstall 훅으로 **`panda codegen`**을 실행해 `styled-system/` 생성물을 만든다(VCS 제외 — → [디자인 시스템](design/design-system.md#fsd-배치)). 이 단계가 빠지면 clone 직후 `typecheck`·빌드가 생성물 부재로 실패한다.
 
 ## 자주 쓰는 명령
 

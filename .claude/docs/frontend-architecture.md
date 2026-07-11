@@ -80,7 +80,7 @@ packages/ui       (공용 프리미티브)  → shared/ui 가 래핑·재노출
 
 ## 스타일 · 디자인 시스템
 
-스타일은 **Panda CSS**로 작성하고, 디자인 시스템을 프로젝트 내부에 구축한다. 토큰은 `panda.config.ts`(단일 출처), 디자인 시스템 컴포넌트는 `shared/ui`(recipe로 구성)에 둔다. 상위 레이어는 `shared/ui` 컴포넌트를 소비하고 직접 스타일을 최소화한다. 라이트/다크 테마 상태는 `app` 레이어(Zustand)가 소유한다. 상세는 [디자인 시스템](design-system.md)을 단일 출처로 둔다.
+스타일은 **Panda CSS**로 작성하고, 디자인 시스템을 프로젝트 내부에 구축한다. 토큰은 `panda.config.ts`(단일 출처), 디자인 시스템 컴포넌트는 `shared/ui`(recipe로 구성)에 둔다. 상위 레이어는 `shared/ui` 컴포넌트를 소비하고 직접 스타일을 최소화한다. 라이트/다크 테마 상태는 `app` 레이어(Zustand)가 소유한다. 상세는 [디자인 시스템](design/design-system.md)을 단일 출처로 둔다.
 
 ## UI 문자열과 i18n (현재 미도입)
 
