@@ -69,4 +69,6 @@ export const STRINGS = {
     encoding: "지원되지 않는 파일 형식입니다.",
     io: "파일 처리 중 오류가 발생했습니다.",
   },
+  themeToDarkLabel: "다크 테마로 전환",
+  themeToLightLabel: "라이트 테마로 전환",
 } as const;
