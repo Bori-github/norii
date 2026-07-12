@@ -25,7 +25,7 @@ norii/
   LICENSE                    MIT (© 2026 bori)
   CLAUDE.md                  Claude 진입점 → AGENTS.md
   AGENTS.md                  문서 인덱스 + 핵심 원칙
-  DESIGN.md                  디자인 결정 헌장 (무엇을·왜 → .claude/docs/design/)
+  DESIGN.md                  디자인 규칙 (불변식·표면 표 → 상세는 .claude/docs/design/)
   .github/
     pull_request_template.md PR 본문 템플릿 (→ .claude/rules/commit-convention.md)
   scripts/
@@ -33,7 +33,7 @@ norii/
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
-      design/                디자인 상세 (Panda 토큰·recipe · 창 표면 계약)
+      design/                디자인 상세 (결정 기록 ADR · Panda 토큰 · 창 표면 계약)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
     commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
 
