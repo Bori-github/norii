@@ -1,6 +1,8 @@
 import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
 
+import { sourceLinePlugin } from "./line-map";
+
 // 프리뷰 파이프라인 — 소스 텍스트 → markdown-it(GFM) → DOMPurify sanitize → HTML 문자열.
 // DOM 삽입은 소비 측(apps/desktop)이 담당한다(→ .claude/docs/preview-strategy.md).
 //
@@ -46,7 +48,7 @@ function taskListPlugin(md: MarkdownIt): void {
 
 // html: 원시 HTML 통과(<details> 등) — 위험분은 아래 sanitize가 제거한다.
 // linkify: GFM 오토링크. 테이블·취소선은 markdown-it 기본 프리셋에 포함.
-const md = new MarkdownIt({ html: true, linkify: true }).use(taskListPlugin);
+const md = new MarkdownIt({ html: true, linkify: true }).use(taskListPlugin).use(sourceLinePlugin);
 
 /** 마크다운 소스를 sanitize된 HTML 문자열로 렌더한다. */
 export function renderMarkdown(source: string): string {

@@ -12,14 +12,15 @@ import { renderMarkdown } from "./render";
 //       KaTeX·Mermaid·각주는 이후 마일스톤이라 다루지 않는다(→ preview-strategy.md#수식다이어그램-지원-채택).
 describe("renderMarkdown — 마크다운 파싱 (GFM)", () => {
   it("헤딩과 문단을 렌더한다", () => {
+    // 블록 태그에는 라인 매핑 속성(data-source-line, → line-map.test.ts)이 함께 달린다.
     const html = renderMarkdown("# 제목\n\n본문");
-    expect(html).toContain("<h1>제목</h1>");
-    expect(html).toContain("<p>본문</p>");
+    expect(html).toMatch(/<h1[^>]*>제목<\/h1>/);
+    expect(html).toMatch(/<p[^>]*>본문<\/p>/);
   });
 
   it("GFM 테이블을 렌더한다", () => {
     const html = renderMarkdown("| 이름 |\n| --- |\n| 값 |");
-    expect(html).toContain("<table>");
+    expect(html).toMatch(/<table[^>]*>/);
     expect(html).toContain("<th>이름</th>");
     expect(html).toContain("<td>값</td>");
   });
