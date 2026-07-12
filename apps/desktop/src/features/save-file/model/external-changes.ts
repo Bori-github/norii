@@ -100,7 +100,10 @@ export function handleFileRemoved(payload: FileRemovedPayload): Promise<void> {
       return; // 파일이 존재한다 — 낡은 삭제 신호다. 본문은 건드리지 않는다.
     } catch (error) {
       if (!(isIpcError(error) && error.kind === "notFound")) {
-        return; // 존재를 단정할 수 없다(권한 등) — 삭제 표시는 확실할 때만 켠다.
+        // 존재를 단정할 수 없다(권한 등) — 삭제 표시는 확실할 때만 켠다. 반복되면
+        // "삭제 배지가 안 뜨는" 원인을 추적할 수 있게 로그를 남긴다(모듈 관례).
+        logger.warn(`삭제 재확인 실패(${payload.path}): ${String(error)}`);
+        return;
       }
     }
     useMissingFileStore.getState().markMissing(tabId);
@@ -113,19 +116,32 @@ export function handleFileRemoved(payload: FileRemovedPayload): Promise<void> {
 /** 마지막으로 선언한 감시 집합의 서명 — 같은 집합의 반복 선언(IPC 폭주)을 막는다. */
 let watchedSignature: string | null = null;
 
-/** 재선언 직렬화 꼬리 — 동시 IPC의 완료 순서가 뒤집히면 옛 목록이 최종본이 될 수 있다. */
-let syncTail: Promise<void> = Promise.resolve();
+/** 정체 중 제출된 최신 탭 목록 — 최종 상태가 진실이므로 중간 목록은 밀려난다. */
+let pendingTabs: Tab[] | null = null;
+/** 진행 중인 배수(drain) — 하나만 돌며 pendingTabs가 빌 때까지 소진한다. */
+let drain: Promise<void> | null = null;
 
 /**
  * 열린 경로 전체를 감시 대상으로 재선언한다(→ rust-commands.md watch_paths — 선언적 교체).
  * 스토어의 모든 변화(키 입력마다의 dirty 등)에서 불리므로 경로 집합이 실제로 바뀔 때만
- * IPC를 보내고, 제출 순서대로 직렬화한다 — 앞 선언이 끝나기 전에 다음이 나가면 Rust 쪽
- * 완료 순서에 따라 옛 목록이 이길 수 있고, 서명 캐시가 교정 재선언까지 막는다(리뷰 P2).
+ * IPC를 보내고, 동시 제출은 최신본만 전송한다(latest-wins) — 순서가 뒤집히면 옛 목록이
+ * 최종본이 되고, FIFO 체인은 IPC 정체 시 대기 클로저가 무한히 쌓인다(리뷰 P2·성능).
  */
 export function syncWatchedPaths(tabs: Tab[]): Promise<void> {
-  const run = syncTail.then(() => declareWatchedPaths(tabs));
-  syncTail = run.catch(() => {});
-  return run;
+  pendingTabs = tabs;
+  drain ??= (async () => {
+    try {
+      while (pendingTabs !== null) {
+        const next = pendingTabs;
+        pendingTabs = null;
+        // declareWatchedPaths는 내부에서 실패를 삼키므로(loop 지속) 여기서 throw하지 않는다.
+        await declareWatchedPaths(next);
+      }
+    } finally {
+      drain = null;
+    }
+  })();
+  return drain;
 }
 
 async function declareWatchedPaths(tabs: Tab[]): Promise<void> {
@@ -138,7 +154,13 @@ async function declareWatchedPaths(tabs: Tab[]): Promise<void> {
   }
   watchedSignature = signature;
   try {
-    await ipc.watchPaths(paths);
+    const skipped = await ipc.watchPaths(paths);
+    if (skipped > 0) {
+      // 일부가 감시되지 않았다 — 서명을 캐시하면 일시적 사유의 건너뜀이 영구 미감시로
+      // 고착된다. 무효화해 다음 탭 변화에서 재선언한다(→ rust-commands.md watch_paths).
+      watchedSignature = null;
+      logger.warn(`파일 감시 부분 성립: ${skipped}개 경로 건너뜀 — 다음 변화에서 재시도`);
+    }
   } catch (error) {
     // 감시 실패는 치명적이지 않다 — 저장 직전 해시 검사가 마지막 방어선이다.
     // 서명을 되돌려 다음 탭 변화에서 재시도한다.
@@ -147,10 +169,11 @@ async function declareWatchedPaths(tabs: Tab[]): Promise<void> {
   }
 }
 
-/** 테스트 전용 — 모듈 상태(감시 서명·직렬화 꼬리)를 초기화한다. */
+/** 테스트 전용 — 모듈 상태(감시 서명·배수 상태)를 초기화한다. */
 export function resetWatchedPathsForTest(): void {
   watchedSignature = null;
-  syncTail = Promise.resolve();
+  pendingTabs = null;
+  drain = null;
 }
 
 /** 이벤트 구독과 감시 재선언을 시작한다. 반환값은 정리 함수(React effect 계약). */
