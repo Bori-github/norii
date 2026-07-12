@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import type { Tab } from "@entities/document";
 import { findTab, setTabText, useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { ipc } from "@shared/ipc";
+import { ipc, isIpcError } from "@shared/ipc";
 import { logger } from "@shared/lib";
 import { notifyIpcError } from "@shared/ui";
 
@@ -81,26 +81,54 @@ export async function handleFileChanged(payload: FileChangedPayload): Promise<vo
   });
 }
 
-export function handleFileRemoved(payload: FileRemovedPayload): void {
+export function handleFileRemoved(payload: FileRemovedPayload): Promise<void> {
   const tab = useDocumentStore.getState().tabs.find((t) => t.filePath === payload.path);
   if (!tab) {
-    return;
+    return Promise.resolve();
   }
-  useMissingFileStore.getState().markMissing(tab.id);
-  // 사용자가 밖에서 지운 파일을 자동 저장이 조용히 되살리지 않는다 — 재생성은
-  // 명시적 저장(Cmd+S·배너 버튼)과 닫기/종료 플러시(데이터 보존 우선)만 한다.
-  autosave.pause(tab.id);
+  const tabId = tab.id;
+  // 저장 큐로 지연하고, 처리 시점에 디스크를 재확인한다 — 유예(100ms)를 거친 삭제 신호가
+  // 재생성 저장 뒤에 도착하는 순서 역전에서, 멀쩡한 파일에 삭제 표시 + 자동 저장 정지가
+  // 남는 것을 막는다(→ file-lifecycle.md#외부-변경-처리 저장 중 이벤트 지연).
+  return saveQueue.enqueue(tabId, async () => {
+    const current = findTab(tabId);
+    if (!current || current.filePath !== payload.path) {
+      return;
+    }
+    try {
+      await ipc.openFile(payload.path);
+      return; // 파일이 존재한다 — 낡은 삭제 신호다. 본문은 건드리지 않는다.
+    } catch (error) {
+      if (!(isIpcError(error) && error.kind === "notFound")) {
+        return; // 존재를 단정할 수 없다(권한 등) — 삭제 표시는 확실할 때만 켠다.
+      }
+    }
+    useMissingFileStore.getState().markMissing(tabId);
+    // 사용자가 밖에서 지운 파일을 자동 저장이 조용히 되살리지 않는다 — 재생성은
+    // 명시적 저장(Cmd+S·배너 버튼)과 닫기/종료 플러시(데이터 보존 우선)만 한다.
+    autosave.pause(tabId);
+  });
 }
 
 /** 마지막으로 선언한 감시 집합의 서명 — 같은 집합의 반복 선언(IPC 폭주)을 막는다. */
 let watchedSignature: string | null = null;
 
+/** 재선언 직렬화 꼬리 — 동시 IPC의 완료 순서가 뒤집히면 옛 목록이 최종본이 될 수 있다. */
+let syncTail: Promise<void> = Promise.resolve();
+
 /**
  * 열린 경로 전체를 감시 대상으로 재선언한다(→ rust-commands.md watch_paths — 선언적 교체).
- * 스토어의 모든 변화(키 입력마다의 dirty 등)에서 불리므로, 경로 집합이 실제로 바뀔 때만
- * IPC를 보낸다.
+ * 스토어의 모든 변화(키 입력마다의 dirty 등)에서 불리므로 경로 집합이 실제로 바뀔 때만
+ * IPC를 보내고, 제출 순서대로 직렬화한다 — 앞 선언이 끝나기 전에 다음이 나가면 Rust 쪽
+ * 완료 순서에 따라 옛 목록이 이길 수 있고, 서명 캐시가 교정 재선언까지 막는다(리뷰 P2).
  */
-export async function syncWatchedPaths(tabs: Tab[]): Promise<void> {
+export function syncWatchedPaths(tabs: Tab[]): Promise<void> {
+  const run = syncTail.then(() => declareWatchedPaths(tabs));
+  syncTail = run.catch(() => {});
+  return run;
+}
+
+async function declareWatchedPaths(tabs: Tab[]): Promise<void> {
   const paths = [
     ...new Set(tabs.flatMap((tab) => (tab.filePath === null ? [] : [tab.filePath]))),
   ].toSorted();
@@ -119,9 +147,10 @@ export async function syncWatchedPaths(tabs: Tab[]): Promise<void> {
   }
 }
 
-/** 테스트 전용 — 모듈 상태(감시 서명)를 초기화한다. */
+/** 테스트 전용 — 모듈 상태(감시 서명·직렬화 꼬리)를 초기화한다. */
 export function resetWatchedPathsForTest(): void {
   watchedSignature = null;
+  syncTail = Promise.resolve();
 }
 
 /** 이벤트 구독과 감시 재선언을 시작한다. 반환값은 정리 함수(React effect 계약). */
@@ -134,7 +163,7 @@ export function initExternalChanges(): () => void {
     void handleFileChanged(event.payload);
   });
   const unlistenRemoved = listen<FileRemovedPayload>("file-removed", (event) => {
-    handleFileRemoved(event.payload);
+    void handleFileRemoved(event.payload);
   });
   return () => {
     unsubscribeStore();
