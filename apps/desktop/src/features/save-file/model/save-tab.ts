@@ -1,4 +1,11 @@
-import { findTab, getTabText, setTabText, useDocumentStore } from "@entities/document";
+import {
+  findTab,
+  getTabText,
+  needsNormalizationApproval,
+  setTabText,
+  useDocumentStore,
+} from "@entities/document";
+import type { Tab } from "@entities/document";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -6,6 +13,7 @@ import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
 import { AUTOSAVE_DELAY_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
 import { isTabInConflict, useConflictStore } from "./conflict-store";
+import { isTabFileMissing, useMissingFileStore } from "./missing-file-store";
 import { createSaveQueue } from "./save-queue";
 
 // 저장 오케스트레이션 — 정책의 단일 출처: file-lifecycle.md(자동 저장·충돌·탭 닫기 규칙).
@@ -13,28 +21,53 @@ import { createSaveQueue } from "./save-queue";
 
 export type SaveOutcome = "saved" | "cancelled" | "conflict" | "error" | "skipped";
 
-const saveQueue = createSaveQueue();
+/** feature 내부 공유(외부 변경 처리의 이벤트 지연) — Public API(index.ts)에는 노출하지 않는다. */
+export const saveQueue = createSaveQueue();
 
-const autosave = createAutosaveScheduler({
+/** feature 내부 공유(외부 변경 처리의 일시 중지·재개) — Public API에는 노출하지 않는다. */
+export const autosave = createAutosaveScheduler({
   delayMs: AUTOSAVE_DELAY_MS,
   flush: (tabId) => {
     void autosaveFlush(tabId);
   },
 });
 
-/** 에디터가 문서 변경을 알린다 — 자동 저장 예약. Untitled는 대상이 아니다(경로 없음). */
+/**
+ * 에디터가 문서 변경을 알린다 — 자동 저장 예약. Untitled(경로 없음)와 정규화 미승인 탭은
+ * 대상이 아니다 — 미승인 탭의 저장은 원본 바이트를 재작성하므로 사용자 승인 전까지
+ * 자동 저장이 건드리지 않는다(→ file-lifecycle.md#자동-저장).
+ */
 export function noteDocumentChanged(tabId: string): void {
   const tab = findTab(tabId);
-  if (!tab || tab.filePath === null) {
+  if (!tab || tab.filePath === null || needsNormalizationApproval(tab)) {
     return;
   }
   autosave.noteChange(tabId);
 }
 
+/** 배너의 정규화 승인 — 승인 순간부터 이 탭도 자동 저장 대상이므로 밀린 변경을 예약한다. */
+export function approveTabNormalization(tabId: string): void {
+  const tab = findTab(tabId);
+  if (!tab) {
+    return;
+  }
+  useDocumentStore.getState().approveNormalization(tabId);
+  if (tab.isDirty) {
+    autosave.noteChange(tabId);
+  }
+}
+
 async function autosaveFlush(tabId: string): Promise<void> {
   const tab = findTab(tabId);
   // 충돌 중 일시 중지는 스케줄러가 보장하지만, 예약과 해소가 겹칠 수 있어 여기서도 거른다.
-  if (!tab || tab.filePath === null || !tab.isDirty || isTabInConflict(tabId)) {
+  // 미승인 검사도 마지막 관문으로 반복한다(예약 후 리로드로 승인이 원점 복귀할 수 있다).
+  if (
+    !tab ||
+    tab.filePath === null ||
+    !tab.isDirty ||
+    isTabInConflict(tabId) ||
+    needsNormalizationApproval(tab)
+  ) {
     return;
   }
   await saveTabNow(tabId);
@@ -63,6 +96,8 @@ async function performSave(
     return "skipped";
   }
   // 이 저장이 대기 중인 자동 저장을 대신한다 — 이중 저장을 막는다.
+  // 정규화 승인은 여기서 미리 기록하지 않는다 — 취소·실패한 저장이 승인을 남기면 이후
+  // 자동 저장이 동의 없이 원본을 재작성한다(리뷰 P1-2). 승인은 저장 성공 후처리에서 한다.
   autosave.discard(tabId);
 
   let path = tab.filePath;
@@ -93,6 +128,11 @@ async function performSave(
     // 새 경로 또는 명시적 덮어쓰기 — OS 다이얼로그가 이미 덮어쓰기를 확인했다(→ rust-commands.md).
     expectedHash = null;
   }
+  if (isTabFileMissing(tabId)) {
+    // 파일이 디스크에서 사라졌다 — 낡은 해시로는 Conflict만 난다. 명시적 저장은
+    // "새로 생성"이다(→ file-lifecycle.md#외부-변경-처리 file-removed).
+    expectedHash = null;
+  }
 
   try {
     const result = await ipc.saveFile({
@@ -102,15 +142,10 @@ async function performSave(
       hasBom: tab.hasBom,
       expectedHash,
     });
-    const store = useDocumentStore.getState();
     if (tab.filePath !== path) {
-      store.assignPath(tabId, path);
+      useDocumentStore.getState().assignPath(tabId, path);
     }
-    store.setLastSavedHash(tabId, result.hash);
-    // 저장이 나가는 동안 추가 편집이 있었으면 dirty를 유지한다(그 편집은 아직 미저장).
-    if (getTabText(tabId) === text) {
-      store.setDirty(tabId, false);
-    }
+    commitSaveSuccess(tabId, tab, text, result.hash);
     return "saved";
   } catch (error) {
     if (isIpcError(error) && error.kind === "conflict") {
@@ -121,6 +156,34 @@ async function performSave(
     }
     notifyIpcError(STRINGS.saveFailedTitle, error);
     return "error";
+  }
+}
+
+/**
+ * 저장 성공의 공통 후처리 — 수동 저장(performSave)과 충돌 덮어쓰기가 같은 규칙을 따른다.
+ * 갈라지면 한쪽만 승인·메타가 갱신되어 배너가 유령으로 남는다(리뷰 P2).
+ * `tab`은 저장 요청 시점의 스냅숏이다 — 정규화 대상 여부는 그 시점 기준으로 판정한다.
+ */
+function commitSaveSuccess(tabId: string, tab: Tab, text: string, hash: string): void {
+  const store = useDocumentStore.getState();
+  store.setLastSavedHash(tabId, hash);
+  // 저장 성공 = 파일이 디스크에 다시 존재한다 — 삭제 표시를 끄고 자동 저장을 재개한다.
+  if (isTabFileMissing(tabId)) {
+    useMissingFileStore.getState().clearMissing(tabId);
+    autosave.resume(tabId);
+  }
+  // 성립한 저장(성공)만이 정규화 승인이다 — 취소·실패는 승인을 남기지 않는다
+  // (→ file-lifecycle.md#자동-저장 "첫 수동 저장을 하면 승인된다", 리뷰 P1-2).
+  if (needsNormalizationApproval(tab)) {
+    store.approveNormalization(tabId);
+  }
+  // 저장 성공 = 디스크가 UTF-8·판정 EOL로 통일됐다 — 정규화 메타를 해제한다(변환은 1회).
+  if (tab.sourceEncoding !== "utf-8" || tab.eolMixed) {
+    store.markNormalized(tabId);
+  }
+  // 저장이 나가는 동안 추가 편집이 있었으면 dirty를 유지한다(그 편집은 아직 미저장).
+  if (getTabText(tabId) === text) {
+    store.setDirty(tabId, false);
   }
 }
 
@@ -141,11 +204,7 @@ export async function resolveConflictKeepMine(tabId: string): Promise<void> {
         hasBom: tab.hasBom,
         expectedHash: null,
       });
-      const store = useDocumentStore.getState();
-      store.setLastSavedHash(tabId, result.hash);
-      if (getTabText(tabId) === text) {
-        store.setDirty(tabId, false);
-      }
+      commitSaveSuccess(tabId, tab, text, result.hash);
     });
   } catch (error) {
     notifyIpcError(STRINGS.saveFailedTitle, error);
@@ -200,6 +259,18 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     });
     return;
   }
+  if (needsNormalizationApproval(tab)) {
+    // 미승인 탭을 플러시하면 닫기가 정규화 승인을 우회해 무단 변환하게 된다 — 반드시
+    // 다이얼로그다(→ file-lifecycle.md#종료-방어 · document-model.md#다중-탭-규칙).
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.closeUnapprovedTitle,
+      body: STRINGS.closeUnapprovedBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
+    return;
+  }
   // 저장 왕복 중 타이핑이 이어지면 dirty가 되살아난다 — "saved"만 믿고 닫으면 그 편집이
   // 조용히 유실되므로, 깨끗해질 때까지 재저장한다(적대적 리뷰 P1). 상한 후에도 dirty면
   // 닫지 않고 열어 둔다(사용자가 입력을 계속 중 — dirty ●가 상태를 알린다).
@@ -231,7 +302,8 @@ export async function requestCloseTab(tabId: string): Promise<void> {
 }
 
 function cleanupAndRemove(tabId: string): void {
-  autosave.discard(tabId);
+  autosave.forget(tabId);
   useConflictStore.getState().clearConflict(tabId);
+  useMissingFileStore.getState().clearMissing(tabId);
   useDocumentStore.getState().removeTab(tabId);
 }

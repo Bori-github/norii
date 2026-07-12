@@ -18,6 +18,23 @@ export const STRINGS = {
   saveAsAlreadyOpenBody:
     "이미 열려 있는 파일로는 저장할 수 없습니다. 해당 파일의 탭에서 편집해 주세요.",
 
+  // 정규화 승인 배너 — "저장 시 무엇이 바뀌는지"를 알린다 (→ file-lifecycle.md#자동-저장).
+  normalizationEncodingBody: (encoding: string) =>
+    `${encoding.toUpperCase()} 인코딩으로 감지되었습니다. 저장하면 UTF-8로 변환됩니다.`,
+  normalizationEolBody: (eol: string) =>
+    `줄바꿈이 일정하지 않습니다. 저장하면 ${eol.toUpperCase()}로 통일됩니다.`,
+  normalizationApproveLabel: "저장 시 변환 허용",
+  reopenEncodingLabel: "다른 인코딩으로 다시 열기",
+  reopenDirtyTitle: "편집 중인 문서 다시 열기",
+  reopenDirtyBody: "다시 열면 저장되지 않은 편집이 사라지고 디스크의 원본을 다시 읽습니다.",
+  reopenConfirmLabel: "다시 열기",
+
+  conflictBadgeLabel: "외부 변경 충돌 — 탭을 열어 확인하세요",
+  missingBadgeLabel: "파일이 디스크에서 삭제됨 — 탭을 열어 확인하세요",
+  missingFileBody:
+    "이 파일이 디스크에서 삭제되었습니다. 편집 내용은 탭에 남아 있고, 자동 저장은 멈췄습니다.",
+  missingFileRecreate: "저장해서 새로 생성",
+
   conflictTitle: "외부 변경 충돌",
   conflictBody:
     "이 파일이 밖에서 수정되었습니다. 어느 버전을 유지할까요?\n" +
@@ -29,6 +46,10 @@ export const STRINGS = {
   closeDirtyUntitledBody:
     "저장되지 않은 새 문서가 있습니다. 저장하지 않고 닫으면 내용이 사라집니다.",
   closeSaveFailedBody: "저장하지 못했습니다. 저장하지 않고 닫으면 마지막 편집이 사라집니다.",
+  closeUnapprovedTitle: "변환 승인 대기 중인 문서",
+  closeUnapprovedBody:
+    "이 문서는 저장 형식 변환(인코딩·개행) 승인 전이라 자동 저장되지 않았습니다.\n" +
+    "저장하지 않고 닫으면 편집한 내용이 사라집니다.",
   closeDiscardLabel: "저장하지 않고 닫기",
   closeCancelLabel: "취소",
 

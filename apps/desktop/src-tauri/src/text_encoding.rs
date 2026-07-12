@@ -1,9 +1,8 @@
-//! 열기 파이프라인의 디코드 단계 — M1 범위(UTF-8만).
-//! 파이프라인 순서의 단일 출처: .claude/docs/file-lifecycle.md#인코딩-정책.
+//! 열기 파이프라인의 디코드 단계 — 순서·규칙의 단일 출처:
+//! .claude/docs/file-lifecycle.md#인코딩-정책.
 //!
-//! M1은 저장이 원본 바이트를 재작성하게 되는 파일(비UTF-8)을 거부한다
-//! (→ .claude/docs/implementation-plan.md M1). UTF-16 변환·chardetng 감지는 M2에서
-//! 이 모듈의 거부 지점을 변환으로 바꿔 구현한다.
+//! 메모리·저장은 항상 UTF-8이다. 비UTF-8(UTF-16·레거시)은 여기서 UTF-8로 변환해 열고,
+//! 원본 인코딩 라벨을 보고한다 — 저장 재작성의 승인(배너)은 프론트 소관이다.
 
 use crate::error::AppError;
 
@@ -11,7 +10,7 @@ use crate::error::AppError;
 pub struct DecodedText {
     /// BOM이 제거된 UTF-8 본문.
     pub text: String,
-    /// 감지된 원본 인코딩(WHATWG 라벨). M1은 항상 "utf-8".
+    /// 감지된 원본 인코딩(WHATWG 라벨 소문자, "utf-8"|"euc-kr"|"utf-16le"…).
     pub encoding: String,
     /// 원본 BOM 유무 — 저장 시 그대로 유지한다(→ file-lifecycle.md#인코딩-정책).
     pub has_bom: bool,
@@ -28,8 +27,8 @@ const NULL_SCAN_LIMIT: usize = 512;
 /// 파일 바이트를 UTF-8 본문으로 디코드한다.
 ///
 /// `encoding_override`는 파이프라인 전 단계(BOM 스니핑 포함)를 건너뛰는 수동 재해석이다
-/// (→ rust-commands.md). M1은 "utf-8" 라벨만 수용하고, 그 외 라벨은 비UTF-8 거부와 동일하게
-/// `AppError::Encoding`을 반환한다(M2에서 encoding_rs 라벨 해석으로 확장).
+/// (→ rust-commands.md). WHATWG 라벨(encoding_rs 표준)을 받고, 알 수 없는 라벨은
+/// `AppError::Encoding`이다.
 pub fn decode_document(
     bytes: &[u8],
     encoding_override: Option<&str>,
@@ -52,52 +51,104 @@ pub fn decode_document(
             has_bom: true,
         });
     }
-    if bytes.starts_with(UTF16_LE_BOM) || bytes.starts_with(UTF16_BE_BOM) {
-        return Err(AppError::Encoding(
-            "UTF-16 파일은 아직 지원되지 않습니다(M2에서 지원 예정)".into(),
-        ));
+    if bytes.starts_with(UTF16_LE_BOM) {
+        // BOM이 인코딩을 확정했다 — 디코드 실패(대체 문자)는 감지 대상이 아니라 손상이다
+        // (UTF-8 BOM의 손상 판정과 같은 원칙).
+        return decode_utf16(&bytes[UTF16_LE_BOM.len()..], encoding_rs::UTF_16LE, true)
+            .ok_or_else(utf16_corrupt_error);
+    }
+    if bytes.starts_with(UTF16_BE_BOM) {
+        return decode_utf16(&bytes[UTF16_BE_BOM.len()..], encoding_rs::UTF_16BE, true)
+            .ok_or_else(utf16_corrupt_error);
     }
 
-    // 2단계: 널 바이트 검사(바이너리 판정) — BOM 없는 UTF-16도 여기서 걸린다.
-    check_null_bytes(bytes)?;
+    // 2단계: 널 바이트 검사(바이너리 판정) — BOM 없는 UTF-16도 여기서 판정한다.
+    match sniff_null_bytes(bytes)? {
+        Some(encoding) => {
+            // 디코드 검증(M2 확정) — 홀짝 일관성만의 판정은 관대해 바이너리를 깨진 텍스트로
+            // 열 수 있다. 판정된 UTF-16으로 디코드해 깨지면 바이너리로 거부한다.
+            decode_utf16(bytes, encoding, false)
+                .ok_or_else(|| AppError::Encoding("바이너리 파일은 열 수 없습니다".into()))
+        }
+        None => {
+            // 3단계: UTF-8 엄격 검증 — 대다수 파일이 여기서 끝난다.
+            if let Ok(text) = std::str::from_utf8(bytes) {
+                return Ok(DecodedText {
+                    text: text.to_owned(),
+                    encoding: "utf-8".into(),
+                    has_bom: false,
+                });
+            }
+            // 4단계: chardetng 감지 → encoding_rs 변환. 감지는 항상 추측을 반환하므로
+            // 이 단계는 실패하지 않는다 — 오판은 배너·재해석·원본 불변 안전망이 다룬다.
+            Ok(detect_and_convert(bytes))
+        }
+    }
+}
 
-    // 3단계: UTF-8 엄격 검증 — M1은 여기서 끝난다(4단계 chardetng 감지는 M2).
-    let text = validate_utf8(bytes)?;
-    Ok(DecodedText {
-        text,
-        encoding: "utf-8".into(),
-        has_bom: false,
+fn utf16_corrupt_error() -> AppError {
+    AppError::Encoding(
+        "UTF-16 BOM이 있지만 본문이 UTF-16이 아닙니다 — 파일이 손상된 것으로 보입니다".into(),
+    )
+}
+
+/// UTF-16 바이트를 UTF-8로 변환한다. 디코드가 대체 문자를 만들면(짝 없는 서로게이트·홀수
+/// 길이) None — 호출부가 손상/바이너리로 판정한다.
+fn decode_utf16(
+    bytes: &[u8],
+    encoding: &'static encoding_rs::Encoding,
+    has_bom: bool,
+) -> Option<DecodedText> {
+    let (text, had_errors) = encoding.decode_without_bom_handling(bytes);
+    if had_errors {
+        return None;
+    }
+    Some(DecodedText {
+        text: text.into_owned(),
+        encoding: encoding.name().to_ascii_lowercase(),
+        has_bom,
     })
+}
+
+/// 4단계 — chardetng로 감지하고 encoding_rs로 변환한다. UTF-8은 3단계에서 확정됐으므로
+/// 감지 후보에서 제외한다(allow_utf8=false). 디코드는 손실 허용(대체 문자) — 오판이어도
+/// 저장 전까지 원본이 불변이고 배너가 감지 결과를 보여 준다.
+fn detect_and_convert(bytes: &[u8]) -> DecodedText {
+    // ISO-2022-JP 감지 허용 — 크레이트가 경고하는 위험은 "스크립트가 도는 웹 페이지" 디코드
+    // 상황이고, norii는 로컬 문서를 열 뿐이며 프리뷰는 sanitize를 거친다(→ security.md).
+    let mut detector = chardetng::EncodingDetector::new(chardetng::Iso2022JpDetection::Allow);
+    detector.feed(bytes, true);
+    // UTF-8은 3단계 엄격 검증에서 이미 확정됐다 — 여기 온 바이트는 UTF-8이 아니므로 제외.
+    let encoding = detector.guess(None, chardetng::Utf8Detection::Deny);
+    let (text, _encoding_used, _had_errors) = encoding.decode(bytes);
+    DecodedText {
+        text: text.into_owned(),
+        encoding: encoding.name().to_ascii_lowercase(),
+        has_bom: false,
+    }
 }
 
 fn decode_with_override(bytes: &[u8], label: &str) -> Result<DecodedText, AppError> {
-    // WHATWG 라벨은 대소문자 무시로 비교한다(encoding_rs 표준과 동일).
-    if !label.eq_ignore_ascii_case("utf-8") && !label.eq_ignore_ascii_case("utf8") {
+    let Some(encoding) = encoding_rs::Encoding::for_label(label.as_bytes()) else {
         return Err(AppError::Encoding(format!(
-            "인코딩 재해석 '{label}'은 아직 지원되지 않습니다(M2에서 지원 예정)"
+            "알 수 없는 인코딩 라벨입니다: {label} (WHATWG 라벨을 사용하세요)"
         )));
-    }
-    // 재해석은 전체 바이트를 그대로 디코드한다 — BOM도 내용으로 노출된다(→ file-lifecycle.md).
-    let text = validate_utf8(bytes)?;
+    };
+    // 재해석은 전 단계(BOM 스니핑 포함)를 건너뛰고 전체 바이트를 그대로 디코드한다 —
+    // BOM도 내용으로 노출되고, 깨진 결과도 있는 그대로 보여 준다(사용자 명시 선택,
+    // → file-lifecycle.md#인코딩-정책 수동 재해석).
+    let (text, _had_errors) = encoding.decode_without_bom_handling(bytes);
     Ok(DecodedText {
-        text,
-        encoding: "utf-8".into(),
+        text: text.into_owned(),
+        encoding: encoding.name().to_ascii_lowercase(),
         has_bom: false,
     })
 }
 
-fn validate_utf8(bytes: &[u8]) -> Result<String, AppError> {
-    match std::str::from_utf8(bytes) {
-        Ok(text) => Ok(text.to_owned()),
-        Err(_) => Err(AppError::Encoding(
-            "UTF-8이 아닌 파일은 아직 지원되지 않습니다(M2에서 지원 예정)".into(),
-        )),
-    }
-}
-
-/// 앞 512바이트의 널 바이트를 검사한다. 홀수/짝수 인덱스에만 일관되게 있으면 BOM 없는
-/// UTF-16(LE/BE), 불규칙하면 바이너리다 — M1은 모두 거부한다(M2는 UTF-16을 변환으로 수용).
-fn check_null_bytes(bytes: &[u8]) -> Result<(), AppError> {
+/// 앞 512바이트의 널 바이트를 검사한다. 홀수 인덱스에만 일관되게 있으면 UTF-16 LE,
+/// 짝수 인덱스에만 일관되게 있으면 UTF-16 BE 후보(호출부가 디코드 검증), 불규칙하면
+/// 바이너리 거부, 없으면 None(다음 단계로).
+fn sniff_null_bytes(bytes: &[u8]) -> Result<Option<&'static encoding_rs::Encoding>, AppError> {
     let scan = &bytes[..bytes.len().min(NULL_SCAN_LIMIT)];
     let mut null_at_odd = false;
     let mut null_at_even = false;
@@ -111,16 +162,34 @@ fn check_null_bytes(bytes: &[u8]) -> Result<(), AppError> {
         }
     }
     match (null_at_even, null_at_odd) {
-        (false, false) => Ok(()),
-        (false, true) | (true, false) => Err(AppError::Encoding(
-            "BOM 없는 UTF-16으로 보이는 파일은 아직 지원되지 않습니다(M2에서 지원 예정)".into(),
-        )),
+        (false, false) => Ok(None),
+        // 상위 바이트(홀수 인덱스) 쪽이 0 = LE, 하위 바이트(짝수 인덱스) 쪽이 0 = BE.
+        (false, true) => Ok(Some(encoding_rs::UTF_16LE)),
+        (true, false) => Ok(Some(encoding_rs::UTF_16BE)),
         (true, true) => Err(AppError::Encoding("바이너리 파일은 열 수 없습니다".into())),
     }
 }
 
+/// 테스트 공용 표본 — 감지(chardetng)는 통계적이라 몇 바이트짜리 표본은 오판하므로,
+/// 현실적인 문장 길이의 EUC-KR 바이트를 여러 테스트가 공유한다.
+#[cfg(test)]
+pub(crate) mod test_support {
+    /// "노리는 가볍고 빠른 마크다운 에디터다.\n한글 문서를 안전하게 연다.\n"의 EUC-KR.
+    pub(crate) const EUC_KR_SAMPLE: &[u8] = &[
+        0xB3, 0xEB, 0xB8, 0xAE, 0xB4, 0xC2, 0x20, 0xB0, 0xA1, 0xBA, 0xB1, 0xB0, 0xED, 0x20, 0xBA,
+        0xFC, 0xB8, 0xA5, 0x20, 0xB8, 0xB6, 0xC5, 0xA9, 0xB4, 0xD9, 0xBF, 0xEE, 0x20, 0xBF, 0xA1,
+        0xB5, 0xF0, 0xC5, 0xCD, 0xB4, 0xD9, 0x2E, 0x0A, 0xC7, 0xD1, 0xB1, 0xDB, 0x20, 0xB9, 0xAE,
+        0xBC, 0xAD, 0xB8, 0xA6, 0x20, 0xBE, 0xC8, 0xC0, 0xFC, 0xC7, 0xCF, 0xB0, 0xD4, 0x20, 0xBF,
+        0xAC, 0xB4, 0xD9, 0x2E, 0x0A,
+    ];
+
+    pub(crate) const EUC_KR_SAMPLE_TEXT: &str =
+        "노리는 가볍고 빠른 마크다운 에디터다.\n한글 문서를 안전하게 연다.\n";
+}
+
 #[cfg(test)]
 mod tests {
+    use super::test_support::{EUC_KR_SAMPLE, EUC_KR_SAMPLE_TEXT};
     use super::*;
 
     // 집행: file-lifecycle.md#인코딩-정책 — 파이프라인 3단계(UTF-8 엄격 검증).
@@ -149,45 +218,75 @@ mod tests {
         assert!(decoded.has_bom);
     }
 
-    // 집행: implementation-plan.md M1 — 저장이 원본 바이트를 재작성하는 파일(비UTF-8)은 거부.
-    // 왜: M1에서 UTF-16을 열어 저장하면 무단으로 UTF-8 재작성이 일어난다(정규화 승인은 M2).
-    // 보장: UTF-16 BOM(LE/BE)은 AppError::Encoding으로 거부되고 파일은 건드리지 않는다.
-    // 경계: M2에서 이 케이스는 "변환 후 배너·승인"으로 바뀐다 — 그때 이 테스트를 갱신한다.
+    // 집행: file-lifecycle.md#인코딩-정책 — 파이프라인 1단계 "UTF-16도 UTF-8로 변환해 연다".
+    // 왜: BOM 있는 UTF-16은 확정 판별이 가능한데도 못 열면 파일 강건성(M2)이 무의미하다.
+    // 보장: UTF-16 LE/BE BOM 파일이 UTF-8 본문으로 변환되고, 원본 인코딩 라벨과
+    //       has_bom=true(저장 시 BOM 유지)가 보고된다.
+    // 경계: 저장이 실제로 UTF-8로 나가는 것은 fs_commands 왕복 테스트가 검증한다.
     #[test]
-    fn utf16_bom_파일은_m1에서_거부한다() {
-        let le = decode_document(&[0xFF, 0xFE, 0x6E, 0x00], None);
-        let be = decode_document(&[0xFE, 0xFF, 0x00, 0x6E], None);
-        assert!(matches!(le, Err(AppError::Encoding(_))));
-        assert!(matches!(be, Err(AppError::Encoding(_))));
+    fn utf16_bom_파일은_utf8로_변환해_열린다() {
+        let le = decode_document(&[0xFF, 0xFE, 0x6E, 0x00], None).unwrap();
+        assert_eq!(le.text, "n");
+        assert_eq!(le.encoding, "utf-16le");
+        assert!(le.has_bom);
+
+        let be = decode_document(&[0xFE, 0xFF, 0x00, 0x6E], None).unwrap();
+        assert_eq!(be.text, "n");
+        assert_eq!(be.encoding, "utf-16be");
+        assert!(be.has_bom);
     }
 
     // 집행: file-lifecycle.md#인코딩-정책 — 파이프라인 2단계(널 바이트 규칙, VS Code와 동일).
     // 왜: 바이너리를 텍스트로 열면 화면이 깨지고, 저장하면 파일이 파괴된다.
-    // 보장: 불규칙한 널 바이트는 바이너리로 판정해 거부한다. 홀수/짝수 일관 널은
-    //       BOM 없는 UTF-16으로 판정한다(M1은 거부, M2는 변환).
+    // 보장: 불규칙한 널 바이트는 바이너리로 거부하고, 홀수/짝수 일관 널은 BOM 없는
+    //       UTF-16으로 판정해 변환한다(M2).
     // 경계: 512바이트 이후에만 널이 있는 파일은 통과한다 — 스캔 범위는 앞 512바이트다.
     #[test]
-    fn 널_바이트_규칙_바이너리와_bom_없는_utf16을_거부한다() {
+    fn 널_바이트_규칙_바이너리는_거부하고_bom_없는_utf16은_변환한다() {
         // 불규칙 널 = 바이너리.
         let binary = decode_document(&[0x89, 0x50, 0x00, 0x00, 0x0D, 0x0A], None);
         assert!(matches!(binary, Err(AppError::Encoding(_))));
         // "no"의 UTF-16 LE (널이 홀수 인덱스에만).
-        let utf16le = decode_document(&[0x6E, 0x00, 0x6F, 0x00], None);
-        assert!(matches!(utf16le, Err(AppError::Encoding(_))));
+        let le = decode_document(&[0x6E, 0x00, 0x6F, 0x00], None).unwrap();
+        assert_eq!(le.text, "no");
+        assert_eq!(le.encoding, "utf-16le");
+        assert!(!le.has_bom);
         // "no"의 UTF-16 BE (널이 짝수 인덱스에만).
-        let utf16be = decode_document(&[0x00, 0x6E, 0x00, 0x6F], None);
-        assert!(matches!(utf16be, Err(AppError::Encoding(_))));
+        let be = decode_document(&[0x00, 0x6E, 0x00, 0x6F], None).unwrap();
+        assert_eq!(be.text, "no");
+        assert_eq!(be.encoding, "utf-16be");
+        assert!(!be.has_bom);
     }
 
-    // 집행: implementation-plan.md M1 — 비UTF-8 파일 거부(chardetng 변환은 M2).
-    // 왜: EUC-KR을 무단 UTF-8 재작성 없이 다루려면 M1은 열기 자체를 거부해야 한다.
-    // 보장: UTF-8 엄격 검증에 실패하는 바이트(EUC-KR "한글" 등)는 Encoding 에러다.
-    // 경계: M2에서 이 케이스는 chardetng 감지·변환으로 바뀐다.
+    // 집행: file-lifecycle.md#인코딩-정책 — 2단계 디코드 검증(M2 확정 열린 결정).
+    // 왜: 홀짝 일관성만의 판정은 관대해(널 1개도 UTF-16 분류) 바이너리를 깨진 텍스트로
+    //     열 수 있다 — 판정된 UTF-16으로 실제 디코드해 깨지면 텍스트가 아니다.
+    // 보장: 널 패턴은 UTF-16 LE로 일관되지만 디코드가 대체 문자를 만드는 바이트
+    //       (짝 없는 서로게이트·홀수 길이)는 바이너리로 거부된다.
+    // 경계: 모든 바이트 쌍이 유효 코드 유닛인 바이너리는 통과한다 — 그 오판은
+    //       배너 + 저장 전 원본 불변 안전망이 다룬다(문서화된 잔여 위험).
     #[test]
-    fn 비utf8_바이트는_m1에서_거부한다() {
-        // "한글"의 EUC-KR 인코딩.
-        let euc_kr = decode_document(&[0xC7, 0xD1, 0xB1, 0xDB], None);
-        assert!(matches!(euc_kr, Err(AppError::Encoding(_))));
+    fn 널_패턴이_utf16이어도_디코드가_깨지면_바이너리로_거부한다() {
+        // [0x41,0x00]='A', [0x34,0xD8]=짝 없는 상위 서로게이트(U+D834) — 널은 홀수 인덱스에만.
+        let lone_surrogate = decode_document(&[0x41, 0x00, 0x34, 0xD8], None);
+        assert!(matches!(lone_surrogate, Err(AppError::Encoding(_))));
+        // 홀수 길이 — 마지막 코드 유닛이 불완전하다. 널은 홀수 인덱스에만.
+        let odd_length = decode_document(&[0x41, 0x00, 0x42], None);
+        assert!(matches!(odd_length, Err(AppError::Encoding(_))));
+    }
+
+    // 집행: file-lifecycle.md#인코딩-정책 — 파이프라인 4단계(chardetng 감지 → encoding_rs 변환).
+    // 왜: EUC-KR 레거시 한글 문서를 여는 것이 M2 파일 강건성의 대표 시나리오다.
+    // 보장: UTF-8 검증에 실패한 바이트가 감지·변환되어 열리고, 감지된 인코딩 라벨이
+    //       보고된다(배너 안내의 근거). 이 단계는 실패하지 않는다 — 거부는 2단계뿐이다.
+    // 경계: 감지는 통계적이라 표본이 몇 글자면 오판할 수 있다 — 그 구제는
+    //       encoding_override(재해석)와 원본 불변 안전망 소관이다.
+    #[test]
+    fn 비utf8_바이트는_감지해_utf8로_변환한다() {
+        let decoded = decode_document(EUC_KR_SAMPLE, None).unwrap();
+        assert_eq!(decoded.text, EUC_KR_SAMPLE_TEXT);
+        assert_eq!(decoded.encoding, "euc-kr");
+        assert!(!decoded.has_bom);
     }
 
     // 집행: file-lifecycle.md#인코딩-정책 — BOM은 인코딩을 "확정"한다. 확정 후 검증 실패는
@@ -210,19 +309,25 @@ mod tests {
     }
 
     // 집행: rust-commands.md open_file — encoding_override는 파이프라인 전 단계를 건너뛴다.
-    // 왜: 수동 재해석("Reopen with Encoding")의 계약을 지금 고정한다(→ file-lifecycle.md).
-    // 보장: override="utf-8"은 BOM 스니핑 없이 전체 바이트를 디코드한다(BOM이 내용으로 노출).
-    //       M1이 지원하지 않는 라벨·알 수 없는 라벨은 AppError::Encoding이다.
-    // 경계: 비UTF-8 라벨의 실제 디코드는 M2에서 encoding_rs로 구현·검증한다.
+    //       라벨은 WHATWG(encoding_rs 표준), 알 수 없는 라벨은 AppError::Encoding.
+    // 왜: 수동 재해석("Reopen with Encoding")은 감지 오판의 유일한 구제 수단이다.
+    // 보장: override="utf-8"은 BOM 스니핑 없이 전체 바이트를 디코드하고(BOM이 내용으로 노출),
+    //       "euc-kr" 같은 유효 라벨은 그 인코딩으로 디코드되며, 미지 라벨은 거부된다.
+    // 경계: 재해석은 검증하지 않는다 — 깨진 결과도 있는 그대로 보여준다(사용자 명시 선택).
     #[test]
-    fn encoding_override_는_bom_스니핑을_건너뛴다() {
+    fn encoding_override_는_bom_스니핑을_건너뛰고_라벨로_디코드한다() {
         let mut bytes = vec![0xEF, 0xBB, 0xBF];
         bytes.extend_from_slice("x".as_bytes());
         let decoded = decode_document(&bytes, Some("utf-8")).unwrap();
         assert_eq!(decoded.text, "\u{FEFF}x");
         assert!(!decoded.has_bom);
 
-        let unknown = decode_document(b"x", Some("euc-kr"));
+        // "한글" EUC-KR 바이트를 명시 라벨로 재해석한다.
+        let euc_kr = decode_document(&[0xC7, 0xD1, 0xB1, 0xDB], Some("euc-kr")).unwrap();
+        assert_eq!(euc_kr.text, "한글");
+        assert_eq!(euc_kr.encoding, "euc-kr");
+
+        let unknown = decode_document(b"x", Some("no-such-encoding"));
         assert!(matches!(unknown, Err(AppError::Encoding(_))));
     }
 }

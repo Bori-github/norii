@@ -8,6 +8,7 @@ mod error;
 mod fs_commands;
 mod scope;
 mod text_encoding;
+mod watch;
 
 /// IPC 계약의 단일 조립 지점 — 커맨드 등록과 TS 바인딩 생성(specta_export 테스트)이
 /// 같은 목록을 쓰게 해, 등록 누락과 바인딩 드리프트를 함께 막는다(→ .claude/docs/testing.md).
@@ -15,6 +16,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
         fs_commands::open_file,
         fs_commands::save_file,
+        watch::watch_paths,
         dialog_commands::show_open_dialog,
         dialog_commands::show_save_dialog,
     ])
@@ -37,6 +39,8 @@ pub fn run() {
         )
         // 경로 스코프 상태 — 다이얼로그가 허용 루트를 채운다(→ rust-commands.md#권한-capabilities).
         .manage(scope::FileScope::default())
+        // 파일 감시 상태 — watch_paths가 선언적으로 교체한다(→ rust-commands.md).
+        .manage(watch::SharedWatcher::default())
         .invoke_handler(specta_builder().invoke_handler());
 
     // webdriver 피처를 켠 빌드에서만 임베디드 WebDriver 서버(127.0.0.1:4445)를 켠다 — 실앱 E2E용.

@@ -16,6 +16,8 @@ interface Tab {
   hasBom: boolean;              // 원본 BOM 유무 — 저장 시 그대로 유지
   eol: 'lf' | 'crlf';           // 판정된 EOL. 새 문서는 'lf' (→ file-lifecycle.md)
   eolMixed: boolean;            // 원본 개행이 판정 EOL과 불일치(혼합·CR-only) — 정규화 승인 대상 (→ file-lifecycle.md)
+  normalizationApproved: boolean; // 정규화 승인 여부 — 배너 승인·첫 수동 저장으로 true.
+                                  // 승인 전까지 자동 저장·종료 플러시가 이 탭을 건드리지 않는다 (→ file-lifecycle.md#자동-저장)
   lastSavedHash: string | null; // 열기/저장이 반환한 내용 해시 — 충돌 검사·에코 억제용 (→ file-lifecycle.md)
   // CM6 EditorState는 스토어 밖(에디터 인스턴스)에서 관리한다.
 }

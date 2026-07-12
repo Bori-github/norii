@@ -29,6 +29,8 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 // - 항상 UTF-8로 쓴다. has_bom=true면 BOM을 다시 붙인다(원본 유지)
 // - 경로를 canonicalize해 심볼릭 링크의 "실제 대상"에 저장한다(링크를 일반 파일로 교체하지 않음)
 // - 원자적 쓰기: 대상과 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename
+// - 대상 파일이 읽기 전용(쓰기 권한 없음)이면 쓰지 않고 AppError::Permission으로 거부
+//   (rename은 파일 잠금을 우회하므로 명시적으로 검사 → file-lifecycle.md)
 // - 디스크 내용 해시 ≠ expected_hash면 쓰지 않고 AppError::Conflict 반환
 //   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
 

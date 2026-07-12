@@ -20,6 +20,7 @@ export const ipc = {
     unwrapIpcResult(
       commands.saveFile(args.path, args.text, args.eol, args.hasBom, args.expectedHash),
     ),
+  watchPaths: (paths: string[]) => unwrapIpcResult(commands.watchPaths(paths)),
   showOpenDialog: () => unwrapIpcResult(commands.showOpenDialog()),
   showSaveDialog: (defaultName: string) => unwrapIpcResult(commands.showSaveDialog(defaultName)),
 };
