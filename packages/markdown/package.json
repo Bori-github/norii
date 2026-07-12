@@ -1,0 +1,25 @@
+{
+  "name": "@norii/markdown",
+  "version": "0.0.0",
+  "private": true,
+  "description": "프리뷰 파이프라인 — markdown-it 파싱 + DOMPurify sanitize + 스크롤 매핑. 플랫폼 무관 (→ .claude/docs/project-structure.md)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dompurify": "3.4.11",
+    "markdown-it": "14.3.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "14.1.2",
+    "@vitest/browser-playwright": "4.1.9",
+    "playwright": "1.57.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}

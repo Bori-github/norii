@@ -21,6 +21,9 @@ styled-system/
 # Test coverage (생성물)
 coverage/
 
+# Vitest Browser Mode 실패 스크린샷 (진단용 생성물)
+__screenshots__/
+
 # Logs
 *.log
 npm-debug.log*
