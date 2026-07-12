@@ -91,4 +91,4 @@ mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-dri
 
 ## 성공 기준
 
-현재 단계(M0)의 성공 기준은 [실제 구현 계획](implementation-plan.md#성공-기준-현재-단계)을 단일 출처로 둔다.
+성공 기준(상시 게이트)은 [실제 구현 계획](implementation-plan.md#성공-기준-상시-게이트)을 단일 출처로 둔다.
