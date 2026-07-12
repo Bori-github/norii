@@ -62,7 +62,6 @@ tauri-specta 2.0  rc 핀 → 정식 2.0 도달 시 재확인            (→ tec
 손실 변환 안내     감지 인코딩으로 못 읽는 바이트는 대체 문자(U+FFFD)로 변환되는데 배너가 손실 여부를 알리지 않음 — FileContent에 손실 플래그 추가 여부(계약 변경, 문서 선행) (→ file-lifecycle.md#인코딩-정책 · rust-commands.md)
 자동 저장 maxWait   순수 디바운스라 연속 타이핑 중에는 자동 저장이 무기한 연기됨 — 상한(예: 30초) 도입 여부. 정책 변경이므로 문서 선행 (→ file-lifecycle.md#자동-저장)
 트리 외부 변경    사이드바 트리의 외부 생성/삭제 반영 방식 — M4 (→ document-model.md)
-프리뷰 디바운스   구체 값은 M3에서 실측으로 확정              (→ preview-strategy.md)
 번들 크기 임계값  앱 번들 15MB 예산 확정. 프론트엔드 dist 하드 임계값 도입 여부는 열림 (→ platform-strategy.md)
 i18n 도입         현재 미도입(UI 문자열은 shared/config 상수). 다국어 필요 시 도입 (→ frontend-architecture.md)
 ```
