@@ -102,10 +102,6 @@ export default defineConfig({
 
             // 오버레이 뒤를 가리는 딤. 다크에서는 표면 대비가 낮아 더 짙게 깐다.
             scrim: { value: { base: "rgba(0, 0, 0, 0.4)", _dark: "rgba(0, 0, 0, 0.6)" } },
-
-            // 폐기 예정 — 컴포넌트가 새 이름으로 옮겨갈 때까지만 유지한다(다음 단위에서 제거).
-            surface: { value: { base: "{colors.white}", _dark: "{colors.neutral.600}" } },
-            overlay: { value: { base: "rgba(0, 0, 0, 0.4)", _dark: "rgba(0, 0, 0, 0.6)" } },
           },
 
           text: {

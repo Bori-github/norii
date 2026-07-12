@@ -5,36 +5,42 @@ import { useDocumentStore } from "@entities/document";
 import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 
+// 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
 const barClass = css({
   display: "flex",
   alignItems: "stretch",
   overflowX: "auto",
-  background: "bg.canvas",
+  background: "bg.chrome",
   borderBottom: "1px solid",
   borderColor: "border",
   minHeight: "9",
 });
 
+// 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
+// 활성/비활성은 글자 밝기가 아니라 배경으로 가른다: 활성 탭만 종이를 깐다(→ decisions/0004).
 const tabClass = css({
   display: "flex",
   alignItems: "center",
   gap: "1.5",
   paddingX: "3",
   fontSize: "sm",
-  color: "text.muted",
+  color: "text",
   cursor: "pointer",
   borderRight: "1px solid",
   borderColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _hover: { background: "bg.hover" },
   '&[aria-selected="true"]': {
-    background: "bg.surface",
-    color: "text",
+    background: "bg.paper",
+    // 액센트는 종이 위에서만 빛난다 — 활성 탭이 종이이므로 여기서만 dirty ●가 액센트가 된다.
+    "& [data-dirty]": { color: "accent" },
   },
 });
 
-const dirtyClass = css({ color: "accent", fontSize: "xs" });
+// 비활성 탭의 ●는 유리 위에 있으므로 본문색이다.
+const dirtyClass = css({ color: "text", fontSize: "xs" });
 
 const warningClass = css({ fontSize: "xs" });
 
@@ -42,10 +48,10 @@ const closeClass = css({
   border: "none",
   background: "transparent",
   cursor: "pointer",
-  color: "text.muted",
+  color: "text",
   borderRadius: "sm",
   paddingX: "1",
-  _hover: { color: "text", background: "bg.canvas" },
+  _hover: { background: "bg.hover" },
 });
 
 // 탭바 — 열린 문서 목록·dirty 표시(●)·닫기. 닫기 규칙(플러시·확인)은 features/save-file이 소유.
@@ -133,7 +139,7 @@ export function TabBar() {
             </span>
           )}
           {tab.isDirty && (
-            <span className={dirtyClass} aria-label={STRINGS.dirtyIndicatorLabel}>
+            <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
               ●
             </span>
           )}
