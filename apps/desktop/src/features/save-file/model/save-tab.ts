@@ -66,26 +66,37 @@ async function autosaveFlush(tabId: string): Promise<void> {
     tab.filePath === null ||
     !tab.isDirty ||
     isTabInConflict(tabId) ||
+    isTabFileMissing(tabId) ||
     needsNormalizationApproval(tab)
   ) {
     return;
   }
-  await saveTabNow(tabId);
+  // origin="auto" — 큐에서 실행되는 시점에 탭이 삭제 표시면 건너뛴다. 재확인(IPC) 대기 중
+  // 발화한 자동 저장이 표시가 켜진 "뒤에" 실행되는 경합에서 파일을 되살리지 않기 위한
+  // 실행 시점 판정이다(위 가드는 예약 시점이라 이 경합을 못 막는다 — 리뷰 교차 확인 치명).
+  await saveQueue.enqueue(tabId, () => performSave(tabId, { forceDialog: false, origin: "auto" }));
 }
 
-/** 즉시 저장(Cmd+S·자동 저장 플러시). Untitled는 다이얼로그로 경로를 확정한다. */
+/** 즉시 저장(Cmd+S·배너·닫기 플러시) — 명시적 저장. Untitled는 다이얼로그로 경로를 확정한다. */
 export function saveTabNow(tabId: string): Promise<SaveOutcome> {
-  return saveQueue.enqueue(tabId, () => performSave(tabId, { forceDialog: false }));
+  return saveQueue.enqueue(tabId, () =>
+    performSave(tabId, { forceDialog: false, origin: "explicit" }),
+  );
 }
 
 /** 다른 이름으로 저장(Cmd+Shift+S) — 항상 다이얼로그를 띄운다. */
 export function saveTabAs(tabId: string): Promise<SaveOutcome> {
-  return saveQueue.enqueue(tabId, () => performSave(tabId, { forceDialog: true }));
+  return saveQueue.enqueue(tabId, () =>
+    performSave(tabId, { forceDialog: true, origin: "explicit" }),
+  );
 }
+
+/** 저장 출처 — 삭제 표시된 탭의 재생성은 명시적 저장만 허용된다(→ file-lifecycle.md). */
+type SaveOrigin = "auto" | "explicit";
 
 async function performSave(
   tabId: string,
-  { forceDialog }: { forceDialog: boolean },
+  { forceDialog, origin }: { forceDialog: boolean; origin: SaveOrigin },
 ): Promise<SaveOutcome> {
   const tab = findTab(tabId);
   if (!tab) {
@@ -129,6 +140,11 @@ async function performSave(
     expectedHash = null;
   }
   if (isTabFileMissing(tabId)) {
+    if (origin === "auto") {
+      // 자동 저장은 삭제된 파일을 되살리지 않는다(→ file-lifecycle.md) — 재확인 대기 중
+      // 줄을 선 자동 저장이 표시가 켜진 뒤 실행되는 경합을 실행 시점에 차단한다.
+      return "skipped";
+    }
     // 파일이 디스크에서 사라졌다 — 낡은 해시로는 Conflict만 난다. 명시적 저장은
     // "새로 생성"이다(→ file-lifecycle.md#외부-변경-처리 file-removed).
     expectedHash = null;

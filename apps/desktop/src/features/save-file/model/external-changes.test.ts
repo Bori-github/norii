@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { saveFile, openFile, watchPaths } = vi.hoisted(() => ({
   saveFile: vi.fn(),
   openFile: vi.fn(),
-  watchPaths: vi.fn(async () => {}),
+  // 반환값은 "건너뛴 경로 수"(→ rust-commands.md watch_paths) — 기본은 완전 성립(0).
+  watchPaths: vi.fn(async () => 0),
 }));
 
 vi.mock("@shared/ipc", () => {
@@ -206,7 +207,9 @@ describe("handleFileRemoved", () => {
     vi.useFakeTimers();
     try {
       const id = openTab();
-      handleFileRemoved({ path: "/vault/doc.md" });
+      // 디스크 재확인 — 정말 없다.
+      openFile.mockRejectedValueOnce(new IpcError("notFound", "없음"));
+      await handleFileRemoved({ path: "/vault/doc.md" });
       expect(isTabFileMissing(id)).toBe(true);
 
       useDocumentStore.getState().setDirty(id, true);
@@ -221,7 +224,8 @@ describe("handleFileRemoved", () => {
   it("명시적 저장은 새로 생성하고(expectedHash=null) 삭제 표시를 해제한다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    handleFileRemoved({ path: "/vault/doc.md" });
+    openFile.mockRejectedValueOnce(new IpcError("notFound", "없음"));
+    await handleFileRemoved({ path: "/vault/doc.md" });
     saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
 
     await expect(saveTabNow(id)).resolves.toBe("saved");
@@ -232,13 +236,127 @@ describe("handleFileRemoved", () => {
 
   it("외부에서 파일이 되살아나면(file-changed) 삭제 표시를 해제한다", async () => {
     const id = openTab();
-    handleFileRemoved({ path: "/vault/doc.md" });
+    openFile.mockRejectedValueOnce(new IpcError("notFound", "없음"));
+    await handleFileRemoved({ path: "/vault/doc.md" });
     openFile.mockResolvedValueOnce(fileContent({ text: "# 되살아남\n", hash: "hash-3" }));
 
     await handleFileChanged({ path: "/vault/doc.md", mtime: 3_000, hash: "hash-3" });
 
     expect(isTabFileMissing(id)).toBe(false);
     expect(getTabText(id)).toBe("# 되살아남\n");
+  });
+
+  // 집행: file-lifecycle.md#외부-변경-처리 — 삭제 신호는 저장 큐로 지연하고, 처리 시점에
+  //       디스크를 재확인해 정말 없을 때만 삭제로 처리한다(낡은 신호는 버린다).
+  // 왜: "외부 삭제 → 내 저장이 재생성" 순서에서 유예(100ms)를 거친 삭제 신호가 저장
+  //     성공 뒤에 도착하면, 멀쩡한 파일에 삭제 표시 + 자동 저장 정지가 남는다(리뷰 P2).
+  // 보장: 재확인에서 파일이 존재하면 삭제 표시가 켜지지 않고 본문도 건드리지 않는다.
+  //       존재를 단정할 수 없는 실패(권한 등)도 표시하지 않는다 — 삭제는 확실할 때만.
+  // 경계: 실제 이벤트 타이밍(Rust 유예)은 Rust 테스트 소관 — 여기는 판정 규칙만.
+  it("낡은 삭제 신호는 디스크 재확인으로 버린다 (파일이 살아 있음)", async () => {
+    const id = openTab();
+    setTabText(id, "# 본문\n");
+    openFile.mockResolvedValueOnce(fileContent()); // 재확인 — 파일이 존재한다.
+
+    await handleFileRemoved({ path: "/vault/doc.md" });
+
+    expect(isTabFileMissing(id)).toBe(false);
+    expect(getTabText(id)).toBe("# 본문\n"); // 재확인은 본문을 건드리지 않는다.
+  });
+
+  it("존재를 단정할 수 없으면(권한 등) 삭제 표시를 켜지 않는다", async () => {
+    const id = openTab();
+    openFile.mockRejectedValueOnce(new IpcError("permission", "권한 없음"));
+
+    await handleFileRemoved({ path: "/vault/doc.md" });
+
+    expect(isTabFileMissing(id)).toBe(false);
+  });
+
+  // 집행: file-lifecycle.md#외부-변경-처리 — "file-removed도 같은 지연을 거치고"(저장 큐).
+  // 왜: 이 지연 코드를 지워도 통과하는 테스트뿐이었다(리뷰 치명 지적) — 지연이 빠지면
+  //     재확인이 재생성 저장보다 먼저 실행되어 고친 버그가 소리 없이 회귀한다.
+  // 보장: 진행 중 저장이 끝나기 전에는 재확인(openFile)이 나가지 않고, 저장이 파일을
+  //       재생성했으면 삭제 표시가 켜지지 않는다.
+  // 경계: 큐 직렬화 자체는 save-queue 테스트 소관 — 여기는 삭제 신호가 큐를 탄다는 사실.
+  it("삭제 신호의 재확인은 진행 중 저장이 끝난 뒤에 실행된다", async () => {
+    const id = openTab();
+    useDocumentStore.getState().setDirty(id, true);
+    let finishSave!: (result: { mtime: number; hash: string }) => void;
+    saveFile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishSave = resolve;
+      }),
+    );
+
+    const saving = saveTabNow(id); // 재생성 저장이 진행 중이다.
+    const removing = handleFileRemoved({ path: "/vault/doc.md" });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(openFile).not.toHaveBeenCalled(); // 큐 지연 — 저장 완료 전엔 재확인 금지.
+
+    openFile.mockResolvedValueOnce(fileContent({ hash: "hash-2" })); // 재확인: 파일이 존재.
+    finishSave({ mtime: 2_000, hash: "hash-2" });
+    await Promise.all([saving, removing]);
+
+    expect(openFile).toHaveBeenCalledTimes(1);
+    expect(isTabFileMissing(id)).toBe(false);
+  });
+
+  it("큐 대기 중 탭이 닫히면 재확인 없이 무시한다", async () => {
+    const id = openTab();
+    useDocumentStore.getState().setDirty(id, true);
+    let finishSave!: (result: { mtime: number; hash: string }) => void;
+    saveFile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishSave = resolve;
+      }),
+    );
+
+    const saving = saveTabNow(id);
+    const removing = handleFileRemoved({ path: "/vault/doc.md" });
+    useDocumentStore.getState().removeTab(id); // 큐 대기 중 탭이 닫혔다.
+    finishSave({ mtime: 2_000, hash: "hash-2" });
+    await Promise.all([saving, removing]);
+
+    expect(openFile).not.toHaveBeenCalled();
+    expect(useMissingFileStore.getState().missingTabIds).toHaveLength(0);
+  });
+
+  // 집행: file-lifecycle.md#외부-변경-처리 — "자동 저장이 조용히 되살리지 않는다"는 저장
+  //       실행 시점에 판정되어야 한다.
+  // 왜: 재확인(IPC) 대기 중 자동 저장 타이머가 발화하면 그 저장이 재확인 뒤에 줄을 서고,
+  //     재확인이 삭제 표시를 켠 뒤 실행되어 '새로 생성' 변환을 타 파일을 되살린다
+  //     (리뷰 교차 확인 치명 — 이 경합은 큐 직렬화 때문에 결정론적이다).
+  // 보장: 자동 저장 출신 저장은 실행 시점에 탭이 삭제 표시면 건너뛴다 — 파일이 재생성되지
+  //       않고 표시·정지가 유지된다. 재생성은 명시적 저장(Cmd+S·배너·닫기)만 한다.
+  // 경계: 명시적 저장의 재생성은 기존 테스트가 고정한다.
+  it("삭제 확인 대기 중 발화한 자동 저장은 파일을 되살리지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const id = openTab();
+      useDocumentStore.getState().setDirty(id, true);
+      // 재확인이 IPC 왕복을 기다리는 동안 자동 저장 타이머가 발화하는 순서를 재현한다.
+      let probeRejects!: () => void;
+      openFile.mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          probeRejects = () => reject(new IpcError("notFound", "없음"));
+        }),
+      );
+
+      const removing = handleFileRemoved({ path: "/vault/doc.md" }); // 재확인 대기 시작.
+      noteDocumentChanged(id);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS); // 자동 저장이 재확인 뒤에 줄을 선다.
+
+      probeRejects(); // 정말 삭제됨 — 표시가 켜지고, 이어서 줄 선 자동 저장이 실행된다.
+      await removing;
+      await vi.advanceTimersByTimeAsync(10); // 큐에 남은 자동 저장까지 소진.
+
+      expect(saveFile).not.toHaveBeenCalled(); // 자동 저장이 파일을 되살리면 안 된다.
+      expect(isTabFileMissing(id)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -285,5 +403,84 @@ describe("syncWatchedPaths", () => {
     await syncWatchedPaths(tabs); // 같은 집합 — 실패했으므로 건너뛰지 않고 재시도해야 한다.
 
     expect(watchPaths).toHaveBeenCalledTimes(2);
+  });
+
+  // 집행: rust-commands.md watch_paths(선언적 교체) — 재선언은 제출 순서대로 직렬화한다.
+  // 왜: 동시 IPC 두 개의 완료 순서가 뒤집히면 옛 목록이 최종본이 되고, 프론트 서명 캐시가
+  //     교정 재선언까지 막아 어긋난 채 고착된다(리뷰 P2).
+  // 보장: 앞 선언의 IPC가 끝나기 전에는 다음 선언이 나가지 않는다(순서 보존).
+  // 경계: Rust 쪽 교체의 원자성은 Rust 소관 — 여기는 호출 순서만.
+  // 집행: rust-commands.md watch_paths — 반환값(건너뛴 수) > 0이면 "선언 캐시를 무효화해
+  //       다음 탭 변화에서 재시도한다".
+  // 왜: 일시적 사유(볼륨 마운트 중 등)로 건너뛴 경로가 서명 캐시 탓에 영구 미감시로
+  //     고착된다(리뷰 P2 — 최악은 전부 건너뛰어 감시가 통째로 꺼진 채 성공으로 기억).
+  // 보장: skipped>0이면 같은 집합이라도 다음 호출이 재선언한다.
+  // 경계: Rust가 무엇을 왜 건너뛰는지는 Rust 테스트 소관.
+  it("일부가 건너뛰어지면(skipped>0) 같은 집합이라도 재시도한다", async () => {
+    openTab("/vault/a.md");
+    const tabs = useDocumentStore.getState().tabs;
+    watchPaths.mockResolvedValueOnce(1); // Rust가 1개를 건너뛰었다고 보고.
+
+    await syncWatchedPaths(tabs);
+    await syncWatchedPaths(tabs); // 같은 집합 — 부분 성립이었으므로 재시도해야 한다.
+
+    expect(watchPaths).toHaveBeenCalledTimes(2);
+  });
+
+  // 집행: rust-commands.md watch_paths(선언적 교체) — 최종 상태가 진실이다: 정체 중 쌓인
+  //       중간 목록은 보낼 필요가 없다.
+  // 왜: FIFO 체인은 중간 목록마다 감시 전체를 재구축하고, IPC 정체 시 대기 클로저가
+  //     스토어 변화마다 무한히 쌓인다(리뷰 성능 지적).
+  // 보장: 정체 중 제출된 여러 목록 중 최신본만 전송된다(중간 목록 생략).
+  // 경계: 순서 보존(아래 테스트)과 양립한다 — 보내는 것은 항상 제출 순서상 가장 나중 것.
+  it("정체 중 제출은 최신본만 전송된다 (중간 목록 생략)", async () => {
+    openTab("/vault/a.md");
+    const tabsA = useDocumentStore.getState().tabs;
+    openTab("/vault/b.md");
+    const tabsAB = useDocumentStore.getState().tabs;
+    openTab("/vault/c.md");
+    const tabsABC = useDocumentStore.getState().tabs;
+
+    let finishFirst!: () => void;
+    watchPaths.mockReturnValueOnce(
+      new Promise<number>((resolve) => {
+        finishFirst = () => resolve(0);
+      }),
+    );
+
+    const first = syncWatchedPaths(tabsA); // IPC 정체 시작.
+    const second = syncWatchedPaths(tabsAB); // 정체 중 제출 — 최신본에 밀려나야 한다.
+    const third = syncWatchedPaths(tabsABC);
+
+    finishFirst();
+    await Promise.all([first, second, third]);
+
+    expect(watchPaths).toHaveBeenCalledTimes(2); // A, 그리고 최신본 ABC — AB는 생략.
+    expect(watchPaths).toHaveBeenLastCalledWith(["/vault/a.md", "/vault/b.md", "/vault/c.md"]);
+  });
+
+  it("재선언은 앞 선언의 IPC가 끝난 뒤에만 나간다 (순서 보존)", async () => {
+    openTab("/vault/a.md");
+    const tabsA = useDocumentStore.getState().tabs;
+    openTab("/vault/b.md");
+    const tabsAB = useDocumentStore.getState().tabs;
+
+    let finishFirst!: () => void;
+    watchPaths.mockReturnValueOnce(
+      new Promise<number>((resolve) => {
+        finishFirst = () => resolve(0);
+      }),
+    );
+
+    const first = syncWatchedPaths(tabsA);
+    const second = syncWatchedPaths(tabsAB);
+    // 앞 IPC가 아직 진행 중 — 두 번째 선언은 나가면 안 된다.
+    await Promise.resolve();
+    expect(watchPaths).toHaveBeenCalledTimes(1);
+
+    finishFirst();
+    await Promise.all([first, second]);
+    expect(watchPaths).toHaveBeenCalledTimes(2);
+    expect(watchPaths).toHaveBeenLastCalledWith(["/vault/a.md", "/vault/b.md"]);
   });
 });
