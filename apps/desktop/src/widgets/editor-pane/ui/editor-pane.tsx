@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { notifyDocChanged, useDocumentStore } from "@entities/document";
 import { noteDocumentChanged } from "@features/save-file";
+import { publishScroll, subscribeScroll } from "@features/scroll-sync";
 import { STRINGS } from "@shared/config";
 
 import { createEditorController, type EditorController } from "../model/editor-controller";
@@ -65,9 +66,17 @@ export function EditorPane() {
         // 프리뷰 등 파생 뷰의 갱신 신호(→ entities/document의 문서 변경 신호).
         notifyDocChanged(tabId);
       },
+      // 스크롤 동기화 — 사용자 스크롤을 중계소로 발행한다(→ features/scroll-sync).
+      onScroll: (position) => publishScroll("editor", position),
     });
     controllerRef.current.showTab(activeTabId);
   }, [activeTabId]);
+
+  // 프리뷰발 동기화 신호를 받아 뷰포트를 따라 옮긴다.
+  useEffect(
+    () => subscribeScroll("editor", (position) => controllerRef.current?.applyScrollSync(position)),
+    [],
+  );
 
   useEffect(
     () => () => {

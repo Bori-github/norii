@@ -1,8 +1,10 @@
+import { useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 
 import { usePreviewHtml } from "../model/use-preview-html";
+import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
 
 // 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/0001).
 // 유리(투명 창)가 켜져 있으므로 bg.canvas를 쓰면 본문 뒤로 바탕화면이 비친다.
@@ -50,12 +52,15 @@ const paneClass = css({
 export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const html = usePreviewHtml(activeTabId);
+  const paneRef = useRef<HTMLDivElement>(null);
+  usePreviewScrollSync(paneRef, activeTabId);
 
   if (activeTabId === null) {
     return null;
   }
   return (
     <div
+      ref={paneRef}
       className={paneClass}
       data-testid="preview-pane"
       // sanitize를 거친 HTML만 온다(위 주석) — 원시 사용자 입력을 직접 넣지 않는다.
