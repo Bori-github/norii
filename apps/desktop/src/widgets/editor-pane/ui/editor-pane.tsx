@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 import { useShallow } from "zustand/react/shallow";
 
-import { useDocumentStore } from "@entities/document";
+import { notifyDocChanged, useDocumentStore } from "@entities/document";
 import { noteDocumentChanged } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 
@@ -62,6 +62,8 @@ export function EditorPane() {
       onDocChanged: (tabId) => {
         useDocumentStore.getState().setDirty(tabId, true);
         noteDocumentChanged(tabId);
+        // 프리뷰 등 파생 뷰의 갱신 신호(→ entities/document의 문서 변경 신호).
+        notifyDocChanged(tabId);
       },
     });
     controllerRef.current.showTab(activeTabId);

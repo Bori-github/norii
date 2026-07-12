@@ -15,6 +15,28 @@ const handles = new Map<string, TabTextHandle>();
 // 아직 에디터가 마운트되지 않은 탭의 초기 본문. 뷰 생성 시 여기서 읽는다.
 const initialTexts = new Map<string, string>();
 
+// 본문 변경 신호 — 본문이 스토어 밖에 살아 변경이 zustand로 흐르지 않으므로,
+// 프리뷰 같은 파생 뷰는 이 통로로 갱신 신호를 받는다(→ preview-strategy.md#디바운스).
+// 발행자는 에디터 위젯(타이핑)과 아래 setTabText(프로그램적 교체)다.
+type DocChangeListener = (tabId: string) => void;
+
+const docChangeListeners = new Set<DocChangeListener>();
+
+/** 본문 변경 구독. 반환값은 해제 함수. 통지 중복 억제는 구독자 책임(멱등 처리). */
+export function subscribeDocChanged(listener: DocChangeListener): () => void {
+  docChangeListeners.add(listener);
+  return () => {
+    docChangeListeners.delete(listener);
+  };
+}
+
+/** 본문이 바뀌었음을 구독자에게 알린다. */
+export function notifyDocChanged(tabId: string): void {
+  for (const listener of docChangeListeners) {
+    listener(tabId);
+  }
+}
+
 export function registerTabTextHandle(tabId: string, handle: TabTextHandle): void {
   handles.set(tabId, handle);
 }
@@ -37,9 +59,11 @@ export function setTabText(tabId: string, text: string): void {
   const handle = handles.get(tabId);
   if (handle) {
     handle.setText(text);
-    return;
+  } else {
+    initialTexts.set(tabId, text);
   }
-  initialTexts.set(tabId, text);
+  // 교체(충돌 해소·외부 리로드)도 변경이다 — 프리뷰가 낡은 본문을 보이지 않게 통지한다.
+  notifyDocChanged(tabId);
 }
 
 export function setInitialText(tabId: string, text: string): void {
@@ -60,4 +84,5 @@ export function clearTabText(tabId: string): void {
 export function resetTabTextRegistry(): void {
   handles.clear();
   initialTexts.clear();
+  docChangeListeners.clear();
 }

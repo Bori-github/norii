@@ -75,6 +75,12 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.0.3
         version: 6.0.3(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))
+      '@vitest/browser-playwright':
+        specifier: 4.1.9
+        version: 4.1.9(playwright@1.57.0)(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)
+      playwright:
+        specifier: 1.57.0
+        version: 1.57.0
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -2677,18 +2683,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright-core@1.61.1:
-    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
-    engines: {node: '>=18'}
-    hasBin: true
-
   playwright@1.57.0:
     resolution: {integrity: sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  playwright@1.61.1:
-    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -4459,20 +4455,6 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser-playwright@4.1.9(playwright@1.61.1)(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)':
-    dependencies:
-      '@vitest/browser': 4.1.9(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)
-      '@vitest/mocker': 4.1.9(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))
-      playwright: 1.61.1
-      tinyrainbow: 3.1.0
-      vitest: 4.1.9(@types/node@26.1.0)(@vitest/browser-playwright@4.1.9)(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))
-    transitivePeerDependencies:
-      - bufferutil
-      - msw
-      - utf-8-validate
-      - vite
-    optional: true
-
   '@vitest/browser@4.1.9(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)':
     dependencies:
       '@blazediff/core': 1.9.1
@@ -5927,21 +5909,11 @@ snapshots:
 
   playwright-core@1.57.0: {}
 
-  playwright-core@1.61.1:
-    optional: true
-
   playwright@1.57.0:
     dependencies:
       playwright-core: 1.57.0
     optionalDependencies:
       fsevents: 2.3.2
-
-  playwright@1.61.1:
-    dependencies:
-      playwright-core: 1.61.1
-    optionalDependencies:
-      fsevents: 2.3.2
-    optional: true
 
   pluralize@8.0.0: {}
 
@@ -6525,7 +6497,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.0
-      '@vitest/browser-playwright': 4.1.9(playwright@1.61.1)(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)
+      '@vitest/browser-playwright': 4.1.9(playwright@1.57.0)(vite@8.1.3(@types/node@26.1.0)(jiti@2.6.1))(vitest@4.1.9)
     transitivePeerDependencies:
       - msw
 
