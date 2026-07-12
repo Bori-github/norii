@@ -21,7 +21,10 @@ tauri-build = { version = "2", features = [] }
 webdriver = ["dep:tauri-plugin-webdriver"]
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# macos-private-api — 웹뷰의 투명 배경을 켠다. 이것 없이는 transparent가 조용히 무시되고
+# 창 뒤 vibrancy가 웹뷰에 가려 보이지 않는다. 대가로 App Store 배포를 포기했다
+# (→ .claude/docs/platform-strategy.md#배포-경로--app-store는-비목표).
+tauri = { version = "2", features = ["macos-private-api"] }
 # optional이라 webdriver 피처를 켤 때만 컴파일·링크된다 — 일반 개발·릴리스 빌드에는 포함되지 않는다.
 # (cfg(debug_assertions)는 의존성 선택에 지원되지 않아 릴리스에 새어 들어가므로 피처로 게이팅한다.)
 tauri-plugin-webdriver = { version = "0.2.1", optional = true }

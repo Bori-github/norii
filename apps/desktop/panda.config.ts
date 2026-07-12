@@ -19,6 +19,10 @@ export default defineConfig({
   conditions: {
     extend: {
       dark: '[data-theme="dark"] &',
+      // 창 유리가 켜졌는가 — "macOS인가"가 아니다. 유리를 끄면 macOS에서도 불투명 캔버스여야 한다
+      // (→ .claude/docs/design/window-chrome.md#웹-쪽-계약--캔버스만-갈라진다).
+      // dark 뒤에 정의해 두 조건이 겹칠 때 glass가 이긴다 — 유리가 켜지면 테마와 무관하게 투명이다.
+      glass: '[data-glass="on"] &',
     },
   },
 
@@ -81,8 +85,16 @@ export default defineConfig({
       semanticTokens: {
         colors: {
           bg: {
-            // 창 바닥. M5에서 유리가 켜지면 macOS에서 투명이 된다(→ design/window-chrome.md).
-            canvas: { value: { base: "{colors.gray.100}", _dark: "{colors.gray.950}" } },
+            // 창 바닥 — **플랫폼에 따라 갈라지는 유일한 토큰**이다.
+            // 유리가 켜지면 투명해져 창 뒤 OS 재질(vibrancy)이 그대로 비친다.
+            // 유리가 없으면(비-macOS·유리 미지원) 앱이 자기 배경을 깔아 인앱 글라스로 자연 후퇴한다.
+            canvas: {
+              value: {
+                base: "{colors.gray.100}",
+                _dark: "{colors.gray.950}",
+                _glass: "transparent",
+              },
+            },
 
             // 유리 위에 얹는 틴트. 알파는 대비 게이트가 정한 하한이다
             // — 라이트 0.525(바탕 48% 비침) · 다크 0.64(36% 비침).
