@@ -2,6 +2,7 @@
 export { isMac, isPrimaryModifier } from "./platform";
 export { logger } from "./logger";
 export {
+  AA_NON_TEXT,
   AA_TEXT,
   composite,
   contrastOnGlass,

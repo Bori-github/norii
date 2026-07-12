@@ -11,6 +11,9 @@ const BLACK: Rgb = [0, 0, 0];
 /** WCAG AA 본문 텍스트 최소 대비. */
 export const AA_TEXT = 4.5;
 
+/** WCAG AA 비텍스트(UI 표시·경계·아이콘) 최소 대비 — 커서·dirty ●·포커스 링이 여기 해당한다. */
+export const AA_NON_TEXT = 3;
+
 /** `#rgb` · `#rrggbb` · `rgba(r, g, b, a)` 를 채널과 알파로 파싱한다. */
 export function parseColor(value: string): { rgb: Rgb; alpha: number } {
   const rgba = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$/.exec(value);

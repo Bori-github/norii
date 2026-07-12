@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AA_TEXT, contrastOnGlass, contrastOnSolid } from "@shared/lib";
+import { AA_NON_TEXT, AA_TEXT, contrastOnGlass, contrastOnSolid } from "@shared/lib";
 
 import { resolveSemanticColors } from "./resolve-tokens";
 
@@ -20,10 +20,36 @@ describe.each(THEMES)("%s 테마 — 종이 위 글자", (theme) => {
   it.each([
     ["본문", "text"],
     ["흐린 글자", "textMuted"],
-    ["액센트", "accent"],
   ] as const)("%s는 종이 위에서 AA를 만족한다", (_label, key) => {
     const ratio = contrastOnSolid(colors[key], colors.bgPaper);
     expect(ratio).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+});
+
+// 액센트는 테마와 무관하게 한 색이다(브랜드가 테마마다 달라 보이지 않게 — decisions/0005).
+// 그 대가로 **글자에는 쓰지 않는다**: 흰 종이 위에서 AA를 넘으려면 휘도가 0.183 이하여야 하고
+// 어두운 종이 위에서 넘으려면 0.201 이상이어야 하는데, 두 조건은 동시에 만족될 수 없다.
+// 따라서 액센트는 표시(커서·dirty ●·포커스 링·강조 테두리)에만 쓰고, 비텍스트 기준(3:1)을 적용한다.
+describe("액센트 — 테마 공통 단일 값", () => {
+  it("두 테마의 액센트가 같은 색이다", () => {
+    expect(resolveSemanticColors("light").accent).toBe(resolveSemanticColors("dark").accent);
+  });
+
+  it.each(THEMES)("%s 테마의 종이 위에서 비텍스트 기준(3:1)을 만족한다", (theme) => {
+    const colors = resolveSemanticColors(theme);
+    expect(contrastOnSolid(colors.accent, colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  // 이 테스트가 실패한다면 액센트를 글자로 쓸 수 있다는 뜻이고, 그러면 위 금지 규칙의 근거가 사라진다.
+  // 즉 규칙과 팔레트가 어긋난 것이므로 둘 중 하나를 고쳐야 한다.
+  it("어느 한 테마에서는 글자 기준(AA)을 넘지 못한다 — 그래서 글자로 쓰지 않는다", () => {
+    const worst = Math.min(
+      ...THEMES.map((theme) => {
+        const colors = resolveSemanticColors(theme);
+        return contrastOnSolid(colors.accent, colors.bgPaper);
+      }),
+    );
+    expect(worst).toBeLessThan(AA_TEXT);
   });
 });
 

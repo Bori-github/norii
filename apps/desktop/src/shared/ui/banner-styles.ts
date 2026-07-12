@@ -18,17 +18,19 @@ export const bannerClass = css({
   whiteSpace: "pre-line",
 });
 
-// 종이 위이므로 액센트를 쓸 수 있다.
+// 액센트는 글자로 쓰지 않는다 — 테마 공통 단일 값이라 어느 한 테마에서 AA를 통과하지 못한다
+// (→ decisions/0005). 강조는 테두리와 굵기로 낸다.
 export const bannerActionClass = css({
   flexShrink: 0,
   paddingX: "2",
   paddingY: "1",
   border: "1px solid",
-  borderColor: "border",
+  borderColor: "accent",
   borderRadius: "sm",
   cursor: "pointer",
   background: "transparent",
-  color: "accent",
+  color: "text",
+  fontWeight: "medium",
   _hover: { background: "bg.hover" },
 });
 

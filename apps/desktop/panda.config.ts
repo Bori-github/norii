@@ -111,8 +111,11 @@ export default defineConfig({
             muted: { value: { base: "{colors.neutral.300}", _dark: "{colors.neutral.200}" } },
           },
 
-          // 액센트 — 종이 위에서만. 살아 있는 것(커서·활성 탭의 dirty ●·본문 마크업)에만 쓴다.
-          accent: { value: { base: "{colors.lime.300}", _dark: "{colors.lime.50}" } },
+          // 액센트 — 테마와 무관하게 한 색이다. 브랜드 색이 테마마다 달라 보이지 않게 하려는 결정이며,
+          // 그 대가로 **글자에는 쓰지 않는다**(→ decisions/0005). 살아 있는 것의 표시(커서·활성 탭의
+          // dirty ●·포커스 링·강조 테두리)에만 쓰므로 비텍스트 기준(3:1)이 적용된다.
+          // 두 종이 위에서 4.56:1(라이트) · 4.14:1(다크) — 라임 스케일에서 이 조건을 만족하는 유일한 단계다.
+          accent: { value: "{colors.lime.300}" },
 
           border: { value: { base: "rgba(17, 17, 19, 0.12)", _dark: "rgba(220, 219, 221, 0.12)" } },
         },

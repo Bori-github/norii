@@ -30,4 +30,5 @@ DESIGN.md를 읽으면 **무엇을 지켜야 하는지** 알 수 있고, ADR을 
 | [0001](0001-surface-role-and-material.md) | 표면은 역할과 재질, 두 축으로 정한다 | 확정 |
 | [0002](0002-glass-is-made-by-os.md) | 유리는 OS가 만든다 (App Store 포기) | 확정 |
 | [0003](0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다 | 확정 |
-| [0004](0004-lime-is-the-only-accent.md) | 액센트는 라임 하나, 보라는 브랜드 전용 | 확정 |
+| [0004](0004-lime-is-the-only-accent.md) | 액센트는 라임 하나, 보라는 브랜드 전용 | 확정 (일부 → 0005) |
+| [0005](0005-accent-is-never-text.md) | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다 | 확정 |

@@ -17,6 +17,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 - **글이 놓이는 면은 반투명하지 않다.** 오래 읽는 글자 뒤로는 아무것도 지나가지 않는다.
 - **크롬에 흐린 글자를 쓰지 않는다.** 유리 위 muted 글자를 읽히게 하려면 틴트가 사실상 불투명해져야 한다 — 유리를 켜고서 유리를 잃는다.
 - **크롬 위에 액센트를 두지 않는다.** 액센트는 종이 위에서만 빛난다. 결과적으로 "지금 쓰는 문서만 액센트를 갖는다".
+- **액센트를 글자로 쓰지 않는다.** 테마 공통 단일 값이라 어느 한 테마에서는 글자 기준을 넘지 못한다 — 표시(커서·● ·포커스 링·테두리)에만 쓴다.
 
 ## 표면 표
 
@@ -36,7 +37,9 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ## 색
 
-**앱 UI의 액센트는 라임 하나**다. 살아 있는 것(커서·활성 탭의 dirty ●·본문 마크업)에만 쓴다. 다크에서는 형광 그대로 빛나고, 라이트에서는 올리브로 내려앉는다 — 흰 종이 위 형광 라임은 물리적으로 쓸 수 없다. 컴포넌트는 `accent` 토큰 하나만 보고, 갈라지는 일은 시맨틱 토큰이 한다.
+**앱 UI의 액센트는 라임 하나**이고, **테마에 따라 갈리지 않는다** — 브랜드 색이 테마마다 달라 보이지 않게 하려는 결정이다.
+
+**액센트는 글자로 쓰지 않는다.** 하나의 색이 흰 종이와 어두운 종이 양쪽에서 글자 기준(4.5:1)을 넘는 것은 **수학적으로 불가능하다**(→ [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)). 그래서 액센트는 **살아 있는 것의 표시**에만 쓴다 — 커서 · 활성 탭의 dirty ● · 포커스 링 · 강조 테두리. 강조 버튼은 글자색이 아니라 테두리와 굵기로 강조한다.
 
 **브랜드 보라는 앱 UI에 쓰지 않는다** — 아이콘·런치 화면 같은 불투명 자리에만 남는다(→ [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)).
 
@@ -70,12 +73,13 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ## 결정 기록
 
-| #                                                                           | 결정                                   |
-| --------------------------------------------------------------------------- | -------------------------------------- |
-| [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)     | 표면은 역할과 재질, 두 축으로 정한다   |
-| [0002](.claude/docs/design/decisions/0002-glass-is-made-by-os.md)           | 유리는 OS가 만든다 (App Store 포기)    |
-| [0003](.claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다     |
-| [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | 액센트는 라임 하나, 보라는 브랜드 전용 |
+| #                                                                           | 결정                                               |
+| --------------------------------------------------------------------------- | -------------------------------------------------- |
+| [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)     | 표면은 역할과 재질, 두 축으로 정한다               |
+| [0002](.claude/docs/design/decisions/0002-glass-is-made-by-os.md)           | 유리는 OS가 만든다 (App Store 포기)                |
+| [0003](.claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다                 |
+| [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | 액센트는 라임 하나, 보라는 브랜드 전용             |
+| [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)          | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다 |
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.
 
