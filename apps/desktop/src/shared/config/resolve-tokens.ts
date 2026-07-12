@@ -12,6 +12,7 @@ export interface SemanticColors {
   bgChrome: string;
   text: string;
   textMuted: string;
+  textMark: string;
   accent: string;
 }
 
@@ -81,6 +82,7 @@ export function resolveSemanticColors(theme: Theme): SemanticColors {
     bgChrome: pick("bg.chrome"),
     text: pick("text.DEFAULT"),
     textMuted: pick("text.muted"),
+    textMark: pick("text.mark"),
     accent: pick("accent"),
   };
 }

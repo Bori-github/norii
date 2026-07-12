@@ -1,6 +1,7 @@
 import { createEditorState, createEditorView } from "@norii/editor";
 
 import { getInitialText, registerTabTextHandle, unregisterTabTextHandle } from "@entities/document";
+import { EDITOR_COLORS } from "@shared/config";
 
 // 탭별 편집 상태 관리 — CM6 EditorState는 스토어 밖에서 관리한다(→ document-model.md#상태-구조).
 // 뷰(EditorView)는 하나만 두고 탭 전환 시 상태를 갈아끼운다 — 탭 수만큼 DOM을 만들지 않는다.
@@ -37,6 +38,7 @@ export function createEditorController(options: Options): EditorController {
 
   function makeState(tabId: string, doc: string): EditorStateValue {
     return createEditorState({
+      colors: EDITOR_COLORS,
       doc,
       onDocChanged: () => options.onDocChanged(tabId),
     });
@@ -76,7 +78,7 @@ export function createEditorController(options: Options): EditorController {
       }
       const next = ensureState(tabId);
       if (!view) {
-        view = createEditorView({ parent: options.parent });
+        view = createEditorView({ parent: options.parent, colors: EDITOR_COLORS });
       }
       view.setState(next);
       activeTabId = tabId;

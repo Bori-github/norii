@@ -2,8 +2,11 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 import { noriiEditorExtensions } from "./extensions";
+import type { EditorColors } from "./theme";
 
 export interface CreateEditorStateOptions {
+  /** 에디터 색 — 앱의 디자인 토큰에서 온다. 테마 전환이 따라오도록 CSS 변수 참조를 넘긴다. */
+  colors: EditorColors;
   /** 초기 문서 내용. 생략하면 빈 문서. */
   doc?: string;
   /**
@@ -15,9 +18,9 @@ export interface CreateEditorStateOptions {
 }
 
 // 에디터 상태의 단일 생성 지점 — 확장 구성을 한곳에 모아 앱·위젯이 일관되게 소비한다.
-export function createEditorState(options: CreateEditorStateOptions = {}): EditorState {
+export function createEditorState(options: CreateEditorStateOptions): EditorState {
   const { onDocChanged } = options;
-  const extensions = [...noriiEditorExtensions()];
+  const extensions = [...noriiEditorExtensions(options.colors)];
   if (onDocChanged) {
     extensions.push(
       EditorView.updateListener.of((update) => {

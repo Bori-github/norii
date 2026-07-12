@@ -20,6 +20,7 @@ describe.each(THEMES)("%s 테마 — 종이 위 글자", (theme) => {
   it.each([
     ["본문", "text"],
     ["흐린 글자", "textMuted"],
+    ["마크다운 구문 마크", "textMark"],
   ] as const)("%s는 종이 위에서 AA를 만족한다", (_label, key) => {
     const ratio = contrastOnSolid(colors[key], colors.bgPaper);
     expect(ratio).toBeGreaterThanOrEqual(AA_TEXT);
