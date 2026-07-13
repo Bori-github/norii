@@ -13,7 +13,10 @@ const paneClass = css({
   minWidth: 0,
   overflowY: "auto",
   paddingX: "6",
-  paddingY: "4",
+  paddingTop: "4",
+  // 바닥 여백 — 에디터의 scrollPastEnd(마지막 줄을 상단까지)와 감각을 맞춘 큰 여백.
+  // 마지막 블록이 바닥에 붙지 않고, 문서의 끝이라는 신호가 된다(VS Code 프리뷰 관례).
+  paddingBottom: "70vh",
   borderLeftWidth: "1px",
   borderColor: "border",
   background: "bg.paper",
