@@ -74,6 +74,10 @@ export function usePreviewScrollSync(
     if (activeTabId === null || pane === null) {
       return;
     }
+    // 바닥 기억은 탭 경계를 넘지 않는다 — 이전 탭의 기억이 남으면 새 탭 프리뷰가
+    // 렌더 직후 바닥으로 점프할 수 있다(현재는 에디터의 탭 전환 리셋 신호가 우연한
+    // 순서로 덮어주지만, 순서에 기대지 않고 여기서 결정적으로 끊는다).
+    wasAtBottomRef.current = false;
     const echoGuard = createEchoGuard();
 
     const measured = (): BlockPositionCache => {

@@ -145,6 +145,35 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
     });
   });
 
+  it("탭을 전환하면 이전 탭의 '바닥 기억'이 새 탭 프리뷰를 바닥으로 끌어내리지 않는다", async () => {
+    // 바닥 고정의 기억(wasAtBottom)이 탭 경계를 넘어 남으면, A탭을 바닥에서 보다가
+    // B탭을 열자마자 B 프리뷰가 바닥으로 점프한다(에디터는 위) — 리뷰에서 발견된 결함.
+    const shortDoc = Array.from({ length: 40 }, (_, index) => `# ${index + 1}번째 제목`).join(
+      "\n\n",
+    );
+    const { editorScroller, previewPane } = await renderDocPage(shortDoc, "h1");
+
+    // A탭을 바닥까지 — 프리뷰가 바닥 기억을 갖게 한다.
+    editorScroller.scrollTop = editorScroller.scrollHeight;
+    await waitFor(() => {
+      const previewMax = previewPane.scrollHeight - previewPane.clientHeight;
+      expect(previewPane.scrollTop).toBeGreaterThanOrEqual(previewMax - 1);
+    });
+
+    // 더 긴 B탭을 연다(자동 활성화) — 프리뷰가 B의 내용으로 갈린다.
+    const tabB = useDocumentStore.getState().addUntitledTab();
+    setTabText(tabB, UNEVEN_DOC);
+    await waitFor(() => {
+      expect(previewPane.textContent).toContain("150번째 제목");
+    });
+
+    // 새 탭 프리뷰가 바닥으로 슬램되지 않았어야 한다.
+    await waitFor(() => {
+      const previewMax = previewPane.scrollHeight - previewPane.clientHeight;
+      expect(previewPane.scrollTop).toBeLessThan(previewMax - 100);
+    });
+  });
+
   it("동기화 후 위치가 안정된다 — 에코로 인한 무한 왕복이 없다", async () => {
     const { editorScroller, previewPane } = await renderLongDocPage();
 
