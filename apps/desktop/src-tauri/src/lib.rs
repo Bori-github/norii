@@ -8,6 +8,7 @@ mod error;
 mod fs_commands;
 mod scope;
 mod text_encoding;
+mod titlebar_drag;
 mod watch;
 mod window_glass;
 
@@ -52,10 +53,16 @@ pub fn run() {
     builder
         .setup(|app| {
             // 창 유리 — 투명 창의 뒤 배경을 OS가 흐린다(→ src/window_glass.rs).
+            // 그 위에 드래그 띠를 얹는다 — 오버레이 타이틀바에서 창을 끄는 유일한 길이다
+            // (→ src/titlebar_drag.rs).
             {
                 use tauri::Manager;
                 if let Some(window) = app.get_webview_window("main") {
                     window_glass::apply_window_glass(&window, window_glass::DEFAULT_BLUR_RADIUS);
+                    titlebar_drag::attach_titlebar_strip(
+                        &window,
+                        titlebar_drag::TITLEBAR_STRIP_HEIGHT,
+                    );
                 }
             }
 

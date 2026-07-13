@@ -7,9 +7,9 @@ import { STRINGS } from "@shared/config";
 
 // 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
 //
-// 타이틀바는 OS가 소유한다(titleBarStyle 기본값) — 창 드래그·더블클릭 최대화·신호등을 OS가 맡는다.
-// Overlay로 그 자리를 뺏으면 상단 색 단차는 사라지지만 **창을 끌 수 없게 된다**
-// (tauri#9503 — 웹뷰의 비동기 IPC로는 native performDrag에 이벤트를 못 넘긴다 → decisions/0002).
+// 유리가 켜지면 웹뷰가 창 맨 위까지 올라와 상단이 한 장이 된다(titleBarStyle: Overlay).
+// 그 위 28px는 네이티브 드래그 띠가 덮으므로(→ src-tauri/src/titlebar_drag.rs) 탭을 그 아래로
+// 내린다 — 침범하면 탭을 눌러도 클릭이 띠에 먹혀 창이 끌린다.
 const barClass = css({
   display: "flex",
   alignItems: "stretch",
@@ -18,6 +18,8 @@ const barClass = css({
   borderBottom: "1px solid",
   borderColor: "border",
   minHeight: "9",
+  // 띠 높이(28px)와 같아야 한다 — titlebar_drag.rs의 TITLEBAR_STRIP_HEIGHT가 단일 출처다.
+  _glass: { paddingTop: "28px" },
 });
 
 // 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
@@ -105,8 +107,21 @@ export function TabBar() {
     }
   }
 
+  // 문서가 없어도 탭바는 자리를 지킨다 — "새 탭" 하나가 서고, 그 내용이 빈 상태 안내다
+  // (→ document-model.md#빈-탭--탭바는-비지-않는다). 스토어에 빈 문서를 만들지는 않는다.
   if (tabs.length === 0) {
-    return null;
+    return (
+      <div
+        className={barClass}
+        role="tablist"
+        aria-label={STRINGS.tabListLabel}
+        data-testid="tab-bar"
+      >
+        <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
+          <span>{STRINGS.newTabTitle}</span>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -15,7 +15,8 @@
         "title": "norii",
         "width": 1024,
         "height": 768,
-        "transparent": true
+        "transparent": true,
+        "titleBarStyle": "Overlay"
       }
     ],
     "security": {

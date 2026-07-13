@@ -5,6 +5,9 @@ export const STRINGS = {
   untitledTitle: "Untitled",
   untitledDefaultFileName: "Untitled.md",
 
+  // 열린 문서가 없을 때 탭바가 지키는 자리(→ .claude/docs/document-model.md#빈-탭--탭바는-비지-않는다).
+  newTabTitle: "새 탭",
+
   emptyStateTitle: "열린 문서가 없습니다",
   emptyStateHint: "⌘N 새 문서 · ⌘O 파일 열기",
 
