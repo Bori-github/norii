@@ -2,6 +2,7 @@ import { type MouseEvent, useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
+import { openExternalLink } from "@features/open-link";
 import { STRINGS } from "@shared/config";
 
 import { usePreviewHtml } from "../model/use-preview-html";
@@ -88,13 +89,15 @@ const contentClass = css({
   marginX: "auto",
 });
 
-// 문서 속 링크로 웹뷰가 통째로 내비게이트되는 것을 차단한다 — OS 브라우저로 열기는
-// 열린 결정이다(→ preview-strategy.md의 링크 정책).
-function blockLinkNavigation(event: MouseEvent<HTMLDivElement>): void {
+// 링크 클릭 — 웹뷰 내비게이션은 **항상** 막는다(앱 창이 문서 속 URL로 이동하면 앱 UI가
+// 사라진다). 그중 안전한 스킴만 OS 기본 브라우저로 넘긴다(→ preview-strategy.md 링크 정책).
+function handleLinkClick(event: MouseEvent<HTMLDivElement>): void {
   const anchor = (event.target as Element).closest("a[href]");
-  if (anchor) {
-    event.preventDefault();
+  if (!anchor) {
+    return;
   }
+  event.preventDefault();
+  openExternalLink(anchor.getAttribute("href") ?? "");
 }
 
 // 프리뷰 패널 — 활성 탭의 마크다운을 분할로 렌더한다(→ preview-strategy.md).
@@ -117,7 +120,7 @@ export function PreviewPane() {
       ref={paneRef}
       className={paneClass}
       data-testid="preview-pane"
-      onClick={blockLinkNavigation}
+      onClick={handleLinkClick}
       tabIndex={0}
       role="region"
       aria-label={STRINGS.previewRegionLabel}

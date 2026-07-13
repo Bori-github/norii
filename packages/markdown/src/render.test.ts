@@ -87,6 +87,14 @@ describe("renderMarkdown — sanitize (필수)", () => {
     expect(viaRawHtml).toContain("클릭");
   });
 
+  it("file: 링크의 href를 제거한다 — 문서가 로컬 파일을 가리키지 못하게(→ security.md#4-외부-링크)", () => {
+    // 외부 링크 방어는 두 층이다: sanitize가 걷어내는 스킴(file: 등)과, 통과했더라도
+    // OS로 넘기지 않는 허용목록(features/open-link). 이 테스트는 앞 층을 고정한다.
+    const html = renderMarkdown('<a href="file:///etc/passwd">로컬 파일</a>');
+    expect(html).not.toContain("file:");
+    expect(html).toContain("로컬 파일");
+  });
+
   it("<style> 태그를 제거한다 — 문서 CSS가 앱 UI를 위장·은폐하지 못하게(→ preview-strategy.md DOMPurify 정책)", () => {
     const html = renderMarkdown("본문\n\n<style>body { display: none; }</style>");
     expect(html).not.toContain("<style");

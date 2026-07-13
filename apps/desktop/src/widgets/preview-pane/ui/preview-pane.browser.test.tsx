@@ -95,8 +95,16 @@ describe("PreviewPane", () => {
     expect(seen).not.toContain("2");
   });
 
-  it("링크 클릭은 웹뷰 내비게이션을 차단한다 — 앱이 문서 속 링크로 이동하지 않는다", async () => {
-    openTabWith("[외부 링크](https://example.com)");
+  // 웹뷰 내비게이션은 어떤 링크든 항상 막는다 — 앱 창이 문서 속 URL로 이동하면 앱 UI가
+  // 사라진다. 어떤 링크를 OS로 넘길지의 판정은 features/open-link 단위 테스트가 고정한다
+  // (여기서는 "웹뷰가 이동하지 않는다"만 확인).
+  // tel:은 sanitize는 통과하지만 우리 허용목록(http·https·mailto) 밖이라 무동작 대상이다 —
+  // sanitize와 허용목록이 서로 다른 층임을 보이는 사례다(file:은 sanitize가 이미 걷어낸다).
+  it.each([
+    ["허용 스킴", "[외부 링크](https://example.com)"],
+    ["허용목록 밖 스킴", '<a href="tel:+821012345678">전화</a>'],
+  ])("링크 클릭은 웹뷰 내비게이션을 차단한다 — %s", async (_label, source) => {
+    openTabWith(source);
     const { container } = render(<PreviewPane />);
     const anchor = await waitFor(() => {
       const found = container.querySelector("a[href]");
