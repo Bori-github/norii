@@ -14,7 +14,7 @@ export default defineConfig({
   // CSS 리셋 포함.
   preflight: true,
 
-  // 다크 테마는 루트의 data-theme 속성으로 켠다(상태 소유는 app 레이어 Zustand — M5 switch-theme).
+  // 다크 테마는 루트의 data-theme 속성으로 켠다(상태는 entities/theme이 소유하고 app이 적용한다).
   // 기본 _dark(prefers-color-scheme 미디어) 대신 속성 기반으로 바꿔 앱이 테마를 완전히 제어한다.
   conditions: {
     extend: {
@@ -86,7 +86,7 @@ export default defineConfig({
         colors: {
           bg: {
             // 창 바닥 — **플랫폼에 따라 갈라지는 유일한 토큰**이다.
-            // 유리가 켜지면 투명해져 창 뒤 OS 재질(vibrancy)이 그대로 비친다.
+            // 유리가 켜지면 투명해져 OS가 흐린 창 뒤 바탕화면이 그대로 비친다.
             // 유리가 없으면(비-macOS·유리 미지원) 앱이 자기 배경을 깔아 인앱 글라스로 자연 후퇴한다.
             canvas: {
               value: {
