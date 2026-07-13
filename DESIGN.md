@@ -81,6 +81,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 | [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | 액센트는 라임 하나, 보라는 브랜드 전용                      |
 | [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)          | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다          |
 | [0006](.claude/docs/design/decisions/0006-sage-palette.md)                  | 팔레트를 세이지로 바꾸고, 무채색을 세이지 쪽으로 편향시킨다 |
+| [0007](.claude/docs/design/decisions/0007-glass-is-opacity-not-color.md)    | 유리는 색이 아니라 불투명도다                               |
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.
 

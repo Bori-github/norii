@@ -96,10 +96,17 @@ export default defineConfig({
               },
             },
 
-            // 유리 위에 얹는 틴트. 알파는 대비 게이트가 정한 하한이다
-            // — 라이트 0.525(바탕 48% 비침) · 다크 0.64(36% 비침).
+            // 유리 위에 얹는 틴트 — **색이 아니라 불투명도만 얹는다.**
+            // 창 뒤 배경은 OS가 흐려 주므로(→ src-tauri/src/window_glass.rs) 우리가 할 일은
+            // 그 위에 순백/순흑을 얼마나 덮느냐뿐이다. 색을 섞으면 바탕화면이 물든다.
+            //
+            // 알파는 대비 게이트가 정한 하한이고, 설정 화면이 --norii-glass-opacity로 덮어쓴다
+            // (→ decisions/0007).
             chrome: {
-              value: { base: "rgba(245, 249, 243, 0.525)", _dark: "rgba(25, 27, 24, 0.64)" },
+              value: {
+                base: "rgba(255, 255, 255, var(--norii-glass-opacity, 0.55))",
+                _dark: "rgba(0, 0, 0, var(--norii-glass-opacity, 0.62))",
+              },
             },
 
             // 글이 놓이는 면. 항상 불투명 — 편집면·프리뷰면·활성 탭이 공유한다.
