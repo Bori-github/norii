@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createEchoGuard, publishScroll, resetScrollSync, subscribeScroll } from "./scroll-sync";
+import {
+  applyGuardedScrollTop,
+  createEchoGuard,
+  publishScroll,
+  resetScrollSync,
+  subscribeScroll,
+} from "./scroll-sync";
 
 // 집행: preview-strategy.md#스크롤-동기화 — 소스↔프리뷰 스크롤 연동.
 //
@@ -42,6 +48,49 @@ describe("스크롤 중계소 (publishScroll / subscribeScroll)", () => {
     resetScrollSync();
     publishScroll("editor", { line: 1, fraction: 0 });
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+function fakeTarget(scrollTop: number, scrollHeight = 1000, clientHeight = 400) {
+  return { scrollTop, scrollHeight, clientHeight };
+}
+
+// 집행: preview-strategy.md#스크롤-동기화 — 프로그램적 스크롤의 가드 짝 맞춤.
+// 왜: 목표값이 스크롤 가능 범위 밖이면 대입이 무효화되어 scroll 이벤트가 없다.
+//     그때 arm만 쌓이면 이후 진짜 사용자 스크롤이 삼켜져 동기화가 조용히 죽는다.
+// 보장: 목표는 [0, max]로 클램프되고, 실제로 움직일 때만 arm된다.
+// 경계: 실제 DOM/CM6 대상 연결은 위젯·통합 테스트가 다룬다.
+describe("applyGuardedScrollTop — 가드 짝 맞춤 적용", () => {
+  it("범위 밖 목표는 최대 스크롤로 클램프해 적용한다", () => {
+    const guard = createEchoGuard();
+    const target = fakeTarget(100);
+    applyGuardedScrollTop(guard, target, 99_999);
+    expect(target.scrollTop).toBe(600); // 1000 - 400
+    expect(guard.shouldIgnore()).toBe(true); // 움직였으므로 arm됨
+  });
+
+  it("이미 최대 위치인데 범위 밖 목표가 오면 arm하지 않는다 — 짝 어긋남 방지", () => {
+    const guard = createEchoGuard();
+    const target = fakeTarget(600);
+    applyGuardedScrollTop(guard, target, 99_999);
+    expect(target.scrollTop).toBe(600);
+    expect(guard.shouldIgnore()).toBe(false); // scroll 이벤트가 없을 것이므로 arm 금지
+  });
+
+  it("음수 목표는 0으로 클램프하고, 이미 0이면 arm하지 않는다", () => {
+    const guard = createEchoGuard();
+    const target = fakeTarget(0);
+    applyGuardedScrollTop(guard, target, -50);
+    expect(target.scrollTop).toBe(0);
+    expect(guard.shouldIgnore()).toBe(false);
+  });
+
+  it("허용 오차(1px) 미만의 이동은 적용하지 않는다", () => {
+    const guard = createEchoGuard();
+    const target = fakeTarget(100);
+    applyGuardedScrollTop(guard, target, 100.5);
+    expect(target.scrollTop).toBe(100);
+    expect(guard.shouldIgnore()).toBe(false);
   });
 });
 

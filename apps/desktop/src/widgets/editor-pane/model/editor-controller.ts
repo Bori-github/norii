@@ -1,7 +1,7 @@
 import { createEditorState, createEditorView, lineScrollTop, topVisibleLine } from "@norii/editor";
 
 import { getInitialText, registerTabTextHandle, unregisterTabTextHandle } from "@entities/document";
-import { createEchoGuard, type ScrollPosition } from "@features/scroll-sync";
+import { applyGuardedScrollTop, createEchoGuard, type ScrollPosition } from "@features/scroll-sync";
 import { EDITOR_COLORS } from "@shared/config";
 
 // 탭별 편집 상태 관리 — CM6 EditorState는 스토어 밖에서 관리한다(→ document-model.md#상태-구조).
@@ -116,13 +116,12 @@ export function createEditorController(options: Options): EditorController {
       if (!view) {
         return;
       }
-      const target = lineScrollTop(view, position.line, position.fraction);
-      // 이미 그 자리면 적용하지 않는다 — scroll 이벤트가 안 생겨 가드 짝이 어긋나는 것을 방지.
-      if (Math.abs(view.scrollDOM.scrollTop - target) < 1) {
-        return;
-      }
-      echoGuard.arm();
-      view.scrollDOM.scrollTop = target;
+      // 클램프·"이미 그 자리" 판정·arm 짝 맞춤은 공용 헬퍼가 보장한다(→ features/scroll-sync).
+      applyGuardedScrollTop(
+        echoGuard,
+        view.scrollDOM,
+        lineScrollTop(view, position.line, position.fraction),
+      );
     },
     destroy() {
       for (const tabId of states.keys()) {

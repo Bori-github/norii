@@ -2,7 +2,12 @@ import { type RefObject, useEffect } from "react";
 
 import { blockIndexForLine, collectLineBlocks, type LineBlock } from "@norii/markdown";
 
-import { createEchoGuard, publishScroll, subscribeScroll } from "@features/scroll-sync";
+import {
+  applyGuardedScrollTop,
+  createEchoGuard,
+  publishScroll,
+  subscribeScroll,
+} from "@features/scroll-sync";
 
 // 프리뷰 쪽 스크롤 동기화 — 라인 매핑 테이블(packages/markdown)로 "스크롤 위치 ↔ 소스
 // 라인"을 변환해 중계소와 주고받는다(→ preview-strategy.md#스크롤-동기화).
@@ -66,14 +71,14 @@ export function usePreviewScrollSync(
         return;
       }
       const lineSpan = block.endLine - block.line + 1;
-      const progress = Math.min((line - block.line + fraction) / lineSpan, 1);
-      const target = blockTopOf(pane, block.element) + block.element.offsetHeight * progress;
-      // 이미 그 자리면 적용하지 않는다 — scroll 이벤트가 안 생겨 가드 짝이 어긋나는 것을 방지.
-      if (Math.abs(pane.scrollTop - target) < 1) {
-        return;
-      }
-      echoGuard.arm();
-      pane.scrollTop = target;
+      // 진행률은 아래위 모두 클램프한다 — 하한이 없으면 음수 목표가 나올 수 있다.
+      const progress = Math.min(Math.max((line - block.line + fraction) / lineSpan, 0), 1);
+      // 클램프·"이미 그 자리" 판정·arm 짝 맞춤은 공용 헬퍼가 보장한다(→ features/scroll-sync).
+      applyGuardedScrollTop(
+        echoGuard,
+        pane,
+        blockTopOf(pane, block.element) + block.element.offsetHeight * progress,
+      );
     });
 
     return () => {

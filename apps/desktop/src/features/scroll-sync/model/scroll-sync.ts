@@ -68,3 +68,29 @@ export function createEchoGuard(): EchoGuard {
     },
   };
 }
+
+/** 스크롤 적용 대상의 최소 표면 — DOM 요소와 CM6 scrollDOM 모두 만족한다. */
+export interface ScrollTarget {
+  scrollTop: number;
+  readonly scrollHeight: number;
+  readonly clientHeight: number;
+}
+
+/** "이미 그 자리" 판정 허용 오차 — 이 미만이면 대입해도 scroll 이벤트가 없다고 본다. */
+export const SCROLL_APPLY_TOLERANCE_PX = 1;
+
+/**
+ * 프로그램적 스크롤을 에코 가드와 짝을 맞춰 적용한다.
+ * 목표값을 스크롤 가능 범위 [0, max]로 먼저 클램프한다 — 범위 밖 목표로 대입이
+ * 무효화되면 scroll 이벤트가 생기지 않아, arm만 쌓여 이후 진짜 사용자 스크롤이
+ * 삼켜진다(가드 짝 어긋남). 클램프 후에도 이동이 없으면 arm하지 않는다.
+ */
+export function applyGuardedScrollTop(guard: EchoGuard, target: ScrollTarget, top: number): void {
+  const maxTop = Math.max(0, target.scrollHeight - target.clientHeight);
+  const clamped = Math.min(Math.max(top, 0), maxTop);
+  if (Math.abs(target.scrollTop - clamped) < SCROLL_APPLY_TOLERANCE_PX) {
+    return;
+  }
+  guard.arm();
+  target.scrollTop = clamped;
+}
