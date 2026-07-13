@@ -18,6 +18,8 @@ const COLORS: EditorColors = {
   mark: "#336633",
   accent: "#568335",
   hover: "rgba(0, 0, 0, 0.06)",
+  selection: "rgba(86, 131, 53, 0.28)",
+  match: "rgba(86, 131, 53, 0.14)",
   border: "rgba(0, 0, 0, 0.12)",
 };
 

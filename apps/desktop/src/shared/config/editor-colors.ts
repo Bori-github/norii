@@ -15,5 +15,7 @@ export const EDITOR_COLORS: EditorColors = {
   mark: "var(--colors-text-mark)",
   accent: "var(--colors-accent)",
   hover: "var(--colors-bg-hover)",
+  selection: "var(--colors-bg-selection)",
+  match: "var(--colors-bg-match)",
   border: "var(--colors-border)",
 };

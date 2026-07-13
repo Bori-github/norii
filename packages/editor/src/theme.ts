@@ -19,8 +19,12 @@ export interface EditorColors {
   mark: string;
   /** 액센트 — 커서에만 쓴다. 글자에는 쓰지 않는다(→ decisions/0005). */
   accent: string;
-  /** 선택 영역·활성 줄 배경. */
+  /** 상태 배경 — 활성 줄·호버. **선택에는 쓰지 않는다**(같은 색이면 겹칠 때 선택이 사라진다). */
   hover: string;
+  /** 사용자가 고른 것 — 텍스트 선택, 검색 결과 중 지금 보고 있는 하나. hover 위에 겹쳐도 보여야 한다. */
+  selection: string;
+  /** 시스템이 찾은 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 물러난다. */
+  match: string;
   /** 경계선. */
   border: string;
 }
@@ -62,23 +66,25 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
       borderLeftColor: colors.accent,
       borderLeftWidth: "2px",
     },
+    // 선택은 활성 줄(hover)과 **다른 색**이어야 한다 — 같으면 커서가 있는 줄에서 선택이 사라진다.
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
-      backgroundColor: colors.hover,
+      backgroundColor: colors.selection,
     },
     // CM6 기본값은 옅은 파랑(#cceeff)이다 — 팔레트 밖 색이라 반드시 덮는다.
     ".cm-activeLine": {
       backgroundColor: colors.hover,
     },
     ".cm-selectionMatch": {
-      backgroundColor: colors.hover,
+      backgroundColor: colors.match,
       outline: `1px solid ${colors.border}`,
     },
     ".cm-searchMatch": {
-      backgroundColor: colors.hover,
+      backgroundColor: colors.match,
       outline: `1px solid ${colors.accent}`,
     },
+    // 여러 결과 중 지금 보고 있는 하나 — 고른 것과 같은 무게로 도드라진다.
     ".cm-searchMatch.cm-searchMatch-selected": {
-      backgroundColor: colors.hover,
+      backgroundColor: colors.selection,
       outline: `2px solid ${colors.accent}`,
     },
     // 검색 패널은 content 위에 놓인 크롬이다 — 뒤에 있는 것이 바탕화면이 아니라 글이므로
@@ -114,7 +120,7 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
       backgroundColor: colors.hover,
     },
     ".cm-matchingBracket, .cm-nonmatchingBracket": {
-      backgroundColor: colors.hover,
+      backgroundColor: colors.match,
       outline: `1px solid ${colors.border}`,
     },
   };

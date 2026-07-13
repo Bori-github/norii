@@ -16,6 +16,8 @@ const COLORS: EditorColors = {
   mark: "var(--mark)",
   accent: "var(--accent)",
   hover: "var(--hover)",
+  selection: "var(--selection)",
+  match: "var(--match)",
   border: "var(--border)",
 };
 
@@ -54,5 +56,33 @@ describe("noriiTheme", () => {
 
   it("구문 마크에 mark 색을 쓴다 — 액센트는 글자에 쓰지 않으므로", () => {
     expect(themeRules()).toContain("var(--mark)");
+  });
+
+  // 왜: 선택 영역과 활성 줄이 같은 색이면, 커서가 있는 줄에서 글자를 끌 때 **선택이 사라진다** —
+  //     두 배경이 겹쳐 구분이 없어지기 때문이다. 브라우저 기본 선택색(파랑)을 덮은 대가다.
+  // 보장: 겹쳐 놓이는 배경들이 서로 다른 토큰을 쓴다.
+  // 경계: "충분히 잘 보이는가"는 값의 문제이고 팔레트(panda.config.ts)가 소유한다.
+  //     여기서는 **자리마다 다른 토큰을 쓰는지**만 고정한다.
+  it("선택 영역은 활성 줄과 다른 색이다 — 겹쳐도 선택이 보이게", () => {
+    const spec = editorThemeSpec(COLORS);
+    const selection =
+      spec[
+        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection"
+      ];
+    const activeLine = spec[".cm-activeLine"];
+
+    expect(selection?.backgroundColor).toBe("var(--selection)");
+    expect(activeLine?.backgroundColor).toBe("var(--hover)");
+    expect(selection?.backgroundColor).not.toBe(activeLine?.backgroundColor);
+  });
+
+  it("검색 결과는 선택 영역과 다른 색이다 — 무엇이 찾은 것이고 무엇이 고른 것인지 갈리게", () => {
+    const spec = editorThemeSpec(COLORS);
+
+    expect(spec[".cm-searchMatch"]?.backgroundColor).toBe("var(--match)");
+    // 여러 결과 중 **지금 보고 있는 하나**는 선택과 같은 무게로 도드라진다.
+    expect(spec[".cm-searchMatch.cm-searchMatch-selected"]?.backgroundColor).toBe(
+      "var(--selection)",
+    );
   });
 });
