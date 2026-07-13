@@ -2,6 +2,9 @@
 // 향후 i18n 도입 시 이 모듈만 로케일 리소스로 교체한다
 // (→ .claude/docs/frontend-architecture.md#ui-문자열과-i18n-현재-미도입).
 export const STRINGS = {
+  // 창 상단 띠에 우리가 그리는 앱 이름 — OS 타이틀 텍스트는 끈다(→ design/window-chrome.md).
+  appName: "norii",
+
   untitledTitle: "Untitled",
   untitledDefaultFileName: "Untitled.md",
 

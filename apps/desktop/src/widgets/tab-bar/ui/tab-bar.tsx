@@ -19,7 +19,30 @@ const barClass = css({
   borderColor: "border",
   minHeight: "9",
   // 띠 높이(28px)와 같아야 한다 — titlebar_drag.rs의 TITLEBAR_STRIP_HEIGHT가 단일 출처다.
-  _glass: { paddingTop: "28px" },
+  _glass: { position: "relative", paddingTop: "28px" },
+});
+
+// 앱 이름 — **우리가 그린다.** OS 타이틀 텍스트를 켜 두면 그 글자가 놓인 자리는 OS 뷰의 것이라
+// 드래그 띠보다 위에 있고, 이름 위를 잡으면 창이 끌리지 않는다(실측). 그래서 OS 이름을 끄고
+// (hiddenTitle) 같은 자리에 우리가 그린다 — 띠는 투명하므로 이 글자가 그대로 비쳐 보이고,
+// 클릭은 띠가 받아 창이 끌린다(→ design/window-chrome.md#계약--드래그-띠).
+const appNameClass = css({
+  display: "none",
+  _glass: {
+    display: "flex",
+    position: "absolute",
+    insetInline: 0,
+    top: 0,
+    height: "28px",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "sm",
+    fontWeight: "medium",
+    color: "text",
+    // 글자는 보이기만 한다 — 마우스는 위에 얹힌 네이티브 띠가 받는다.
+    pointerEvents: "none",
+    userSelect: "none",
+  },
 });
 
 // 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
@@ -117,6 +140,9 @@ export function TabBar() {
         aria-label={STRINGS.tabListLabel}
         data-testid="tab-bar"
       >
+        <span className={appNameClass} aria-hidden="true" data-testid="app-name">
+          {STRINGS.appName}
+        </span>
         <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
           <span>{STRINGS.newTabTitle}</span>
         </div>
@@ -132,6 +158,9 @@ export function TabBar() {
       aria-label={STRINGS.tabListLabel}
       data-testid="tab-bar"
     >
+      <span className={appNameClass} aria-hidden="true" data-testid="app-name">
+        {STRINGS.appName}
+      </span>
       {tabs.map((tab) => (
         <div
           key={tab.id}

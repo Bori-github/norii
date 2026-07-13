@@ -16,7 +16,8 @@
         "width": 1024,
         "height": 768,
         "transparent": true,
-        "titleBarStyle": "Overlay"
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {
