@@ -20,7 +20,7 @@ app → pages → widgets → features → entities → shared
 | `pages/` | 화면(스크린) 단위 조합. 데이터 페칭·에러 바운더리 포함 가능 | `editor/`(메인 워크스페이스), `settings/`(후) |
 | `widgets/` | 독립적으로 완결된 큰 UI 블록 (여러 곳에서 재사용되거나 페이지가 여러 독립 블록으로 구성될 때) | `sidebar/`(파일 트리), `tab-bar/`, `editor-pane/`, `preview-pane/`, `status-bar/` |
 | `features/` | 비즈니스 가치를 가진 사용자 상호작용 (여러 페이지에서 재사용되는 게 좋은 지표) | `open-file/`, `save-file/`, `tab-management/`, `toggle-fold/`, `scroll-sync/`, `switch-theme/`, `reload-on-external-change/` |
-| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 | `document/`(탭·dirty 상태), `file-tree/`, `workspace/`, `settings/` |
+| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 | `document/`(탭·dirty 상태), `theme/`(테마 의도·해석), `file-tree/`, `workspace/`, `settings/` |
 | `shared/` | 외부 시스템·라이브러리·환경과의 연결 기반. **슬라이스 없음, 세그먼트만** | `ipc/`(Tauri 커맨드 래퍼), `ui/`, `lib/`, `config/`, `types/` |
 
 ## 슬라이스와 세그먼트

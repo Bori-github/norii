@@ -12,7 +12,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 > **OS 유리(창 뒤 흐림)는 "창 가장자리에 닿아 있고, 그 뒤가 바탕화면인 표면"에만 쓴다. 그 외에는 전부 불투명하다.**
 
-여기서 따라오는 세 가지 금지 — 셋 다 취향이 아니라 [접근성 기준](#접근성-기준)의 계산 결과다.
+여기서 따라오는 네 가지 금지 — 넷 다 취향이 아니라 [접근성 기준](#접근성-기준)의 계산 결과다.
 
 - **글이 놓이는 면은 반투명하지 않다.** 오래 읽는 글자 뒤로는 아무것도 지나가지 않는다.
 - **크롬에 흐린 글자를 쓰지 않는다.** 유리 위 muted 글자를 읽히게 하려면 틴트가 사실상 불투명해져야 한다 — 유리를 켜고서 유리를 잃는다.
@@ -73,15 +73,15 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ## 결정 기록
 
-| #                                                                           | 결정                                                        |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)     | 표면은 역할과 재질, 두 축으로 정한다                        |
-| [0002](.claude/docs/design/decisions/0002-glass-is-made-by-os.md)           | 유리는 OS가 만든다 (App Store 포기)                         |
-| [0003](.claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다                          |
-| [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | 액센트는 라임 하나, 보라는 브랜드 전용                      |
-| [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)          | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다          |
-| [0006](.claude/docs/design/decisions/0006-sage-palette.md)                  | 팔레트를 세이지로 바꾸고, 무채색을 세이지 쪽으로 편향시킨다 |
-| [0007](.claude/docs/design/decisions/0007-glass-is-opacity-not-color.md)    | 유리는 색이 아니라 불투명도다                               |
+| #                                                                           | 결정                                                              |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)     | 표면은 역할과 재질, 두 축으로 정한다                              |
+| [0002](.claude/docs/design/decisions/0002-glass-is-made-by-os.md)           | 유리는 OS가 만든다 (App Store 포기)                               |
+| [0003](.claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다                                |
+| [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | ~~액센트는 라임 하나, 보라는 브랜드 전용~~ (대체됨 → 0005 · 0006) |
+| [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)          | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다                |
+| [0006](.claude/docs/design/decisions/0006-sage-palette.md)                  | 팔레트를 세이지로 바꾸고, 무채색을 세이지 쪽으로 편향시킨다       |
+| [0007](.claude/docs/design/decisions/0007-glass-is-opacity-not-color.md)    | 유리는 색이 아니라 불투명도다                                     |
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.
 

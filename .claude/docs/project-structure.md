@@ -40,14 +40,14 @@ norii/
   apps/
     desktop/                 Tauri 데스크탑 앱
       src/                   React 프론트엔드 — FSD 레이어 (→ frontend-architecture.md)
-        app/                 Provider·전역 스토어·테마·레이아웃·Tauri 부트스트랩
+        app/                 Provider·레이아웃·부트스트랩(테마/유리 표식 적용·전역 단축키·종료 방어)
         pages/               화면 조합 (editor, settings…)
-        widgets/             완결 UI 블록 (sidebar·tab-bar·editor-pane·preview-pane)
-        features/            사용자 상호작용 (open-file·save-file·toggle-fold…)
-        entities/            도메인 모델·상태 (document·file-tree·workspace)
+        widgets/             완결 UI 블록 (sidebar·tab-bar·editor-pane·preview-pane·status-bar)
+        features/            사용자 상호작용 (open-file·save-file·switch-theme·toggle-fold…)
+        entities/            도메인 모델·상태 (document·theme·file-tree·workspace)
         shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types)
       src-tauri/             Rust 백엔드
-        src/                 커맨드·파일 I/O·감시 구현
+        src/                 커맨드·파일 I/O·감시 · 창 유리·드래그 띠 (→ design/window-chrome.md)
         Cargo.toml           (webdriver 피처로 tauri-plugin-webdriver 선택 포함 → testing.md)
         tauri.conf.json
         capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)

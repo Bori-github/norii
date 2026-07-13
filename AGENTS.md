@@ -24,7 +24,7 @@ norii는 가볍고 빠른 로컬 우선(local-first) 마크다운 **소스 뷰**
 - [디자인 규칙(불변식 · 표면 표 · 접근성)](DESIGN.md)
 - [디자인 결정 기록(ADR)](.claude/docs/design/decisions/README.md)
 - [디자인 시스템(Panda CSS)](.claude/docs/design/design-system.md)
-- [창 표면 계약(투명 · vibrancy · 폴백)](.claude/docs/design/window-chrome.md)
+- [창 표면 계약(투명 창 · 창 뒤 흐림 · 폴백)](.claude/docs/design/window-chrome.md)
 - [문서 모델(다중 탭 + 파일 트리)](.claude/docs/document-model.md)
 - [Rust 커맨드 계약(파일 I/O · IPC 경계)](.claude/docs/rust-commands.md)
 - [에디터 전략(CodeMirror 6 · 하이브리드 접기)](.claude/docs/editor-strategy.md)
