@@ -42,6 +42,8 @@ M6  → platform-strategy.md
 접힘 상태 영속화  사이드카 도입 시점                     (→ editor-strategy.md, non-goals.md)
 Mermaid 번들      무거운 mermaid를 lazy-load로 <15MB 목표 내 흡수 가능한지 실측 (→ preview-strategy.md)
 테마 커스터마이징 프리셋 토큰 vs 사용자 커스텀 깊이     (→ design/design-system.md)
+유리 설정 노출    불투명도(--norii-glass-opacity)·흐림 반경(DEFAULT_BLUR_RADIUS)을 설정 화면에 어떻게 노출할지 — 슬라이더 최솟값은 대비 게이트가 정한 하한과 같아야 한다. M5 설정 영속화와 함께 확정 (→ design/decisions/0007-glass-is-opacity-not-color.md · design/window-chrome.md)
+타이포 스케일     글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정 시점. M5 (→ design/design-system.md)
 탭 ⚠ 배지 색    M2가 추가한 충돌·삭제 배지는 유리(탭바) 위에 있다 — 지금은 본문색 상속. 상태색을 쓰려면 유리 위 대비를 다시 계산해야 한다 (→ design/decisions/0004-lime-is-the-only-accent.md)
 떠 있는 면 흐림   투명 창에서 backdrop-filter가 동작하지 않는다는 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ design/decisions/0002-glass-is-made-by-os.md)
 한글 고정폭 폰트  표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB) 필요 — 15MB 예산과 함께 판단 (→ design/design-system.md#글자액센트-토큰)
