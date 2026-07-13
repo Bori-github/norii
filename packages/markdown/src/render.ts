@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
 
 import { sourceLinePlugin } from "./line-map";
+import { mermaidFencePlugin } from "./mermaid";
 
 // 프리뷰 파이프라인 — 소스 텍스트 → markdown-it(GFM) → DOMPurify sanitize → HTML 문자열.
 // DOM 삽입은 소비 측(apps/desktop)이 담당한다(→ .claude/docs/preview-strategy.md).
@@ -48,7 +49,10 @@ function taskListPlugin(md: MarkdownIt): void {
 
 // html: 원시 HTML 통과(<details> 등) — 위험분은 아래 sanitize가 제거한다.
 // linkify: GFM 오토링크. 테이블·취소선은 markdown-it 기본 프리셋에 포함.
-const md = new MarkdownIt({ html: true, linkify: true }).use(taskListPlugin).use(sourceLinePlugin);
+const md = new MarkdownIt({ html: true, linkify: true })
+  .use(taskListPlugin)
+  .use(sourceLinePlugin)
+  .use(mermaidFencePlugin);
 
 // <style>은 기본 허용이지만 문서 CSS가 프리뷰 밖 앱 UI를 위장·은폐할 수 있어 차단한다
 // (→ preview-strategy.md#sanitize는-필수다의 DOMPurify 정책).
