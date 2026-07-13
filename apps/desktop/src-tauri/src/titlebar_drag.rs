@@ -16,8 +16,9 @@ pub const TITLEBAR_STRIP_HEIGHT: f64 = 28.0;
 #[cfg(target_os = "macos")]
 mod platform {
     use objc2::encode::{Encode, Encoding};
-    use objc2::runtime::AnyObject;
-    use objc2::{class, msg_send};
+    use objc2::rc::Retained;
+    use objc2::runtime::{AnyObject, NSObject};
+    use objc2::{class, msg_send, MainThreadMarker};
 
     // CoreGraphics 기하 타입 — 프레임을 넘기려면 인코딩을 알려야 한다.
     #[repr(C)]
@@ -69,9 +70,15 @@ mod platform {
         if ns_window.is_null() {
             return;
         }
+        // AppKit은 메인 스레드 전용이다 — 뷰를 만들고 계층에 꽂는 일은 특히 그렇다.
+        if MainThreadMarker::new().is_none() {
+            log::error!("드래그 띠는 메인 스레드에서만 얹을 수 있습니다");
+            return;
+        }
 
-        // SAFETY: Tauri가 넘겨준 유효한 NSWindow 포인터다. 아래 호출은 모두 AppKit의 공개 API이며,
-        // 새로 만든 NSView의 소유권은 addSubview:가 가져간다(뷰 계층이 유지한다).
+        // SAFETY: Tauri가 넘겨준 유효한 NSWindow 포인터이고 메인 스레드다. 아래 호출은 모두 AppKit의
+        // 공개 API다. alloc/init이 돌려주는 +1 소유권은 Retained가 받아 두었다가, addSubview:가 자기
+        // 몫으로 retain한 뒤 이 함수를 벗어나며 놓는다 — 뷰는 계층이 유지하고 누수는 없다.
         unsafe {
             let window: &AnyObject = &*ns_window.cast::<AnyObject>();
 
@@ -97,16 +104,16 @@ mod platform {
                 },
             };
             let strip: *mut AnyObject = msg_send![strip, initWithFrame: frame];
-            if strip.is_null() {
+            let Some(strip) = Retained::from_raw(strip.cast::<NSObject>()) else {
                 return;
-            }
+            };
             let _: () = msg_send![
-                strip,
+                &*strip,
                 setAutoresizingMask: NS_VIEW_WIDTH_SIZABLE | NS_VIEW_MIN_Y_MARGIN
             ];
             let _: () = msg_send![
                 content,
-                addSubview: strip,
+                addSubview: &*strip,
                 positioned: NS_WINDOW_ABOVE,
                 relativeTo: std::ptr::null::<AnyObject>()
             ];

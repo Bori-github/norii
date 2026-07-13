@@ -60,7 +60,8 @@
 | `sha2`                  | 0.10.9  | 내용 해시(SHA-256) — 저장 충돌 검사·에코 억제 기준값 (→ [파일 생명주기 정책](file-lifecycle.md)) |
 | `tempfile`              | 3.24.0  | 원자적 쓰기의 임시 파일 + 테스트 임시 디렉터리 (→ [파일 생명주기 정책](file-lifecycle.md))   |
 | `log`                   | 0.4.x   | 로깅 파사드 — plugin-log의 레벨 필터 타입. 사실상 동결된 크레이트라 범위 핀                     |
-| `objc2`                 | 0.6.4   | **macOS 전용 타깃 의존성.** 창 뒤 흐림(유리)을 걸 때 NSWindow의 창 번호를 얻는 데만 쓴다 (→ [창 표면 계약](design/window-chrome.md)) |
+| `objc2`                 | 0.6.4   | **macOS 전용 타깃 의존성.** 창 유리·드래그 띠에서 NSWindow·NSView를 다룬다 (→ [창 표면 계약](design/window-chrome.md)) |
+| `libc`                  | 0.2.180 | **macOS 전용 타깃 의존성.** 비공개 흐림 심볼을 실행 시점에 찾는다(`dlsym`) — 정적 링크하면 심볼이 사라진 macOS에서 앱이 못 뜬다 |
 | `tauri-specta`          | 2.0.0-rc.25 | Rust 커맨드 → TS 바인딩 생성 (코드 품질 표의 IPC 타입 계약과 동일 항목)                  |
 | `specta`                | 2.0.0-rc.25 | tauri-specta의 타입 도출 코어 — rc 버전을 tauri-specta와 맞춰 핀                          |
 | `specta-typescript`     | 0.0.12  | TS 내보내기 백엔드 (pre-1.0)                                                                 |
