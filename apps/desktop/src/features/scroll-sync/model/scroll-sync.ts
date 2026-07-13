@@ -2,6 +2,8 @@
 // 에디터·프리뷰 위젯은 같은 레이어라 서로 직접 참조할 수 없으므로(FSD), 이 feature가
 // 둘 사이에서 "지금 소스 몇째 줄을 보고 있다"는 신호를 전달한다.
 
+import { logger } from "@shared/lib";
+
 export type PaneId = "editor" | "preview";
 
 /** 스크롤 위치의 소스 기준 좌표 — 1-기반 라인과 그 라인/블록 내 진행률(0~1). */
@@ -21,7 +23,13 @@ export function publishScroll(source: PaneId, position: ScrollPosition): void {
       continue;
     }
     for (const listener of listeners) {
-      listener(position);
+      // 구독자 격리 — 발행은 스크롤 이벤트 경로에서 동기 호출되므로,
+      // 한 구독자의 예외가 나머지 구독자·발행 경로를 깨지 않게 한다.
+      try {
+        listener(position);
+      } catch (cause) {
+        logger.error(`scroll-sync 구독자 처리 실패: ${String(cause)}`);
+      }
     }
   }
 }

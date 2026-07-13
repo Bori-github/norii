@@ -52,6 +52,24 @@ describe("스크롤 중계소 (publishScroll / subscribeScroll)", () => {
   });
 });
 
+describe("스크롤 중계소 — 구독자 격리", () => {
+  afterEach(() => {
+    resetScrollSync();
+  });
+
+  it("한 구독자가 예외를 던져도 나머지 구독자와 발행 경로는 살아남는다", () => {
+    // 발행은 스크롤 이벤트 경로에서 동기 호출된다 — 프리뷰 쪽 버그가
+    // 에디터 경로(타이핑·리로드)까지 전파되면 안 된다.
+    const healthy = vi.fn();
+    subscribeScroll("preview", () => {
+      throw new Error("구독자 버그");
+    });
+    subscribeScroll("preview", healthy);
+    expect(() => publishScroll("editor", { line: 1, fraction: 0 })).not.toThrow();
+    expect(healthy).toHaveBeenCalledOnce();
+  });
+});
+
 function fakeTarget(scrollTop: number, scrollHeight = 1000, clientHeight = 400) {
   return { scrollTop, scrollHeight, clientHeight };
 }

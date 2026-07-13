@@ -3,6 +3,8 @@
 // features(저장·충돌 해소)가 이 모듈을 통해서만 본문을 읽고 쓴다.
 // CM6 타입을 노출하지 않아 entities가 에디터 구현에 결합되지 않는다.
 
+import { logger } from "@shared/lib";
+
 /** 에디터 위젯이 등록하는 본문 접근 핸들. */
 export interface TabTextHandle {
   getText(): string;
@@ -33,7 +35,13 @@ export function subscribeDocChanged(listener: DocChangeListener): () => void {
 /** 본문이 바뀌었음을 구독자에게 알린다. */
 export function notifyDocChanged(tabId: string): void {
   for (const listener of docChangeListeners) {
-    listener(tabId);
+    // 구독자 격리 — 이 통지는 타이핑(CM6 dispatch)·충돌 해소·외부 리로드 경로에서
+    // 동기 호출된다. 파생 뷰(프리뷰)의 버그가 그 경로들을 깨지 않게 한다.
+    try {
+      listener(tabId);
+    } catch (cause) {
+      logger.error(`문서 변경 구독자 처리 실패: ${String(cause)}`);
+    }
   }
 }
 
