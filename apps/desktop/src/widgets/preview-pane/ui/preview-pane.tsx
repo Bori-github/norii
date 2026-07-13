@@ -53,7 +53,8 @@ export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const html = usePreviewHtml(activeTabId);
   const paneRef = useRef<HTMLDivElement>(null);
-  usePreviewScrollSync(paneRef, activeTabId);
+  // html은 캐시 무효화 신호 — 렌더 스왑마다 블록 위치를 다시 잰다.
+  usePreviewScrollSync(paneRef, activeTabId, html);
 
   if (activeTabId === null) {
     return null;
