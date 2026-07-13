@@ -81,6 +81,22 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
+  // 각주 — 문서 끝에 얇은 경계선으로 본문과 갈라 두고, 참조 번호는 본문보다 작게 뜬다.
+  // 목록 자체는 위 ol 규칙을 그대로 쓴다(별도 스타일을 만들지 않는다).
+  "& .footnotes": {
+    marginTop: "6",
+    paddingTop: "3",
+    borderTopWidth: "1px",
+    borderColor: "border",
+    fontSize: "sm",
+    color: "text.muted",
+  },
+  "& sup.footnote-ref": { fontSize: "xs" },
+  // 긴 블록 수식은 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일한 처리).
+  "& .katex-display": { overflowX: "auto", overflowY: "hidden", paddingY: "1" },
+  // 조판 실패는 그 수식 자리에서만 드러난다 — 붉은 경고색 대신 흐린 글자로 조용히 알린다
+  // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/0005).
+  "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "sm" },
   // 다이어그램 — 넓은 그래프는 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일).
   // 렌더 전에는 빈 div라 자리를 차지하지 않는다 — 원문이 잠깐 비쳤다 사라지는 깜빡임이 없다.
   "& .norii-mermaid": { marginY: "3", overflowX: "auto", textAlign: "center" },

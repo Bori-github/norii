@@ -14,6 +14,7 @@ import { PreviewPane } from "../index";
 //     보고 편집한다. 삽입 지점은 XSS의 마지막 관문이기도 하다.
 // 보장: 활성 탭 본문이 렌더되고, 본문 변경(타이핑·교체)이 디바운스 뒤 반영되며,
 //       삽입 HTML은 sanitize를 거친다(통합 확인 1건 — 정책 상세는 packages/markdown 테스트).
+//       수식은 여기서 **앱 설정까지 포함해** 조판되는지만 본다(문법 커버리지는 packages/markdown).
 // 경계: 스크롤 동기화(별도 feature)·디바운스 구체 값(M3 마감 실측)·타이포그래피는
 //       다루지 않는다. 실제 WKWebView 충실도는 실앱 E2E 계층의 몫이다.
 
@@ -35,6 +36,16 @@ function openTabWith(text: string): string {
 }
 
 describe("PreviewPane", () => {
+  it("수식이 앱 번들에서도 조판된다 — katex ESM 고정이 앱 설정에도 걸려 있는가", async () => {
+    // 이 확인은 앱 레벨에서만 가능하다: 수식 플러그인이 내부에서 잡는 katex의 CJS 빌드는
+    // 번들되면 제어 시퀀스가 전부 죽는다(모든 수식이 깨진다). 그 방어(ESM alias)는 앱의
+    // vite/vitest 설정에 따로 걸려 있어, 패키지 테스트가 통과해도 여기서 깨질 수 있다.
+    openTabWith("$\\frac{1}{2}$");
+    const { container } = render(<PreviewPane />);
+    await waitFor(() => expect(container.querySelector(".katex")).not.toBeNull());
+    expect(container.querySelector(".katex-error")).toBeNull();
+  });
+
   it("활성 탭의 마크다운을 렌더한다", async () => {
     openTabWith("# 제목\n\n본문");
     const { container } = render(<PreviewPane />);

@@ -7,6 +7,12 @@ import { defineConfig } from "vitest/config";
 // 에뮬레이션 DOM(happy-dom)은 금지다(→ .claude/docs/testing.md).
 // 실제 웹뷰·IPC가 필요한 위험 영역은 실앱 E2E(vitest.e2e.config.ts)가 다룬다.
 export default defineConfig({
+  // katex는 ESM 빌드로 고정한다 — CJS 빌드가 번들되면 제어 시퀀스가 전부 "정의되지 않음"이
+  // 되어 모든 수식이 깨진다. 수식 플러그인이 require("katex")로 CJS를 잡는다
+  // (→ .claude/docs/preview-strategy.md#수식-katex).
+  // alias는 정확히 "katex"만 갈아치운다 — 접두 매칭이면 katex/dist/katex.min.css 같은
+  // 하위 경로까지 망가진다.
+  resolve: { alias: [{ find: /^katex$/, replacement: "katex/dist/katex.mjs" }] },
   plugins: [tsconfigPaths({ projects: ["./tsconfig.app.json"] })],
   test: {
     projects: [

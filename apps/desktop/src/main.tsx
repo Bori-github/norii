@@ -5,6 +5,9 @@ import { App, applyBootFlags } from "@app/index";
 
 // Panda 전역 스타일(리셋·토큰·globalCss) 진입 — 부트스트랩 시 한 번 로드한다.
 import "@app/index.css";
+// KaTeX 조판 스타일 — CSS와 폰트를 **로컬로 번들**한다. CDN에서 가져오면 CSP(style-src·
+// font-src 'self')에 막히고 오프라인에서 수식이 깨진다(→ .claude/docs/security.md).
+import "katex/dist/katex.min.css";
 
 // 엔트리 글루 — 레이어 밖의 유일한 파일. 부트스트랩 책임은 app 레이어가 가진다.
 
