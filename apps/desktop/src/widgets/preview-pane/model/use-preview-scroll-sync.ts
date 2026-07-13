@@ -52,13 +52,22 @@ export function usePreviewScrollSync(
 ): void {
   const cacheRef = useRef<BlockPositionCache | null>(null);
   const swapSuppressorRef = useRef(createSwapSuppressor());
+  // 마지막 scroll 이벤트 시점에 바닥이었는지 — 재렌더 후 바닥 고정의 판정 기준.
+  const wasAtBottomRef = useRef(false);
 
   // 렌더 스왑 — 위치 캐시를 무효화하고, 브라우저의 scrollTop 강제 보정이 만드는
   // 진짜 scroll 이벤트가 동기화 신호로 새 나가는 것을 잠깐 막는다(→ scroll-sync).
   useEffect(() => {
     cacheRef.current = null;
     swapSuppressorRef.current.noteSwap();
-  }, [html]);
+    // 바닥 고정 — 바닥에서 타이핑하면 프리뷰가 '자라는데' 스크롤은 그대로라 새 내용이
+    // 잘린다. 스왑 직전에 바닥이었다면 새 바닥으로 따라 내린다(이때 생기는 scroll
+    // 이벤트는 위 억제 창이 걸러 동기화 신호로 새 나가지 않는다).
+    const pane = paneRef.current;
+    if (pane && wasAtBottomRef.current) {
+      pane.scrollTop = pane.scrollHeight;
+    }
+  }, [paneRef, html]);
 
   useEffect(() => {
     const pane = paneRef.current;
@@ -81,6 +90,8 @@ export function usePreviewScrollSync(
     };
 
     const handleScroll = () => {
+      // 발행 여부와 무관하게 실제 위치는 항상 추적한다(바닥 고정 판정용).
+      wasAtBottomRef.current = isAtBottom(pane);
       if (echoGuard.shouldIgnore()) {
         return;
       }
