@@ -5,6 +5,7 @@ import { blockIndexForLine, collectLineBlocks, type LineBlock } from "@norii/mar
 import {
   applyGuardedScrollTop,
   createEchoGuard,
+  createSwapSuppressor,
   publishScroll,
   subscribeScroll,
 } from "@features/scroll-sync";
@@ -49,10 +50,13 @@ export function usePreviewScrollSync(
   html: string,
 ): void {
   const cacheRef = useRef<BlockPositionCache | null>(null);
+  const swapSuppressorRef = useRef(createSwapSuppressor());
 
-  // 렌더 스왑 — 블록 DOM이 갈렸으므로 위치 캐시를 무효화한다.
+  // 렌더 스왑 — 위치 캐시를 무효화하고, 브라우저의 scrollTop 강제 보정이 만드는
+  // 진짜 scroll 이벤트가 동기화 신호로 새 나가는 것을 잠깐 막는다(→ scroll-sync).
   useEffect(() => {
     cacheRef.current = null;
+    swapSuppressorRef.current.noteSwap();
   }, [html]);
 
   useEffect(() => {
@@ -78,6 +82,14 @@ export function usePreviewScrollSync(
     const handleScroll = () => {
       if (echoGuard.shouldIgnore()) {
         return;
+      }
+      // 렌더 스왑 직후 창 안에서는 "브라우저의 클램프 보정"(본문이 짧아져 scrollTop이
+      // 맨 아래로 잘린 경우)만 무시한다 — 진짜 사용자 스크롤은 창 안이라도 발행한다.
+      if (swapSuppressorRef.current.shouldIgnore()) {
+        const maxTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
+        if (Math.abs(pane.scrollTop - maxTop) < 1) {
+          return;
+        }
       }
       const { blocks, tops } = measured();
       if (blocks.length === 0) {

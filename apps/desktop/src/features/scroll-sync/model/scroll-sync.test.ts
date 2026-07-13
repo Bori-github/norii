@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyGuardedScrollTop,
   createEchoGuard,
+  createSwapSuppressor,
   publishScroll,
   resetScrollSync,
   subscribeScroll,
@@ -91,6 +92,22 @@ describe("applyGuardedScrollTop — 가드 짝 맞춤 적용", () => {
     applyGuardedScrollTop(guard, target, 100.5);
     expect(target.scrollTop).toBe(100);
     expect(guard.shouldIgnore()).toBe(false);
+  });
+});
+
+// 왜: 본문이 짧아지면 브라우저가 프리뷰 scrollTop을 강제 보정하며 진짜 scroll 이벤트가
+//     난다(에코 가드는 arm된 적 없음). 이를 발행하면 타이핑 중인 에디터가 당겨진다.
+// 보장: 스왑 직후 창 안의 이벤트는 무시되고, 창이 지나면 정상 발행된다.
+describe("createSwapSuppressor — 렌더 스왑 직후 발행 억제", () => {
+  it("스왑 후 창 안은 무시, 창이 지나면 통과한다", () => {
+    let now = 1000;
+    const suppressor = createSwapSuppressor(150, () => now);
+    expect(suppressor.shouldIgnore()).toBe(false); // 스왑 전엔 억제 없음
+    suppressor.noteSwap();
+    now = 1100;
+    expect(suppressor.shouldIgnore()).toBe(true);
+    now = 1200;
+    expect(suppressor.shouldIgnore()).toBe(false);
   });
 });
 

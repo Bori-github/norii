@@ -94,3 +94,30 @@ export function applyGuardedScrollTop(guard: EchoGuard, target: ScrollTarget, to
   guard.arm();
   target.scrollTop = clamped;
 }
+
+export interface SwapSuppressor {
+  /** 렌더 스왑(프리뷰 DOM 교체) 직후에 부른다. */
+  noteSwap(): void;
+  /** scroll 핸들러 진입 시 부른다 — true면 스왑이 만든 보정 스크롤일 수 있어 발행하지 않는다. */
+  shouldIgnore(): boolean;
+}
+
+/**
+ * 렌더 스왑 직후의 스크롤 발행 억제 — 본문이 짧아지면 브라우저가 scrollTop을 강제
+ * 보정하며 진짜 scroll 이벤트가 나는데(에코 가드는 arm된 적이 없어 통과), 이를 동기화
+ * 신호로 발행하면 타이핑 중인 반대 패널이 당겨진다. 스왑 후 짧은 창 동안 발행을 막는다.
+ */
+export function createSwapSuppressor(
+  windowMs = 150,
+  now: () => number = () => performance.now(),
+): SwapSuppressor {
+  let suppressUntil = 0;
+  return {
+    noteSwap() {
+      suppressUntil = now() + windowMs;
+    },
+    shouldIgnore() {
+      return now() < suppressUntil;
+    },
+  };
+}

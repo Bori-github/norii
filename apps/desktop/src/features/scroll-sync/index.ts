@@ -2,8 +2,15 @@
 export {
   applyGuardedScrollTop,
   createEchoGuard,
+  createSwapSuppressor,
   publishScroll,
   resetScrollSync,
   subscribeScroll,
 } from "./model/scroll-sync";
-export type { EchoGuard, PaneId, ScrollPosition, ScrollTarget } from "./model/scroll-sync";
+export type {
+  EchoGuard,
+  PaneId,
+  ScrollPosition,
+  ScrollTarget,
+  SwapSuppressor,
+} from "./model/scroll-sync";
