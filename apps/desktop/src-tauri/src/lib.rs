@@ -9,6 +9,7 @@ mod fs_commands;
 mod scope;
 mod text_encoding;
 mod watch;
+mod window_glass;
 
 /// IPC 계약의 단일 조립 지점 — 커맨드 등록과 TS 바인딩 생성(specta_export 테스트)이
 /// 같은 목록을 쓰게 해, 등록 누락과 바인딩 드리프트를 함께 막는다(→ .claude/docs/testing.md).
@@ -50,6 +51,14 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            // 창 유리 — 투명 창의 뒤 배경을 OS가 흐린다(→ src/window_glass.rs).
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    window_glass::apply_window_glass(&window, window_glass::DEFAULT_BLUR_RADIUS);
+                }
+            }
+
             // E2E는 네이티브 다이얼로그를 자동화할 수 없어, webdriver 빌드에 한해 환경변수로
             // 허용 루트를 주입한다(다이얼로그 대체 입구). 일반·릴리스 빌드에는 없는 경로다.
             // 루트가 없으면 만들어 준다 — 테스트가 앱 기동 전에 디렉터리를 준비할 필요가 없게.

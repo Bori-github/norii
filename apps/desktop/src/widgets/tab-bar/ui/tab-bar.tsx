@@ -7,11 +7,9 @@ import { STRINGS } from "@shared/config";
 
 // 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
 //
-// Overlay 타이틀바를 쓰므로(→ design/window-chrome.md) 이 바가 창 최상단까지 올라온다.
-// 그 대가 둘을 여기서 치른다:
-//   1) 신호등 인셋 — 좌측 상단 OS 버튼 아래로 탭이 들어가지 않게 자리를 비운다.
-//   2) 드래그 영역 — 네이티브 타이틀바가 없으므로 이 바가 창을 끄는 손잡이가 된다.
-//      탭·버튼은 자기 클릭을 가지므로 드래그에서 제외한다(아래 no-drag).
+// 타이틀바는 OS가 소유한다(titleBarStyle 기본값) — 창 드래그·더블클릭 최대화·신호등을 OS가 맡는다.
+// Overlay로 그 자리를 뺏으면 상단 색 단차는 사라지지만 **창을 끌 수 없게 된다**
+// (tauri#9503 — 웹뷰의 비동기 IPC로는 native performDrag에 이벤트를 못 넘긴다 → decisions/0002).
 const barClass = css({
   display: "flex",
   alignItems: "stretch",
@@ -20,8 +18,6 @@ const barClass = css({
   borderBottom: "1px solid",
   borderColor: "border",
   minHeight: "9",
-  // 유리가 켜졌을 때만 신호등이 이 바 위에 얹힌다 — 그때만 자리를 비운다.
-  _glass: { paddingLeft: "20", paddingTop: "1.5" },
 });
 
 // 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
@@ -40,8 +36,6 @@ const tabClass = css({
   userSelect: "none",
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
   _hover: { background: "bg.hover" },
-  // 탭은 클릭 대상이다 — 드래그 영역에서 뺀다(안 그러면 탭 전환 대신 창이 끌린다).
-  "&[data-tauri-drag-region]": { cursor: "pointer" },
   '&[aria-selected="true"]': {
     background: "bg.paper",
     // 액센트는 종이 위에서만 빛난다 — 활성 탭이 종이이므로 여기서만 dirty ●가 액센트가 된다.
@@ -88,10 +82,6 @@ export function TabBar() {
     barRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
   }, [activeTabId]);
 
-  if (tabs.length === 0) {
-    return null;
-  }
-
   function onTabKeyDown(event: React.KeyboardEvent, tabId: string) {
     switch (event.key) {
       case "Enter":
@@ -115,6 +105,10 @@ export function TabBar() {
     }
   }
 
+  if (tabs.length === 0) {
+    return null;
+  }
+
   return (
     <div
       ref={barRef}
@@ -122,7 +116,6 @@ export function TabBar() {
       role="tablist"
       aria-label={STRINGS.tabListLabel}
       data-testid="tab-bar"
-      data-tauri-drag-region
     >
       {tabs.map((tab) => (
         <div

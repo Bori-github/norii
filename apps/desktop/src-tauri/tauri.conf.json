@@ -15,12 +15,7 @@
         "title": "norii",
         "width": 1024,
         "height": 768,
-        "transparent": true,
-        "titleBarStyle": "Overlay",
-        "windowEffects": {
-          "effects": ["sidebar"],
-          "state": "followsWindowActiveState"
-        }
+        "transparent": true
       }
     ],
     "security": {

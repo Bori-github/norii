@@ -9,7 +9,7 @@ export function isPrimaryModifier(event: KeyboardEvent): boolean {
 }
 
 /**
- * 창 유리(macOS vibrancy)가 켜져 있는가.
+ * 창 유리(macOS 창 뒤 흐림)가 켜져 있는가.
  *
  * "macOS인가"와 다른 명제다 — 유리를 끄면 macOS에서도 불투명 캔버스여야 하고, 그때 이 값은
  * false다. 지금은 창 설정(tauri.conf.json)이 macOS에서만 유리를 켜므로 플랫폼 판정과 일치하지만,
