@@ -36,9 +36,14 @@ afterEach(() => {
   cleanup();
 });
 
-async function renderLongDocPage() {
+// 소스 1줄 = 프리뷰 큰 블록(h1) — 양쪽 높이 비율이 크게 어긋나는 문서(가장자리 스냅 검증용).
+const UNEVEN_DOC = Array.from({ length: 150 }, (_, index) => `# ${index + 1}번째 제목`).join(
+  "\n\n",
+);
+
+async function renderDocPage(doc: string, readySelector: string) {
   const tabId = useDocumentStore.getState().addUntitledTab();
-  setTabText(tabId, LONG_DOC);
+  setTabText(tabId, doc);
   const { container } = render(
     <div style={{ height: 400 }}>
       <style>{LAYOUT_CSS}</style>
@@ -52,11 +57,14 @@ async function renderLongDocPage() {
   });
   const previewPane = await waitFor(() => {
     const pane = container.querySelector('[data-testid="preview-pane"]');
-    expect(pane?.querySelector("p")).not.toBeNull();
+    expect(pane?.querySelector(readySelector)).not.toBeNull();
     return pane as HTMLElement;
   });
   return { editorScroller, previewPane };
 }
+
+const renderLongDocPage = () => renderDocPage(LONG_DOC, "p");
+const renderUnevenDocPage = () => renderDocPage(UNEVEN_DOC, "h1");
 
 describe("스크롤 동기화 (EditorPage 통합)", () => {
   it("에디터를 스크롤하면 프리뷰가 따라온다", async () => {
@@ -78,6 +86,35 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
 
     await waitFor(() => {
       expect(editorScroller.scrollTop).toBeGreaterThan(0);
+    });
+  });
+
+  // 가장자리 스냅 — "맨 윗줄 맞추기" 규칙만으로는 양쪽 내용 높이가 달라(제목은 소스
+  // 1줄이지만 프리뷰에선 큰 블록) 한쪽이 바닥에 닿아도 반대쪽 바닥이 맞지 않는다.
+  // 바닥에 닿으면 반대쪽도 바닥으로 스냅한다(→ preview-strategy.md#스크롤-동기화).
+  // 균일한 문단만으로는 재현되지 않아, 높이 비율이 크게 어긋나는 제목 문서로 검증한다.
+  it("에디터를 맨 아래로 내리면 프리뷰도 맨 아래에 닿는다", async () => {
+    const { editorScroller, previewPane } = await renderUnevenDocPage();
+
+    editorScroller.scrollTop = editorScroller.scrollHeight;
+
+    await waitFor(() => {
+      const previewMax = previewPane.scrollHeight - previewPane.clientHeight;
+      expect(previewPane.scrollTop).toBeGreaterThanOrEqual(previewMax - 1);
+    });
+  });
+
+  it("프리뷰를 맨 아래로 내리면 에디터도 맨 아래에 닿는다", async () => {
+    const { editorScroller, previewPane } = await renderUnevenDocPage();
+    // 렌더 스왑 억제 창(150ms)을 지나서 스크롤한다 — 바닥 스크롤이 스왑 보정으로
+    // 오인되지 않게(실사용에서 렌더 직후 즉시 바닥까지 내리는 경우는 드물다).
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    previewPane.scrollTop = previewPane.scrollHeight;
+
+    await waitFor(() => {
+      const editorMax = editorScroller.scrollHeight - editorScroller.clientHeight;
+      expect(editorScroller.scrollTop).toBeGreaterThanOrEqual(editorMax - 1);
     });
   });
 

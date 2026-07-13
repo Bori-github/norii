@@ -10,6 +10,17 @@ export type PaneId = "editor" | "preview";
 export interface ScrollPosition {
   line: number;
   fraction: number;
+  /**
+   * 가장자리 스냅 — 발행 패널이 바닥에 닿았다는 표시. "맨 윗줄 맞추기"만으로는 양쪽
+   * 내용 높이가 달라 바닥이 어긋나므로, 수신 패널은 라인 계산 대신 자기 바닥으로
+   * 스냅한다(맨 위는 0=0이라 자연히 맞는다 → preview-strategy.md#스크롤-동기화).
+   */
+  edge?: "bottom";
+}
+
+/** 대상이 바닥(스크롤 가능 최하단)에 닿아 있는지 — 가장자리 스냅의 판정 기준. */
+export function isAtBottom(target: ScrollTarget): boolean {
+  return target.scrollTop >= target.scrollHeight - target.clientHeight - 1;
 }
 
 type ScrollListener = (position: ScrollPosition) => void;

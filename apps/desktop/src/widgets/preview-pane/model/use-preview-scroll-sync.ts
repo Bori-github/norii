@@ -6,6 +6,7 @@ import {
   applyGuardedScrollTop,
   createEchoGuard,
   createSwapSuppressor,
+  isAtBottom,
   publishScroll,
   subscribeScroll,
 } from "@features/scroll-sync";
@@ -109,6 +110,8 @@ export function usePreviewScrollSync(
       publishScroll("preview", {
         line: block.line + Math.floor(lineOffset),
         fraction: lineOffset - Math.floor(lineOffset),
+        // 바닥에 닿으면 가장자리 스냅 — 반대 패널도 바닥으로 정렬된다.
+        ...(isAtBottom(pane) ? { edge: "bottom" as const } : {}),
       });
     };
     pane.addEventListener("scroll", handleScroll);
@@ -119,7 +122,12 @@ export function usePreviewScrollSync(
     };
     window.addEventListener("resize", handleResize);
 
-    const unsubscribe = subscribeScroll("preview", ({ line, fraction }) => {
+    const unsubscribe = subscribeScroll("preview", ({ line, fraction, edge }) => {
+      // 가장자리 스냅: 상대가 바닥이면 블록 계산 대신 우리 바닥으로(헬퍼가 max로 클램프).
+      if (edge === "bottom") {
+        applyGuardedScrollTop(echoGuard, pane, Number.MAX_SAFE_INTEGER);
+        return;
+      }
       const { blocks, tops } = measured();
       const index = blockIndexForLine(blocks, line);
       const block = blocks[index];

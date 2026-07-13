@@ -3,6 +3,7 @@ export {
   applyGuardedScrollTop,
   createEchoGuard,
   createSwapSuppressor,
+  isAtBottom,
   publishScroll,
   resetScrollSync,
   subscribeScroll,

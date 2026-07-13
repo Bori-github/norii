@@ -1,7 +1,12 @@
 import { createEditorState, createEditorView, lineScrollTop, topVisibleLine } from "@norii/editor";
 
 import { getInitialText, registerTabTextHandle, unregisterTabTextHandle } from "@entities/document";
-import { applyGuardedScrollTop, createEchoGuard, type ScrollPosition } from "@features/scroll-sync";
+import {
+  applyGuardedScrollTop,
+  createEchoGuard,
+  isAtBottom,
+  type ScrollPosition,
+} from "@features/scroll-sync";
 import { EDITOR_COLORS } from "@shared/config";
 
 // 탭별 편집 상태 관리 — CM6 EditorState는 스토어 밖에서 관리한다(→ document-model.md#상태-구조).
@@ -40,7 +45,9 @@ export function createEditorController(options: Options): EditorController {
       if (echoGuard.shouldIgnore() || !view) {
         return;
       }
-      options.onScroll?.(topVisibleLine(view));
+      // 바닥에 닿으면 가장자리 스냅을 표시한다 — 반대 패널도 바닥으로 정렬된다.
+      const position = topVisibleLine(view);
+      options.onScroll?.(isAtBottom(view.scrollDOM) ? { ...position, edge: "bottom" } : position);
     });
   }
 
@@ -117,10 +124,13 @@ export function createEditorController(options: Options): EditorController {
         return;
       }
       // 클램프·"이미 그 자리" 판정·arm 짝 맞춤은 공용 헬퍼가 보장한다(→ features/scroll-sync).
+      // 가장자리 스냅: 상대가 바닥이면 라인 계산 대신 우리 바닥으로(헬퍼가 max로 클램프).
       applyGuardedScrollTop(
         echoGuard,
         view.scrollDOM,
-        lineScrollTop(view, position.line, position.fraction),
+        position.edge === "bottom"
+          ? Number.MAX_SAFE_INTEGER
+          : lineScrollTop(view, position.line, position.fraction),
       );
     },
     destroy() {
