@@ -28,6 +28,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         // Rust·프론트 로그를 한 파이프라인으로 통합한다. 릴리스는 warn 이상만
         // (→ .claude/docs/error-handling.md#로깅--tauri-plugin-log).
         .plugin(

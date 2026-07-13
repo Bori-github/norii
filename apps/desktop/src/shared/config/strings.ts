@@ -19,6 +19,10 @@ export const STRINGS = {
   dismissNoticeLabel: "알림 닫기",
   tabListLabel: "열린 문서",
 
+  // 프리뷰 패널은 스크롤되는 독립 영역이다 — 스크린리더가 이름으로 찾고,
+  // 키보드 사용자가 포커스해 방향키로 읽을 수 있어야 한다(→ preview-strategy.md).
+  previewRegionLabel: "마크다운 프리뷰",
+
   openFailedTitle: "파일을 열 수 없습니다",
   saveFailedTitle: "저장하지 못했습니다",
   saveAsAlreadyOpenBody:

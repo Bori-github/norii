@@ -1,6 +1,12 @@
-import { createEditorState, createEditorView } from "@norii/editor";
+import { createEditorState, createEditorView, lineScrollTop, topVisibleLine } from "@norii/editor";
 
 import { getInitialText, registerTabTextHandle, unregisterTabTextHandle } from "@entities/document";
+import {
+  applyGuardedScrollTop,
+  createEchoGuard,
+  isAtBottom,
+  type ScrollPosition,
+} from "@features/scroll-sync";
 import { EDITOR_COLORS } from "@shared/config";
 
 // 탭별 편집 상태 관리 — CM6 EditorState는 스토어 밖에서 관리한다(→ document-model.md#상태-구조).
@@ -14,6 +20,8 @@ export interface EditorController {
   showTab(tabId: string): void;
   /** 열린 탭 목록과 동기화 — 닫힌 탭의 상태·핸들을 정리한다. */
   syncTabs(openTabIds: string[]): void;
+  /** 동기화 신호를 받아 뷰포트를 옮긴다 — 이때 생기는 scroll 이벤트는 에코로 걸러진다. */
+  applyScrollSync(position: ScrollPosition): void;
   destroy(): void;
 }
 
@@ -21,12 +29,27 @@ interface Options {
   parent: HTMLElement;
   /** 문서 내용이 실제로 바뀔 때(docChanged) — dirty 추적·자동 저장 예약의 신호. */
   onDocChanged: (tabId: string) => void;
+  /** 사용자 스크롤 시 뷰포트 상단의 소스 위치 — 동기화 발행용(에코는 걸러져 있음). */
+  onScroll?: (position: ScrollPosition) => void;
 }
 
 export function createEditorController(options: Options): EditorController {
   const states = new Map<string, EditorStateValue>();
   let view: EditorViewValue | null = null;
   let activeTabId: string | null = null;
+  // 동기화가 만든 프로그램적 스크롤의 에코를 걸러낸다(→ features/scroll-sync).
+  const echoGuard = createEchoGuard();
+
+  function attachScrollListener(target: EditorViewValue): void {
+    target.scrollDOM.addEventListener("scroll", () => {
+      if (echoGuard.shouldIgnore() || !view) {
+        return;
+      }
+      // 바닥에 닿으면 가장자리 스냅을 표시한다 — 반대 패널도 바닥으로 정렬된다.
+      const position = topVisibleLine(view);
+      options.onScroll?.(isAtBottom(view.scrollDOM) ? { ...position, edge: "bottom" } : position);
+    });
+  }
 
   function currentText(tabId: string): string | null {
     if (tabId === activeTabId && view) {
@@ -79,6 +102,7 @@ export function createEditorController(options: Options): EditorController {
       const next = ensureState(tabId);
       if (!view) {
         view = createEditorView({ parent: options.parent, colors: EDITOR_COLORS });
+        attachScrollListener(view);
       }
       view.setState(next);
       activeTabId = tabId;
@@ -94,6 +118,20 @@ export function createEditorController(options: Options): EditorController {
           activeTabId = null;
         }
       }
+    },
+    applyScrollSync(position) {
+      if (!view) {
+        return;
+      }
+      // 클램프·"이미 그 자리" 판정·arm 짝 맞춤은 공용 헬퍼가 보장한다(→ features/scroll-sync).
+      // 가장자리 스냅: 상대가 바닥이면 라인 계산 대신 우리 바닥으로(헬퍼가 max로 클램프).
+      applyGuardedScrollTop(
+        echoGuard,
+        view.scrollDOM,
+        position.edge === "bottom"
+          ? Number.MAX_SAFE_INTEGER
+          : lineScrollTop(view, position.line, position.fraction),
+      );
     },
     destroy() {
       for (const tabId of states.keys()) {

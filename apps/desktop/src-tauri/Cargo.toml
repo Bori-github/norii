@@ -41,6 +41,7 @@ chardetng = "1.0.0"
 # 파일 외부 변경 감시(watch_paths → rust-commands.md)
 notify = "8.2.0"
 tauri-plugin-dialog = "2.7.1"
+tauri-plugin-opener = "2.5.4"
 tauri-plugin-log = "2.8.0"
 # plugin-log의 레벨 필터 타입(log::LevelFilter)에 필요한 표준 로깅 파사드.
 log = "0.4"

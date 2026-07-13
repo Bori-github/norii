@@ -12,15 +12,29 @@ rust = "stable"
 # 태스크가 oxlint·oxfmt·steiger·turbo를 맨 이름으로 호출하므로 워크스페이스 실행 파일 경로를 PATH에 추가한다.
 _.path = ["{{config_root}}/node_modules/.bin"]
 
+# 개발 서버 포트는 기동 전에 고른다 — 기본 포트가 이미 쓰이면 다음 빈 포트로 넘어간다.
+# Vite(strictPort)와 Tauri devUrl이 같은 값을 봐야 하므로, 고른 포트를 양쪽에 함께 넘긴다.
+# (dev와 dev-webdriver를 동시에 띄울 수 있다 — E2E를 돌리려고 개발 앱을 끌 필요가 없다.)
 [tasks.dev]
-description = "데스크탑 앱 개발 모드 실행 (Vite + Tauri)"
-run = "pnpm --filter desktop tauri dev"
+description = "데스크탑 앱 개발 모드 실행 (Vite + Tauri, 포트 자동 선택)"
+run = """
+PORT=$(node scripts/free-port.mjs 1420)
+echo "dev 서버 포트: $PORT"
+NORII_DEV_PORT=$PORT pnpm --filter desktop tauri dev \
+  --config "{\\"build\\":{\\"devUrl\\":\\"http://localhost:$PORT\\"}}"
+"""
 
 [tasks.dev-webdriver]
 description = "E2E용 개발 실행 — webdriver 피처를 켜 임베디드 WebDriver(127.0.0.1:4445) 기동"
 # E2E 허용 루트 — 테스트(e2e/*.e2e.ts)와 같은 기본값을 공유한다(다이얼로그 대체 입구).
 env = { NORII_E2E_SCOPE_ROOT = "/tmp/norii-e2e" }
-run = "pnpm --filter desktop tauri dev --features webdriver"
+# dev(1420~)와 겹치지 않게 다른 대역에서 시작한다 — 둘을 동시에 띄우는 것이 정상 흐름이다.
+run = """
+PORT=$(node scripts/free-port.mjs 1520)
+echo "dev-webdriver 서버 포트: $PORT"
+NORII_DEV_PORT=$PORT pnpm --filter desktop tauri dev --features webdriver \
+  --config "{\\"build\\":{\\"devUrl\\":\\"http://localhost:$PORT\\"}}"
+"""
 
 [tasks.build]
 description = "데스크탑 앱 릴리스 빌드"

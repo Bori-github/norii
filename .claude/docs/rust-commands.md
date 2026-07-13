@@ -132,6 +132,12 @@ plugin-log           통합 로깅 (→ error-handling.md)
    - canonicalize로 심볼릭 링크를 통한 스코프 탈출도 차단
 ```
 
+**외부 링크 권한** — 프리뷰의 링크를 OS 기본 브라우저로 넘기기 위해 `opener:allow-open-url`만 연다(`opener:default`가 함께 주는 파일·경로 열기 권한은 두지 않는다 — 문서가 로컬 파일을 열게 할 이유가 없다). **허용 스킴 집합은 [보안 — 외부 링크](security.md#4-외부-링크-프리뷰에서-문서-밖으로-나가는-유일한-통로)** 를 단일 출처로 둔다.
+
+**여기서는 capabilities가 실제로 스코프를 강제한다** — 커스텀 `std::fs` 커맨드와 다른 점이다. 플러그인 커맨드라 Tauri가 스코프 객체를 검사하므로, 스킴을 `allow` 목록에 **URL 글롭으로 선언**해야 하고 **비워 두면 모든 URL이 거부된다**(`Not allowed to open url`). 그래서 허용 스킴이 설정(`capabilities/default.json`)과 코드(`features/open-link`) 두 곳에 존재하게 된다 — 설정은 Rust의 강제층(프론트를 우회한 IPC 직접 호출도 여기서 막힌다), 코드는 판정층(거부를 조용한 무동작으로 만든다)이다.
+
+둘 중 하나만 고치면 링크가 조용히 죽거나(설정만 좁힘) 무의미한 에러 로그가 쌓인다(코드만 넓힘). capabilities는 설정 파일이라 타입체크·린트가 잡아주지 못하므로, **두 목록의 일치를 테스트가 지킨다**(`features/open-link/model/allowlist-drift.test.ts`).
+
 **창 조작 권한** — 종료 방어가 쓰는 `allow-close`·`allow-destroy`, 그리고 테마 동기화가 쓰는 `allow-set-theme`(창의 타이틀바·신호등을 앱 테마에 맞춘다 → [창 표면 계약](design/window-chrome.md#창-테마-동기화)) 셋뿐이다. 모두 `core:default`에 없어 명시 선언한다. **창 드래그 권한은 두지 않는다** — 웹이 드래그를 요청하지 않기 때문이다. 상단은 웹뷰가 가지지만(`titleBarStyle: Overlay`), 그 위에 얹은 네이티브 드래그 띠가 AppKit 경로로 직접 처리한다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠)).
 
 허용 스코프는 "다이얼로그로 선택한 경로"와 "연 루트 폴더의 하위 트리"이고, 임의 전역 접근은 지양한다. 마크다운 에디터는 임의 경로 파일을 열어야 하므로 이렇게 좁혀 최소 권한을 지키되, **그 강제는 capabilities가 아니라 커맨드 코드**에 있음을 잊지 않는다.
