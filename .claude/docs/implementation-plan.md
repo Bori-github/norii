@@ -46,7 +46,6 @@ M7  → platform-strategy.md
 ```text
 스냅샷 백업       주기 스냅샷(File Recovery류) 도입 여부  (→ file-lifecycle.md)
 접힘 상태 영속화  사이드카 도입 시점                     (→ editor-strategy.md, non-goals.md)
-Mermaid 번들      무거운 mermaid를 lazy-load로 <15MB 목표 내 흡수 가능한지 실측 — M4의 선행 스파이크다(현재 앱 번들 9.17MB, 여유 5.8MB) (→ preview-strategy.md · platform-strategy.md)
 테마 커스터마이징 프리셋 토큰 vs 사용자 커스텀 깊이     (→ design/design-system.md)
 유리 설정 노출    불투명도(--norii-glass-opacity)·흐림 반경(DEFAULT_BLUR_RADIUS)을 설정 화면에 어떻게 노출할지 — 슬라이더 최솟값은 대비 게이트가 정한 하한과 같아야 한다. M6 설정 영속화와 함께 확정 (→ design/decisions/0007-glass-is-opacity-not-color.md · design/window-chrome.md)
 타이포 스케일     글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정 시점. M6 (→ design/design-system.md)
