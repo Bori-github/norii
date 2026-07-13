@@ -31,6 +31,7 @@ norii/
   scripts/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
+    free-port.mjs            개발 서버 빈 포트 선택 (dev·dev-webdriver 동시 실행 → development-commands.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
       design/                디자인 상세 (결정 기록 ADR · Panda 토큰 · 창 표면 계약)

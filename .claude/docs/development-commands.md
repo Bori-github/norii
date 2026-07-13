@@ -18,7 +18,7 @@ pnpm --filter @norii/markdown exec playwright install webkit
 ## 자주 쓰는 명령
 
 ```sh
-mise run dev        # 데스크탑 앱 개발 모드 (Vite dev + Tauri)
+mise run dev        # 데스크탑 앱 개발 모드 (Vite dev + Tauri, 포트 자동 선택)
 mise run build      # 데스크탑 앱 릴리스 빌드
 mise run fmt        # 포맷 적용 (oxfmt)
 mise run check      # 전체 게이트 (커밋 전 필수, 수정 없이 검증)
@@ -45,6 +45,8 @@ mise run rust-test       # cargo test
 # 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
 mise run dev-webdriver & # 1) webdriver 피처를 켠 개발 빌드 앱 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
 mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
+# dev와 dev-webdriver는 동시에 띄울 수 있다 — 각자 빈 포트를 잡는다(1420~ / 1520~).
+# E2E를 돌리려고 개발 중인 앱을 끌 필요가 없다.
 
 # PR 데모 영상 (check 미포함 — 앱 실행·화면 기록 권한 필요, macOS 전용)
 mise run dev-webdriver &        # 1) E2E용 앱 실행
