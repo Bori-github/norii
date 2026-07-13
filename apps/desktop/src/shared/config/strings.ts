@@ -23,6 +23,10 @@ export const STRINGS = {
   // 키보드 사용자가 포커스해 방향키로 읽을 수 있어야 한다(→ preview-strategy.md).
   previewRegionLabel: "마크다운 프리뷰",
 
+  // 다이어그램 렌더 실패 — 문법 오류는 사용자가 고칠 수 있는 일상이라 배너로 올리지 않고
+  // 그 다이어그램 자리에서만 알린다(→ preview-strategy.md#다이어그램-mermaid).
+  mermaidRenderError: "다이어그램을 그릴 수 없습니다 — 문법을 확인해 주세요",
+
   openFailedTitle: "파일을 열 수 없습니다",
   saveFailedTitle: "저장하지 못했습니다",
   saveAsAlreadyOpenBody:

@@ -5,6 +5,7 @@ import { useDocumentStore } from "@entities/document";
 import { openExternalLink } from "@features/open-link";
 import { STRINGS } from "@shared/config";
 
+import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
 
@@ -80,6 +81,10 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
+  // 다이어그램 — 넓은 그래프는 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일).
+  // 렌더 전에는 빈 div라 자리를 차지하지 않는다 — 원문이 잠깐 비쳤다 사라지는 깜빡임이 없다.
+  "& .norii-mermaid": { marginY: "3", overflowX: "auto", textAlign: "center" },
+  "& .norii-mermaid svg": { maxWidth: "100%", height: "auto" },
 });
 
 // 읽기 좋은 행 길이 — 창을 넓혀도 한 줄이 무한정 길어지지 않게 본문 폭을 제한한다.
@@ -121,8 +126,11 @@ export function PreviewPane() {
     }
   }, [html]);
 
-  // 렌더 키는 캐시 무효화 신호 — 렌더 스왑마다 블록 위치를 다시 잰다.
-  usePreviewScrollSync(paneRef, activeTabId, html);
+  // 다이어그램은 비동기로 도착해 블록 높이를 바꾼다 — 리비전이 오르면 스크롤 동기화가
+  // 낡은 측정을 버리고 다시 잰다(→ use-mermaid.ts). 이 효과는 위 삽입 뒤에 돈다.
+  const mermaidRevision = useMermaid(paneRef, html);
+  // 렌더 키는 캐시 무효화 신호 — 렌더 스왑·다이어그램 도착마다 블록 위치를 다시 잰다.
+  usePreviewScrollSync(paneRef, activeTabId, `${mermaidRevision} ${html}`);
 
   if (activeTabId === null) {
     return null;
