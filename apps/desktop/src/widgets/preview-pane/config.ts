@@ -8,7 +8,7 @@ export const PREVIEW_DEBOUNCE_BASE_MS = 150;
 export const PREVIEW_DEBOUNCE_MAX_MS = 1000;
 
 /** 직전 렌더 소요의 배수 — 렌더가 무거울수록 간격을 비례해 벌린다. */
-export const PREVIEW_DEBOUNCE_RENDER_MULTIPLIER = 3;
+const PREVIEW_DEBOUNCE_RENDER_MULTIPLIER = 3;
 
 /** 직전 렌더 소요(ms)로 다음 디바운스를 정한다 — clamp(렌더 × 3, 기본, 상한). */
 export function adaptiveDebounceMs(lastRenderMs: number): number {

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { type MouseEvent, useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
@@ -17,6 +17,9 @@ const paneClass = css({
   borderLeftWidth: "1px",
   borderColor: "border",
   background: "bg.paper",
+  // CSS 격리 — 문서 인라인 스타일(position:fixed 등)이 패널 밖 앱 UI 위에 그려지는 것을
+  // 차단한다(→ preview-strategy.md의 DOMPurify 정책).
+  contain: "paint",
   // 프리뷰 타이포그래피 — 마크다운 블록의 최소 가독 스타일(시맨틱 토큰만 참조).
   "& h1": { fontSize: "2xl", fontWeight: "bold", marginY: "3" },
   "& h2": { fontSize: "xl", fontWeight: "bold", marginY: "3" },
@@ -38,13 +41,29 @@ const paneClass = css({
     color: "text.muted",
     marginY: "2",
   },
-  "& table": { borderCollapse: "collapse", marginY: "2" },
+  // 넓은 표는 패널 전체가 아니라 표만 가로 스크롤한다(코드 블록과 동일한 처리).
+  "& table": {
+    borderCollapse: "collapse",
+    marginY: "2",
+    display: "block",
+    overflowX: "auto",
+    maxWidth: "100%",
+  },
   "& th, & td": { borderWidth: "1px", borderColor: "border", paddingX: "3", paddingY: "1" },
   // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/0005).
   "& a": { color: "text.mark", textDecoration: "underline" },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
 });
+
+// 문서 속 링크로 웹뷰가 통째로 내비게이트되는 것을 차단한다 — OS 브라우저로 열기는
+// 열린 결정이다(→ preview-strategy.md의 링크 정책).
+function blockLinkNavigation(event: MouseEvent<HTMLDivElement>): void {
+  const anchor = (event.target as Element).closest("a[href]");
+  if (anchor) {
+    event.preventDefault();
+  }
+}
 
 // 프리뷰 패널 — 활성 탭의 마크다운을 분할로 렌더한다(→ preview-strategy.md).
 // HTML은 packages/markdown이 DOMPurify sanitize까지 마친 것이다 — 이 위젯의 책임은
@@ -64,6 +83,7 @@ export function PreviewPane() {
       ref={paneRef}
       className={paneClass}
       data-testid="preview-pane"
+      onClick={blockLinkNavigation}
       // sanitize를 거친 HTML만 온다(위 주석) — 원시 사용자 입력을 직접 넣지 않는다.
       dangerouslySetInnerHTML={{ __html: html }}
     />

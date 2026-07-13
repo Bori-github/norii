@@ -89,13 +89,22 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
       expect(previewPane.scrollTop).toBeGreaterThan(0);
     });
 
-    // 동기화가 정착할 시간을 준 뒤 두 위치를 고정 관찰한다.
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const editorSettled = editorScroller.scrollTop;
-    const previewSettled = previewPane.scrollTop;
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // 정착을 고정 sleep이 아니라 관측으로 판정한다 — 연속 두 번의 읽기가 같으면 정착
+    // (느린 러너에서 고정 sleep은 정착 전 스냅숏을 찍어 간헐 실패한다 → testing.md).
+    let lastEditor = -1;
+    let lastPreview = -1;
+    await waitFor(() => {
+      const editorTop = editorScroller.scrollTop;
+      const previewTop = previewPane.scrollTop;
+      const settled = editorTop === lastEditor && previewTop === lastPreview;
+      lastEditor = editorTop;
+      lastPreview = previewTop;
+      expect(settled).toBe(true);
+    });
 
-    expect(editorScroller.scrollTop).toBe(editorSettled);
-    expect(previewPane.scrollTop).toBe(previewSettled);
+    // 정착 후 관측 창 동안 위치가 흔들리지 않는다 — 에코 왕복이 있으면 여기서 어긋난다.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(editorScroller.scrollTop).toBe(lastEditor);
+    expect(previewPane.scrollTop).toBe(lastPreview);
   });
 });

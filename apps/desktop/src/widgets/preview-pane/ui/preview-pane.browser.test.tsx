@@ -2,6 +2,7 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
+import { resetScrollSync } from "@features/scroll-sync";
 
 import { PreviewPane } from "../index";
 
@@ -18,6 +19,8 @@ import { PreviewPane } from "../index";
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
   resetTabTextRegistry();
+  // 스크롤 중계소 싱글턴도 초기화 — 테스트 간 구독 누수 방지(editor-page 테스트와 동일).
+  resetScrollSync();
 });
 
 afterEach(() => {
@@ -67,5 +70,41 @@ describe("PreviewPane", () => {
     const { container } = render(<PreviewPane />);
     await waitFor(() => expect(container.textContent).toContain("본문"));
     expect(container.querySelector("script")).toBeNull();
+  });
+
+  it("연속 본문 변경은 디바운스로 모아 렌더한다 — 키 입력마다 재파싱하지 않는다(성능 규칙)", async () => {
+    const tabId = openTabWith("# 0");
+    const { container } = render(<PreviewPane />);
+    await waitFor(() => expect(container.querySelector("h1")?.textContent).toBe("0"));
+    const seen: string[] = [];
+    const observer = new MutationObserver(() => {
+      const text = container.querySelector("h1")?.textContent;
+      if (text !== undefined && text !== null) {
+        seen.push(text);
+      }
+    });
+    observer.observe(container, { subtree: true, childList: true, characterData: true });
+    // 디바운스 창(기본 150ms)보다 훨씬 빠른 연속 변경 — 마지막 값만 렌더돼야 한다.
+    for (let i = 1; i <= 5; i += 1) {
+      setTabText(tabId, `# ${i}`);
+    }
+    await waitFor(() => expect(container.querySelector("h1")?.textContent).toBe("5"));
+    observer.disconnect();
+    expect(seen).not.toContain("1");
+    expect(seen).not.toContain("2");
+  });
+
+  it("링크 클릭은 웹뷰 내비게이션을 차단한다 — 앱이 문서 속 링크로 이동하지 않는다", async () => {
+    openTabWith("[외부 링크](https://example.com)");
+    const { container } = render(<PreviewPane />);
+    const anchor = await waitFor(() => {
+      const found = container.querySelector("a[href]");
+      expect(found).not.toBeNull();
+      return found as HTMLAnchorElement;
+    });
+    const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
+    const notCanceled = anchor.dispatchEvent(clickEvent);
+    // dispatchEvent가 false면 preventDefault가 호출된 것 — 내비게이션 차단.
+    expect(notCanceled).toBe(false);
   });
 });
