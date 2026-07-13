@@ -1,4 +1,4 @@
-import { type MouseEvent, useRef } from "react";
+import { type MouseEvent, useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
@@ -107,7 +107,21 @@ export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const html = usePreviewHtml(activeTabId);
   const paneRef = useRef<HTMLDivElement>(null);
-  // html은 캐시 무효화 신호 — 렌더 스왑마다 블록 위치를 다시 잰다.
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // 프리뷰 내용은 **React가 아니라 우리가** 넣는다. dangerouslySetInnerHTML을 쓰면 React가
+  // 재렌더마다 그 자식들을 다시 만든다 — HTML이 그대로여도, DOM을 건드리지 않아도 그렇다.
+  // 그러면 다이어그램(우리가 직접 꽂는 SVG)이 아무 재렌더에나 조용히 사라진다(M4 실측).
+  // 내용을 우리가 소유하면 React는 이 자식들을 건드리지 않고, 갱신은 html이 바뀔 때만 일어난다.
+  // 삽입되는 것은 sanitize를 마친 HTML뿐이다(위 주석).
+  useEffect(() => {
+    const content = contentRef.current;
+    if (content !== null) {
+      content.innerHTML = html;
+    }
+  }, [html]);
+
+  // 렌더 키는 캐시 무효화 신호 — 렌더 스왑마다 블록 위치를 다시 잰다.
   usePreviewScrollSync(paneRef, activeTabId, html);
 
   if (activeTabId === null) {
@@ -125,11 +139,8 @@ export function PreviewPane() {
       role="region"
       aria-label={STRINGS.previewRegionLabel}
     >
-      <div
-        className={contentClass}
-        // sanitize를 거친 HTML만 온다(위 주석) — 원시 사용자 입력을 직접 넣지 않는다.
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      {/* 내용은 위 이펙트가 채운다 — React는 이 요소의 자식을 소유하지 않는다. */}
+      <div ref={contentRef} className={contentClass} />
     </div>
   );
 }
