@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import { resetScrollSync } from "@features/scroll-sync";
+import { STRINGS } from "@shared/config";
 
 import { PreviewPane } from "../index";
 
@@ -106,5 +107,25 @@ describe("PreviewPane", () => {
     const notCanceled = anchor.dispatchEvent(clickEvent);
     // dispatchEvent가 false면 preventDefault가 호출된 것 — 내비게이션 차단.
     expect(notCanceled).toBe(false);
+  });
+
+  // 왜: 프리뷰는 스크롤되는 독립 영역인데 포커스를 못 받으면 키보드만 쓰는 사용자는
+  //     방향키로 읽을 수 없다(마우스 없이는 프리뷰가 잠긴다).
+  // 보장: 패널이 포커스 가능하고, 스크린리더가 이름으로 찾을 수 있는 영역이다.
+  // 경계: 포커스 링의 시각 표현은 실앱·수동 확인의 몫이다(CSS는 여기 없다).
+  it("프리뷰 패널은 키보드로 포커스할 수 있는 이름 있는 영역이다", async () => {
+    openTabWith("# 제목");
+    const { container } = render(<PreviewPane />);
+    const pane = await waitFor(() => {
+      const found = container.querySelector('[data-testid="preview-pane"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(pane.tabIndex).toBe(0);
+    expect(pane.getAttribute("role")).toBe("region");
+    expect(pane.getAttribute("aria-label")).toBe(STRINGS.previewRegionLabel);
+
+    pane.focus();
+    expect(document.activeElement).toBe(pane);
   });
 });
