@@ -1,5 +1,7 @@
+import katexPlugin from "@vscode/markdown-it-katex";
 import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
+import footnotePlugin from "markdown-it-footnote";
 
 import { sourceLinePlugin } from "./line-map";
 import { mermaidFencePlugin } from "./mermaid";
@@ -49,14 +51,34 @@ function taskListPlugin(md: MarkdownIt): void {
 
 // html: 원시 HTML 통과(<details> 등) — 위험분은 아래 sanitize가 제거한다.
 // linkify: GFM 오토링크. 테이블·취소선은 markdown-it 기본 프리셋에 포함.
+// @vscode/markdown-it-katex는 CJS라 상황에 따라 기본 내보내기가 한 겹 더 감싸여 온다
+// ({ default: fn }). 번들러·런타임마다 갈리므로 양쪽을 다 받는다.
+type MarkdownItPlugin = (md: MarkdownIt) => void;
+const katex: MarkdownItPlugin =
+  (katexPlugin as unknown as { default?: MarkdownItPlugin }).default ??
+  (katexPlugin as unknown as MarkdownItPlugin);
+
+// 수식은 @vscode/markdown-it-katex(Microsoft 유지보수 포크)를 쓴다 — 원본 markdown-it-katex는
+// 사실상 대체됐다(→ preview-strategy.md#수식-katex). 각주는 markdown-it-footnote.
 const md = new MarkdownIt({ html: true, linkify: true })
   .use(taskListPlugin)
+  .use(footnotePlugin)
+  .use(katex)
   .use(sourceLinePlugin)
   .use(mermaidFencePlugin);
 
 // <style>은 기본 허용이지만 문서 CSS가 프리뷰 밖 앱 UI를 위장·은폐할 수 있어 차단한다
 // (→ preview-strategy.md#sanitize는-필수다의 DOMPurify 정책).
-const SANITIZE_CONFIG = { FORBID_TAGS: ["style"] };
+//
+// KaTeX는 눈으로 보는 HTML과 스크린리더가 읽는 MathML을 함께 낸다. DOMPurify의 MathML
+// 허용목록에는 <semantics>·<annotation>이 없어, 그대로 두면 이 둘만 벗겨지고 그 안의 TeX
+// 원문이 맨 텍스트로 <math> 안에 남는다 — 수식이 "x^2"처럼 두 번 읽히는 셈이다. 둘을
+// 허용해 KaTeX의 출력 구조를 온전히 보존한다(내용은 텍스트뿐이라 실행 표면이 아니다).
+const SANITIZE_CONFIG = {
+  FORBID_TAGS: ["style"],
+  ADD_TAGS: ["semantics", "annotation"],
+  ADD_ATTR: ["encoding"],
+};
 
 /** 마크다운 소스를 sanitize된 HTML 문자열로 렌더한다. */
 export function renderMarkdown(source: string): string {
