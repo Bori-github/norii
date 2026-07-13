@@ -15,6 +15,8 @@ norii는 소스 옆에 렌더된 프리뷰를 분할로 보여준다. 이 문서
 
 파이프라인 로직은 `packages/markdown`에 둔다. DOM 삽입은 소비 측(`apps/desktop`)이 담당한다(→ [파일/폴더 구조](project-structure.md)).
 
+**markdown-it 구성**: 테이블·취소선은 기본 프리셋, 오토링크는 `linkify` 옵션. 체크박스(작업 목록)는 markdown-it 본체에 없어 **자체 코어 룰(norii-task-list)** 로 구현한다 — 프리뷰는 표시 전용이고 진실은 소스이므로 **disabled 체크박스**로 렌더한다. 스크롤 동기화용 라인 꼬리표(`data-source-line`)는 자체 룰(norii-source-line)이 주입하며, 이때 원시 HTML 토큰에 들어 있는 **위조 꼬리표는 제거**한다(신뢰 경계 — 아래 sanitize 정책).
+
 ## 디바운스
 
 매 키 입력마다 전체 재파싱하지 않는다. 변경을 디바운스하고, 여력이 되면 증분 렌더로 발전시킨다. 이는 [작업 규칙](../rules/project-rules.md)의 성능 규칙이다.
@@ -28,6 +30,8 @@ norii는 소스 옆에 렌더된 프리뷰를 분할로 보여준다. 이 문서
 DOMPurify는 옵션이 아니라 **필수**다. 마크다운은 원시 HTML을 허용하고, norii는 `<details>` 같은 태그를 의도적으로 통과시킨다(→ [에디터 전략](editor-strategy.md)). 사용자 문서에 스크립트가 섞일 수 있으므로 Tauri 웹뷰라도 sanitize 없이 삽입하지 않는다.
 
 수식(KaTeX)·다이어그램(Mermaid)은 sanitize와 상호작용한다 — KaTeX는 MathML 마크업을 허용해야 하고, Mermaid SVG는 정화 뒤에 렌더한다. 별도 정책은 아래 [수식·다이어그램 지원](#수식다이어그램-지원-채택)에 둔다.
+
+**DOMPurify 정책**: 기본 프로필에 `FORBID_TAGS: ['style']`을 더한다 — 기본 허용되는 `<style>`은 문서의 CSS가 프리뷰 밖 앱 UI 전체를 은폐·위장할 수 있어 차단한다(위협 모델 → [보안](security.md)). `data-*` 속성의 기본 허용은 그대로 둔다 — 라인 꼬리표(`data-source-line`)가 sanitize를 통과하는 근거다. 위조 방어는 두 겹이다: 파서 단계에서 원시 HTML 토큰의 위조 꼬리표를 제거하고, 수집 단계(`collectLineBlocks`)에서 유한한 1 이상·비내림차순 값만 수용한다(이진 탐색의 정렬 전제 보호). 프리뷰 패널은 CSS 격리(`contain: paint`)로 문서 인라인 스타일(position:fixed 등)이 패널 밖에 그려지는 것도 막는다.
 
 ## 스크롤 동기화
 

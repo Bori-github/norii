@@ -5,10 +5,29 @@ import type MarkdownIt from "markdown-it";
 // CM6의 라인 번호(1-기반)와 맞춰 소비 측 변환을 없앤다.
 // 인라인 단위 매핑은 목표가 아니다 — 블록 단위 근사가 사양이다.
 
-/** 렌더된 블록 토큰에 data-source-line(시작)·data-source-line-end(끝, 포함)를 주입한다. */
+// 신뢰 경계: 원시 HTML 토큰 속의 data-source-line*는 사용자가 위조한 꼬리표다 —
+// DOMPurify가 data-*를 기본 허용하므로(우리 꼬리표가 살아남는 근거) 파서 단계에서 제거한다
+// (→ preview-strategy.md#sanitize는-필수다).
+const FORGED_LINE_ATTR = /\s*data-source-line(?:-end)?\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+
+/**
+ * 렌더된 블록 토큰에 data-source-line(시작)·data-source-line-end(끝, 포함)를 주입하고,
+ * 원시 HTML이 들고 온 위조 꼬리표는 제거한다.
+ */
 export function sourceLinePlugin(md: MarkdownIt): void {
   md.core.ruler.push("norii-source-line", (state) => {
     for (const token of state.tokens) {
+      if (token.type === "html_block") {
+        token.content = token.content.replace(FORGED_LINE_ATTR, "");
+        continue;
+      }
+      if (token.type === "inline" && token.children) {
+        for (const child of token.children) {
+          if (child.type === "html_inline") {
+            child.content = child.content.replace(FORGED_LINE_ATTR, "");
+          }
+        }
+      }
       // 여는 토큰(nesting 1)과 자기완결 토큰(fence·hr, nesting 0)만 대상.
       // hidden 토큰(타이트 리스트의 문단)은 렌더되지 않으므로 제외한다.
       if (!token.map || token.nesting < 0 || token.hidden) {
@@ -28,13 +47,25 @@ export interface LineBlock {
   element: HTMLElement;
 }
 
-/** 렌더된 프리뷰 DOM에서 매핑 테이블을 문서 순서로 수집한다. */
+/**
+ * 렌더된 프리뷰 DOM에서 매핑 테이블을 문서 순서로 수집한다.
+ * 방어 2겹째: 파서의 위조 제거를 우회한 값이 있어도, 유한한 1 이상·비내림차순 값만
+ * 수용해 조회(이진 탐색)의 정렬 전제를 지킨다. 정상 렌더는 문서 순서상 항상 비내림차순이다.
+ */
 export function collectLineBlocks(root: ParentNode): LineBlock[] {
-  return Array.from(root.querySelectorAll<HTMLElement>("[data-source-line]")).map((element) => {
+  const blocks: LineBlock[] = [];
+  let previousLine = 1;
+  for (const element of root.querySelectorAll<HTMLElement>("[data-source-line]")) {
     const line = Number(element.dataset["sourceLine"]);
-    const end = element.dataset["sourceLineEnd"];
-    return { line, endLine: end === undefined ? line : Number(end), element };
-  });
+    if (!Number.isFinite(line) || line < previousLine) {
+      continue;
+    }
+    const end = Number(element.dataset["sourceLineEnd"]);
+    const endLine = Number.isFinite(end) && end >= line ? end : line;
+    blocks.push({ line, endLine, element });
+    previousLine = line;
+  }
+  return blocks;
 }
 
 /**

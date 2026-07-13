@@ -13,7 +13,7 @@ const TASK_MARKER = /^\[( |x|X)\] /;
 
 // GFM 체크박스(작업 목록) — markdown-it 본체에 없는 문법이라 코어 룰로 직접 구현한다.
 // 리스트 아이템 첫 텍스트의 "[ ] "/"[x] " 마커를 표시 전용 체크박스로 바꾼다.
-// 프리뷰는 표시 전용이고 진실은 소스이므로 체크박스는 disabled다(→ preview-strategy.md#두-파서-원칙).
+// 프리뷰는 표시 전용이고 진실은 소스이므로 체크박스는 disabled다(→ preview-strategy.md#파이프라인-웹뷰-내).
 function taskListPlugin(md: MarkdownIt): void {
   md.core.ruler.after("inline", "norii-task-list", (state) => {
     const tokens = state.tokens;
@@ -50,7 +50,11 @@ function taskListPlugin(md: MarkdownIt): void {
 // linkify: GFM 오토링크. 테이블·취소선은 markdown-it 기본 프리셋에 포함.
 const md = new MarkdownIt({ html: true, linkify: true }).use(taskListPlugin).use(sourceLinePlugin);
 
+// <style>은 기본 허용이지만 문서 CSS가 프리뷰 밖 앱 UI를 위장·은폐할 수 있어 차단한다
+// (→ preview-strategy.md#sanitize는-필수다의 DOMPurify 정책).
+const SANITIZE_CONFIG = { FORBID_TAGS: ["style"] };
+
 /** 마크다운 소스를 sanitize된 HTML 문자열로 렌더한다. */
 export function renderMarkdown(source: string): string {
-  return DOMPurify.sanitize(md.render(source));
+  return DOMPurify.sanitize(md.render(source), SANITIZE_CONFIG);
 }

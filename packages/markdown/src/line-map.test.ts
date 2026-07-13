@@ -67,6 +67,39 @@ describe("collectLineBlocks — 매핑 테이블 수집", () => {
   });
 });
 
+// 신뢰 경계 — 악성 문서가 원시 HTML로 위조 꼬리표를 끼워 넣어도 매핑이 오염되지 않는다.
+// DOMPurify는 data-*를 기본 허용하므로(우리 꼬리표의 생존 근거) 방어는 두 겹이다:
+// 파서가 원시 HTML 토큰의 꼬리표를 제거하고, 수집이 비정상 값을 걸러낸다.
+describe("위조 data-source-line 방어", () => {
+  it("원시 HTML의 위조 꼬리표는 파서 단계에서 제거된다 (블록·인라인 모두)", () => {
+    const html = renderMarkdown(
+      '<p data-source-line="999999">위조 블록</p>\n\n본문 <span data-source-line="abc" data-source-line-end=\'zzz\'>위조 인라인</span>',
+    );
+    expect(html).toContain("위조 블록");
+    expect(html).toContain("위조 인라인");
+    // 남아 있는 꼬리표는 우리 플러그인이 단 것(숫자)뿐이어야 한다.
+    const host = document.createElement("div");
+    host.innerHTML = html;
+    for (const element of host.querySelectorAll("[data-source-line]")) {
+      expect(Number.isFinite(Number((element as HTMLElement).dataset["sourceLine"]))).toBe(true);
+    }
+    expect(html).not.toContain("999999");
+    expect(html).not.toContain('data-source-line="abc"');
+  });
+
+  it("수집은 비숫자·역순 값을 걸러 정렬 전제(이진 탐색)를 지킨다", () => {
+    const host = document.createElement("div");
+    host.innerHTML =
+      '<p data-source-line="1">정상</p><p data-source-line="junk">비숫자</p>' +
+      '<p data-source-line="9" data-source-line-end="3">끝이 앞선 값</p>' +
+      '<p data-source-line="5">역순(9 뒤의 5)</p>';
+    const blocks = collectLineBlocks(host);
+    expect(blocks.map((block) => block.line)).toEqual([1, 9]);
+    // endLine < line이면 시작 라인으로 정규화된다.
+    expect(blocks[1]?.endLine).toBe(9);
+  });
+});
+
 describe("blockIndexForLine — 라인 → 블록 조회", () => {
   // 시작 라인 [1, 5, 9]인 세 블록: 라인 L을 담당하는 블록은 "시작 라인 ≤ L인 마지막 블록"이다.
   const blocks = [{ line: 1 }, { line: 5 }, { line: 9 }];

@@ -45,6 +45,23 @@ describe("renderMarkdown — 마크다운 파싱 (GFM)", () => {
     const html = renderMarkdown("- [ ] 할 일");
     expect(html).toMatch(/<input[^>]*disabled[^>]*>/);
   });
+
+  it("대문자 [X]도 체크 상태로 렌더한다 — 마커 경계 고정", () => {
+    const html = renderMarkdown("- [X] 완료");
+    expect(html).toMatch(/<input[^>]*checked[^>]*>/);
+  });
+
+  it("뒤 공백 없는 '- [x]'는 작업 목록이 아니다 — 일반 텍스트로 남는다", () => {
+    const html = renderMarkdown("- [x]");
+    expect(html).not.toContain("<input");
+    expect(html).toContain("[x]");
+  });
+
+  it("작업 목록 아이템에 task-list-item 클래스가 달린다 — 프리뷰 스타일이 이 이름에 의존한다", () => {
+    // 소비 측(preview-pane)의 Panda 선택자 "& li.task-list-item"과 짝이다. 이름을 바꾸면 함께 바꾼다.
+    const html = renderMarkdown("- [ ] 할 일");
+    expect(html).toMatch(/<li[^>]*class="[^"]*task-list-item/);
+  });
 });
 
 describe("renderMarkdown — sanitize (필수)", () => {
@@ -68,6 +85,13 @@ describe("renderMarkdown — sanitize (필수)", () => {
     const viaRawHtml = renderMarkdown('<a href="javascript:alert(1)">클릭</a>');
     expect(viaRawHtml).not.toMatch(/href\s*=\s*"[^"]*javascript:/i);
     expect(viaRawHtml).toContain("클릭");
+  });
+
+  it("<style> 태그를 제거한다 — 문서 CSS가 앱 UI를 위장·은폐하지 못하게(→ preview-strategy.md DOMPurify 정책)", () => {
+    const html = renderMarkdown("본문\n\n<style>body { display: none; }</style>");
+    expect(html).not.toContain("<style");
+    expect(html).not.toContain("display: none");
+    expect(html).toContain("본문");
   });
 
   it("<details>/<summary>는 통과시킨다 — 텍스트 안에 사는 정식 구조다(→ non-goals.md)", () => {
