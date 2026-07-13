@@ -15,6 +15,9 @@ export type ThemePreference = "system" | "light" | "dark";
 /** 화면에 실제로 적용되는 테마. 루트의 data-theme 속성이 이 값을 갖는다. */
 export type ResolvedTheme = "light" | "dark";
 
+/** OS 다크 모드 질의 — 스토어 초기값과 app 레이어의 변경 구독이 같은 문자열을 쓴다. */
+export const DARK_QUERY = "(prefers-color-scheme: dark)";
+
 interface ThemeState {
   preference: ThemePreference;
   /** OS가 현재 다크인가 — app 레이어가 matchMedia로 갱신한다. */
@@ -23,9 +26,17 @@ interface ThemeState {
   setSystemPrefersDark: (prefersDark: boolean) => void;
 }
 
+/**
+ * 스토어를 만드는 **그 순간** OS 설정을 읽는다 — 기본값 false로 시작해 이펙트에서 고치면,
+ * 다크 사용자가 첫 프레임에 밝은 화면을 본다. matchMedia가 없는 환경(테스트)에서는 라이트로 본다.
+ */
+function systemPrefersDarkNow(): boolean {
+  return typeof globalThis.matchMedia === "function" && globalThis.matchMedia(DARK_QUERY).matches;
+}
+
 export const useThemeStore = create<ThemeState>((set) => ({
   preference: "system",
-  systemPrefersDark: false,
+  systemPrefersDark: systemPrefersDarkNow(),
   setPreference: (preference) => set({ preference }),
   setSystemPrefersDark: (systemPrefersDark) => set({ systemPrefersDark }),
 }));

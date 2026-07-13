@@ -1,13 +1,14 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
-import { useResolvedTheme, useThemeStore } from "@entities/theme";
+import { DARK_QUERY, useResolvedTheme, useThemeStore } from "@entities/theme";
 import { logger } from "@shared/lib";
 
-const DARK_QUERY = "(prefers-color-scheme: dark)";
-
 /**
- * 테마를 화면에 적용한다 — 루트 요소의 `data-theme`을 심고, OS 설정 변경을 스토어에 흘린다.
+ * 테마 **변화**를 화면에 흘린다 — OS 설정이 바뀌거나 사용자가 토글하면 루트의 `data-theme`을 갱신한다.
+ *
+ * 첫 값은 이 훅이 심지 않는다. 렌더 전에 부팅 단계가 이미 심어 뒀다(→ app/lib/apply-boot-flags.ts) —
+ * 이펙트에서 처음 심으면 한 프레임 동안 다크 사용자가 밝은 화면을 본다.
  *
  * Panda의 다크 조건이 `[data-theme="dark"] &`라 이 속성 하나가 앱 전체의 색을 갈아끼운다.
  * CM6 에디터도 CSS 변수를 참조하므로 함께 따라온다 — 에디터를 다시 만들지 않는다
