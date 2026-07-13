@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "메인 창의 기본 권한 — 코어 기본 + 플러그인(dialog·log·opener) + 창 조작(종료 방어의 close·destroy, 테마 동기화의 set-theme)만 허용한다. opener는 URL 열기만 열고 파일·경로 열기는 주지 않는다. 커스텀 파일 커맨드의 경로 스코프와 링크 스킴 허용목록은 capabilities가 아니라 코드가 강제한다 (단일 출처: .claude/docs/rust-commands.md#권한-capabilities)",
+  "description": "메인 창의 기본 권한 — 코어 기본 + 플러그인(dialog·log·opener) + 창 조작(종료 방어의 close·destroy, 테마 동기화의 set-theme)만 허용한다. opener는 URL 열기만 열고(파일·경로 열기 권한 없음) 스킴은 아래 allow 스코프가 Rust에서 강제한다 — 프론트(features/open-link)의 허용목록과 일치해야 한다. 커스텀 파일 커맨드의 경로 스코프만은 capabilities가 아니라 커맨드 내부 검증이 강제한다 (단일 출처: .claude/docs/rust-commands.md#권한-capabilities)",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -10,6 +10,9 @@
     "core:window:allow-set-theme",
     "dialog:default",
     "log:default",
-    "opener:allow-open-url"
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "http://*" }, { "url": "https://*" }, { "url": "mailto:*" }]
+    }
   ]
 }

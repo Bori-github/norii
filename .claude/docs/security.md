@@ -47,7 +47,13 @@ markdown-it이 만든 HTML은 삽입 전 DOMPurify로 정화한다. 마크다운
                         악성 문서가 클릭 한 번으로 로컬 파일·외부 앱을 열지 못하게.
 ```
 
-허용된 링크는 `plugin-opener`가 **OS 기본 브라우저**에 넘긴다 — 앱 웹뷰 안에서는 어떤 원격 페이지도 열지 않는다. 이 정책의 구현 위치·상세는 [프리뷰 전략 — 링크 정책](preview-strategy.md#sanitize는-필수다)을 단일 출처로 둔다.
+**허용목록(deny-by-default)이지 차단목록이 아니다.** OS 오프너는 등록된 모든 스킴을 프로그램 실행으로 바꿔 준다(`file:` · `smb:` · 설치된 앱의 커스텀 스킴). 차단목록은 새 스킴이 생길 때마다 뚫린다. 이 집합(http·https·mailto)은 VS Code의 `standardSupportedLinkSchemes`와 `tauri-plugin-opener` 기본 권한이 수렴하는 곳이고, **허용목록 없는 에디터들이 바로 이 지점에서 RCE를 겪었다**(Joplin CVE-2024-49362 "RCE on click of `<a>` link in markdown preview" · DeepChat CVE-2025-55733 · Obsidian CVE-2022-36450). 판정은 **URL 파싱**으로 한다 — 접두사 비교(`startsWith`)는 `https://example.com.attacker.com` 류에 뚫린다(Electron 보안 가이드가 명시).
+
+`mailto:`는 조사한 모든 허용목록에 들어 있다(VS Code · Tauri 기본 권한). 잔여 위험(수신자·본문 프리필, 일부 메일 클라이언트의 비표준 `?attach=`)은 취약한 메일 클라이언트를 전제하고 작성 창이 눈에 보이므로, 업계가 공통으로 수용한다.
+
+허용된 링크는 `plugin-opener`가 **OS 기본 브라우저**에 넘긴다 — 앱 웹뷰 안에서는 어떤 원격 페이지도 열지 않는다.
+
+**허용목록은 두 겹으로 강제된다.** 프론트(`features/open-link`)가 URL 파싱으로 판정하고, Rust(capabilities의 `opener:allow-open-url` 스코프)가 다시 검사한다 — 프론트를 우회한 IPC 직접 호출도 Rust에서 막힌다. 두 목록은 값이 서로 일치해야 하며, 그 일치는 테스트가 지킨다. 선언 방법은 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities), 프리뷰에서의 클릭 처리는 [프리뷰 전략 — 링크 정책](preview-strategy.md#링크-정책)을 각각 단일 출처로 둔다 — **허용 스킴 집합과 그 근거는 이 절이 단일 출처다.**
 
 ## 원칙
 
