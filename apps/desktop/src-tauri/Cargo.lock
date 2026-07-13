@@ -2165,8 +2165,10 @@ version = "0.1.0"
 dependencies = [
  "chardetng",
  "encoding_rs",
+ "libc",
  "log",
  "notify",
+ "objc2",
  "serde",
  "serde_json",
  "sha2",

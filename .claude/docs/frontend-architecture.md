@@ -16,11 +16,11 @@ app → pages → widgets → features → entities → shared
 
 | 레이어 | 책임 (FSD 정의) | norii 슬라이스(예정) |
 |---|---|---|
-| `app/` | 앱 전역 관심사 — Provider·전역 스토어·전역 스타일·부트스트랩 | `providers/`(Zustand 스토어·테마), `layouts/`, Tauri 초기화(window·menu·IPC), `index.css` |
+| `app/` | 앱 전역 관심사 — Provider·전역 스토어·전역 스타일·부트스트랩 | `providers/`, `layouts/`, Tauri 초기화(window·menu·IPC), `index.css`, 테마 **적용**(data-theme 심기 — 상태는 entities가 소유) |
 | `pages/` | 화면(스크린) 단위 조합. 데이터 페칭·에러 바운더리 포함 가능 | `editor/`(메인 워크스페이스), `settings/`(후) |
 | `widgets/` | 독립적으로 완결된 큰 UI 블록 (여러 곳에서 재사용되거나 페이지가 여러 독립 블록으로 구성될 때) | `sidebar/`(파일 트리), `tab-bar/`, `editor-pane/`, `preview-pane/`, `status-bar/` |
 | `features/` | 비즈니스 가치를 가진 사용자 상호작용 (여러 페이지에서 재사용되는 게 좋은 지표) | `open-file/`, `save-file/`, `tab-management/`, `toggle-fold/`, `scroll-sync/`, `switch-theme/`, `reload-on-external-change/` |
-| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 | `document/`(탭·dirty 상태), `file-tree/`, `workspace/`, `settings/` |
+| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 | `document/`(탭·dirty 상태), `theme/`(테마 의도·해석), `file-tree/`, `workspace/`, `settings/` |
 | `shared/` | 외부 시스템·라이브러리·환경과의 연결 기반. **슬라이스 없음, 세그먼트만** | `ipc/`(Tauri 커맨드 래퍼), `ui/`, `lib/`, `config/`, `types/` |
 
 ## 슬라이스와 세그먼트
@@ -80,7 +80,9 @@ packages/ui       (공용 프리미티브)  → shared/ui 가 래핑·재노출
 
 ## 스타일 · 디자인 시스템
 
-스타일은 **Panda CSS**로 작성하고, 디자인 시스템을 프로젝트 내부에 구축한다. 토큰은 `panda.config.ts`(단일 출처), 디자인 시스템 컴포넌트는 `shared/ui`(recipe로 구성)에 둔다. 상위 레이어는 `shared/ui` 컴포넌트를 소비하고 직접 스타일을 최소화한다. 라이트/다크 테마 상태는 `app` 레이어(Zustand)가 소유한다. 상세는 [디자인 시스템](design-system.md)을 단일 출처로 둔다.
+스타일은 **Panda CSS**로 작성하고, 디자인 시스템을 프로젝트 내부에 구축한다. 토큰은 `panda.config.ts`(단일 출처), 디자인 시스템 컴포넌트는 `shared/ui`(recipe로 구성)에 둔다. 상위 레이어는 `shared/ui` 컴포넌트를 소비하고 직접 스타일을 최소화한다. 상세는 [디자인 시스템](design/design-system.md)을 단일 출처로 둔다.
+
+**테마 상태는 `entities/theme`이 소유한다.** 앱 전역 관심사처럼 보이지만 실은 **사용자가 바꾸는 도메인 상태**이며(탭·문서와 다르지 않다), `features/switch-theme`이 그것을 바꾸고 `app`이 읽어 루트에 `data-theme`을 심는다. `app`이 소유하면 토글 UI(`features`)가 상위 레이어를 참조하게 되어 **의존 방향을 거스른다** — Steiger가 이를 막는다. 설정 화면이 생기면 `pages/settings` → `features/switch-theme` → `entities/theme`으로 같은 방향을 탄다.
 
 ## UI 문자열과 i18n (현재 미도입)
 

@@ -4,6 +4,7 @@ import { EditorPage } from "@pages/editor";
 import { exposeE2eApi } from "../lib/expose-e2e-api";
 import { useCloseGuard } from "../lib/use-close-guard";
 import { useGlobalShortcuts } from "../lib/use-global-shortcuts";
+import { useTheme } from "../lib/use-theme";
 import { AppErrorBoundary } from "./error-boundary";
 
 // E2E 훅 노출은 dev 빌드에서만 동작한다(함수 내부에서 가드).
@@ -14,6 +15,7 @@ exposeE2eApi();
 export function App() {
   useGlobalShortcuts();
   useCloseGuard();
+  useTheme();
   useExternalChanges();
   return (
     <AppErrorBoundary>

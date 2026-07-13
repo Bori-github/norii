@@ -25,6 +25,7 @@ norii/
   LICENSE                    MIT (© 2026 bori)
   CLAUDE.md                  Claude 진입점 → AGENTS.md
   AGENTS.md                  문서 인덱스 + 핵심 원칙
+  DESIGN.md                  디자인 규칙 (불변식·표면 표 → 상세는 .claude/docs/design/)
   .github/
     pull_request_template.md PR 본문 템플릿 (→ .claude/rules/commit-convention.md)
   scripts/
@@ -32,20 +33,21 @@ norii/
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
+      design/                디자인 상세 (결정 기록 ADR · Panda 토큰 · 창 표면 계약)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
     commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
 
   apps/
     desktop/                 Tauri 데스크탑 앱
       src/                   React 프론트엔드 — FSD 레이어 (→ frontend-architecture.md)
-        app/                 Provider·전역 스토어·테마·레이아웃·Tauri 부트스트랩
+        app/                 Provider·레이아웃·부트스트랩(테마/유리 표식 적용·전역 단축키·종료 방어)
         pages/               화면 조합 (editor, settings…)
-        widgets/             완결 UI 블록 (sidebar·tab-bar·editor-pane·preview-pane)
-        features/            사용자 상호작용 (open-file·save-file·toggle-fold…)
-        entities/            도메인 모델·상태 (document·file-tree·workspace)
+        widgets/             완결 UI 블록 (sidebar·tab-bar·editor-pane·preview-pane·status-bar)
+        features/            사용자 상호작용 (open-file·save-file·switch-theme·toggle-fold…)
+        entities/            도메인 모델·상태 (document·theme·file-tree·workspace)
         shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types)
       src-tauri/             Rust 백엔드
-        src/                 커맨드·파일 I/O·감시 구현
+        src/                 커맨드·파일 I/O·감시 · 창 유리·드래그 띠 (→ design/window-chrome.md)
         Cargo.toml           (webdriver 피처로 tauri-plugin-webdriver 선택 포함 → testing.md)
         tauri.conf.json
         capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)
@@ -56,7 +58,7 @@ norii/
       tsconfig.app.json       FSD 레이어 path alias 정의
       tsconfig.json           편집기용 위임 설정 — tsconfig.app.json을 extends (언어 서버는 이 이름만 자동 탐색)
       steiger.config.ts       FSD 린트 설정
-      panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design-system.md)
+      panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design/design-system.md)
       postcss.config.cjs      Panda PostCSS 플러그인
       styled-system/          Panda 생성물 (VCS 제외 — 빌드 시 생성)
       package.json

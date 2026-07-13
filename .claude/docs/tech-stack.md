@@ -28,10 +28,11 @@
 | 에디터 코어            | CodeMirror 6 (`@codemirror/state`·`view`·`commands`) | state 6.7.0 · view 6.43.5 · commands 6.10.4          | 소스 편집·하이라이팅·폴딩. 증분 파서 내장. 대용량 가상화.                                                             |
 | 마크다운 언어          | `@codemirror/lang-markdown`                          | 6.5.0                                                | 하이라이팅 + 폴딩용 Lezer 파서 (내장)                                                                                 |
 | 에디터 확장            | `@codemirror/language`·`search`                       | language 6.12.4 · search 6.7.1                       | 폴딩(language)·문서 내 검색                                                                                           |
+| 에디터 구문 태그       | `@lezer/highlight`                                   | 1.2.3                                                | 마크다운 구문 태그(heading·link·mark) — CM6 테마가 앱 토큰으로 색을 입힐 때 쓴다(→ [디자인 시스템](design/design-system.md#테마-라이트다크)) |
 | 프리뷰 파서            | markdown-it (`markdown-it`)                          | 14.3.0                                               | 마크다운 → HTML. GFM·플러그인 생태계. 웹뷰에서 실행.                                                                  |
 | Sanitizer              | DOMPurify (`dompurify`)                              | 3.4.11                                               | XSS 방어 (필수)                                                                                                       |
 | 상태 관리              | Zustand (`zustand`)                                  | 5.0.14                                               | 탭·문서·설정 상태 (경량)                                                                                              |
-| 스타일 / 디자인 시스템 | Panda CSS (`@pandacss/dev`)                          | 1.11.4                                               | 프로젝트 내부 DS — 토큰·시맨틱·recipe·제로 런타임 (→ [디자인 시스템](design-system.md))                               |
+| 스타일 / 디자인 시스템 | Panda CSS (`@pandacss/dev`)                          | 1.11.4                                               | 프로젝트 내부 DS — 토큰·시맨틱·recipe·제로 런타임 (→ [디자인 시스템](design/design-system.md))                               |
 
 > **예정(미설치)**: `@codemirror/autocomplete`(확인된 최신 6.20.3)는 자동완성 기능을 도입할 때 추가한다([에디터 전략](editor-strategy.md#확장-구성-초기)의 "필요 시"). 이 표는 **실제 설치된 핀**의 단일 출처이므로, 설치 전까지 버전 열에 넣지 않는다(→ `docs-drift` 검사가 표↔핀을 단방향 대조).
 
@@ -59,6 +60,8 @@
 | `sha2`                  | 0.10.9  | 내용 해시(SHA-256) — 저장 충돌 검사·에코 억제 기준값 (→ [파일 생명주기 정책](file-lifecycle.md)) |
 | `tempfile`              | 3.24.0  | 원자적 쓰기의 임시 파일 + 테스트 임시 디렉터리 (→ [파일 생명주기 정책](file-lifecycle.md))   |
 | `log`                   | 0.4.x   | 로깅 파사드 — plugin-log의 레벨 필터 타입. 사실상 동결된 크레이트라 범위 핀                     |
+| `objc2`                 | 0.6.4   | **macOS 전용 타깃 의존성.** 창 유리·드래그 띠에서 NSWindow·NSView를 다룬다 (→ [창 표면 계약](design/window-chrome.md)) |
+| `libc`                  | 0.2.180 | **macOS 전용 타깃 의존성.** 비공개 흐림 심볼을 실행 시점에 찾는다(`dlsym`) — 정적 링크하면 심볼이 사라진 macOS에서 앱이 못 뜬다 |
 | `tauri-specta`          | 2.0.0-rc.25 | Rust 커맨드 → TS 바인딩 생성 (코드 품질 표의 IPC 타입 계약과 동일 항목)                  |
 | `specta`                | 2.0.0-rc.25 | tauri-specta의 타입 도출 코어 — rc 버전을 tauri-specta와 맞춰 핀                          |
 | `specta-typescript`     | 0.0.12  | TS 내보내기 백엔드 (pre-1.0)                                                                 |

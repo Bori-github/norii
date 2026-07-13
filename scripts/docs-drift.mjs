@@ -53,6 +53,42 @@ function findDocLines(lines, name) {
   return lines.filter((line) => line.includes(name));
 }
 
+// 0) 플랫폼 상수 — 같은 숫자가 Rust와 CSS 두 곳에 사는 자리를 대조한다.
+//
+// 왜: 타이틀바 드래그 띠의 높이는 네이티브(NSView 프레임)와 웹(탭바 padding-top)이 **같은 값**을
+//     써야 한다. 어긋나면 조용히 깨진다 — 탭이 띠에 먹혀 눌러도 창이 끌리거나, 아무것도 없는
+//     띠가 남는다. 화면을 봐야만 알 수 있고, 그때는 이미 늦다.
+// 무엇: Rust의 TITLEBAR_STRIP_HEIGHT와 탭바 CSS의 paddingTop이 같은 숫자인지.
+// 경계: "띠가 실제로 웹뷰 위에 있는가"는 여기서 못 본다 — 그건 실앱 검증 영역이다
+//       (→ .claude/docs/design/window-chrome.md#검증).
+function checkPlatformConstants(problems) {
+  const rust = read("apps/desktop/src-tauri/src/titlebar_drag.rs");
+  const css = read("apps/desktop/src/widgets/tab-bar/ui/tab-bar.tsx");
+
+  const rustMatch = /TITLEBAR_STRIP_HEIGHT:\s*f64\s*=\s*(\d+(?:\.\d+)?)/.exec(rust);
+  if (!rustMatch) {
+    problems.push("titlebar_drag.rs에서 TITLEBAR_STRIP_HEIGHT를 찾지 못했습니다.");
+    return 0;
+  }
+  const stripHeight = Number.parseFloat(rustMatch[1]);
+
+  // 탭바는 유리(_glass)에서만 띠만큼 위를 비운다.
+  const cssMatch = /_glass:\s*\{[^}]*paddingTop:\s*"(\d+)px"/.exec(css);
+  if (!cssMatch) {
+    problems.push("tab-bar.tsx의 _glass paddingTop(띠 높이 확보)을 찾지 못했습니다.");
+    return 0;
+  }
+  const paddingTop = Number.parseFloat(cssMatch[1]);
+
+  if (stripHeight !== paddingTop) {
+    problems.push(
+      `드래그 띠 높이가 어긋납니다 — Rust TITLEBAR_STRIP_HEIGHT=${stripHeight}, ` +
+        `탭바 paddingTop=${paddingTop}px. 같은 값이어야 탭이 띠 아래에서 시작한다.`,
+    );
+  }
+  return 1;
+}
+
 // 1) Rust 커맨드 → rust-commands.md 등재 여부.
 function checkRustCommands(problems) {
   const doc = read(".claude/docs/rust-commands.md");
@@ -174,6 +210,7 @@ function checkTechStackCargo(problems) {
 }
 
 const problems = [];
+const constCount = checkPlatformConstants(problems);
 const rustCount = checkRustCommands(problems);
 const npmCount = checkTechStackNpm(problems);
 const cargoCount = checkTechStackCargo(problems);
@@ -188,5 +225,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `✔ docs-drift: 정합 (Rust 커맨드 ${rustCount} · npm 버전 ${npmCount} · 크레이트 ${cargoCount} 대조)`,
+  `✔ docs-drift: 정합 (플랫폼 상수 ${constCount} · Rust 커맨드 ${rustCount} · ` +
+    `npm 버전 ${npmCount} · 크레이트 ${cargoCount} 대조)`,
 );

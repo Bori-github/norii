@@ -132,4 +132,6 @@ plugin-log           통합 로깅 (→ error-handling.md)
    - canonicalize로 심볼릭 링크를 통한 스코프 탈출도 차단
 ```
 
+**창 조작 권한** — 종료 방어가 쓰는 `allow-close`·`allow-destroy`, 그리고 테마 동기화가 쓰는 `allow-set-theme`(창의 타이틀바·신호등을 앱 테마에 맞춘다 → [창 표면 계약](design/window-chrome.md#창-테마-동기화)) 셋뿐이다. 모두 `core:default`에 없어 명시 선언한다. **창 드래그 권한은 두지 않는다** — 웹이 드래그를 요청하지 않기 때문이다. 상단은 웹뷰가 가지지만(`titleBarStyle: Overlay`), 그 위에 얹은 네이티브 드래그 띠가 AppKit 경로로 직접 처리한다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠)).
+
 허용 스코프는 "다이얼로그로 선택한 경로"와 "연 루트 폴더의 하위 트리"이고, 임의 전역 접근은 지양한다. 마크다운 에디터는 임의 경로 파일을 열어야 하므로 이렇게 좁혀 최소 권한을 지키되, **그 강제는 capabilities가 아니라 커맨드 코드**에 있음을 잊지 않는다.

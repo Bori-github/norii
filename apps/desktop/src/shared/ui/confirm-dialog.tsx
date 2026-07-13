@@ -3,6 +3,8 @@ import { css } from "styled-system/css";
 
 import { useConfirmStore } from "./confirm-store";
 
+// 다이얼로그는 앱 위에 뜨지만 불투명하다 — 투명 창에서 backdrop-filter가 동작하지 않는다는 보고가
+// 있고, 캔버스가 투명하면 흐릴 픽셀 자체가 없다. 흐림 채택은 실측 후 결정한다(→ decisions/0002).
 const dialogClass = css({
   margin: "auto",
   maxWidth: "sm",
@@ -10,10 +12,10 @@ const dialogClass = css({
   border: "1px solid",
   borderColor: "border",
   borderRadius: "md",
-  background: "bg.surface",
+  background: "bg.paper",
   color: "text",
   boxShadow: "lg",
-  _backdrop: { background: "bg.overlay" },
+  _backdrop: { background: "bg.scrim" },
 });
 
 const bodyClass = css({
@@ -39,14 +41,14 @@ const buttonClass = css({
   cursor: "pointer",
   background: "transparent",
   fontSize: "sm",
-  _hover: { background: "bg.canvas" },
+  _hover: { background: "bg.hover" },
 });
 
-// 확정 동작 버튼 — 현재는 강조 색(accent)으로 구분한다. 파괴적 동작 전용 danger 토큰
-// 도입 여부는 디자인 시스템이 커질 때 결정한다.
+// 확정 동작 버튼 — 강조는 글자색이 아니라 **테두리와 굵기**로 낸다. 액센트는 테마 공통 단일 값이라
+// 글자로 쓰면 어느 한 테마에서 AA를 통과하지 못한다(→ decisions/0005). 테두리는 비텍스트라 안전하다.
 const confirmButtonClass = css({
-  color: "accent",
-  fontWeight: "medium",
+  borderColor: "accent",
+  fontWeight: "semibold",
 });
 
 // 인앱 확인 모달 — 표준 <dialog>가 포커스 트랩·Esc(cancel 이벤트)를 기본 제공한다.

@@ -2,8 +2,14 @@
 // 향후 i18n 도입 시 이 모듈만 로케일 리소스로 교체한다
 // (→ .claude/docs/frontend-architecture.md#ui-문자열과-i18n-현재-미도입).
 export const STRINGS = {
+  // 창 상단 띠에 우리가 그리는 앱 이름 — OS 타이틀 텍스트는 끈다(→ design/window-chrome.md).
+  appName: "norii",
+
   untitledTitle: "Untitled",
   untitledDefaultFileName: "Untitled.md",
+
+  // 열린 문서가 없을 때 탭바가 지키는 자리(→ .claude/docs/document-model.md#빈-탭--탭바는-비지-않는다).
+  newTabTitle: "새 탭",
 
   emptyStateTitle: "열린 문서가 없습니다",
   emptyStateHint: "⌘N 새 문서 · ⌘O 파일 열기",
@@ -69,4 +75,6 @@ export const STRINGS = {
     encoding: "지원되지 않는 파일 형식입니다.",
     io: "파일 처리 중 오류가 발생했습니다.",
   },
+  themeToDarkLabel: "다크 테마로 전환",
+  themeToLightLabel: "라이트 테마로 전환",
 } as const;

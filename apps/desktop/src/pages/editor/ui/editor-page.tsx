@@ -4,6 +4,7 @@ import { ConflictBanner, MissingFileBanner } from "@features/save-file";
 import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
 import { NormalizationBanner } from "@widgets/normalization-banner";
+import { StatusBar } from "@widgets/status-bar";
 import { TabBar } from "@widgets/tab-bar";
 
 const pageClass = css({
@@ -23,6 +24,7 @@ export function EditorPage() {
       <ConflictBanner />
       <MissingFileBanner />
       <EditorPane />
+      <StatusBar />
       <ConfirmDialog />
     </div>
   );
