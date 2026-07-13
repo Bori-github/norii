@@ -126,11 +126,14 @@ export function usePreviewScrollSync(
       const height = block.element.offsetHeight || 1;
       const progress = clamp01((pane.scrollTop - top) / height);
       // 블록이 걸친 소스 라인 범위(시작~끝)에 진행률을 펴서 라인+진행률로 변환한다.
+      // 진행률 1(하단 여백 구간)에서 endLine+1로 넘치지 않게 (endLine, 1)로 자른다.
       const lineSpan = block.endLine - block.line + 1;
       const lineOffset = progress * lineSpan;
+      const flooredLine = block.line + Math.floor(lineOffset);
+      const overflow = flooredLine > block.endLine;
       publishScroll("preview", {
-        line: block.line + Math.floor(lineOffset),
-        fraction: lineOffset - Math.floor(lineOffset),
+        line: overflow ? block.endLine : flooredLine,
+        fraction: overflow ? 1 : lineOffset - Math.floor(lineOffset),
         // 바닥에 닿으면 가장자리 스냅 — 반대 패널도 바닥으로 정렬된다.
         ...(isAtBottom(pane) ? { edge: "bottom" as const } : {}),
       });

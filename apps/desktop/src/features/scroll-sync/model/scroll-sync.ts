@@ -121,13 +121,16 @@ export interface SwapSuppressor {
   shouldIgnore(): boolean;
 }
 
+/** 스왑 억제 창의 기본 길이 — 이 값에 기대는 테스트는 이 상수를 참조한다(암묵 결합 금지). */
+export const SWAP_SUPPRESS_WINDOW_MS = 150;
+
 /**
  * 렌더 스왑 직후의 스크롤 발행 억제 — 본문이 짧아지면 브라우저가 scrollTop을 강제
  * 보정하며 진짜 scroll 이벤트가 나는데(에코 가드는 arm된 적이 없어 통과), 이를 동기화
  * 신호로 발행하면 타이핑 중인 반대 패널이 당겨진다. 스왑 후 짧은 창 동안 발행을 막는다.
  */
 export function createSwapSuppressor(
-  windowMs = 150,
+  windowMs = SWAP_SUPPRESS_WINDOW_MS,
   now: () => number = () => performance.now(),
 ): SwapSuppressor {
   let suppressUntil = 0;

@@ -2,7 +2,7 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
-import { resetScrollSync } from "@features/scroll-sync";
+import { resetScrollSync, SWAP_SUPPRESS_WINDOW_MS } from "@features/scroll-sync";
 
 import { EditorPage } from "../index";
 
@@ -20,10 +20,15 @@ import { EditorPage } from "../index";
 const LONG_DOC = Array.from({ length: 300 }, (_, index) => `${index + 1}번째 문단`).join("\n\n");
 
 // Panda CSS 부재를 보완하는 최소 레이아웃 — 두 패널을 고정 높이 스크롤 영역으로 만든다.
+// 프리뷰의 ::after 블록은 운영의 하단 여백(70vh 패딩)이 만드는 기하 — "내용 아래에 화면보다
+// 큰 빈 공간" — 를 결정적으로 재현한다(테스트 환경은 border-box 리셋·실제 vh가 없어 패딩
+// 방식이 통하지 않음). 이 여백이 없으면 일반 매핑만으로 바닥에 닿아, "가장자리 스냅" 테스트가
+// 기능을 꺼도 통과하는 공허한 테스트가 된다(변이로 검증).
 const LAYOUT_CSS = `
   [data-testid="editor-pane"] { height: 400px; overflow: auto; }
   [data-testid="editor-pane"] .cm-editor { height: 100%; }
   [data-testid="preview-pane"] { height: 400px; overflow: auto; }
+  [data-testid="preview-pane"]::after { content: ""; display: block; height: 600px; }
 `;
 
 beforeEach(() => {
@@ -133,15 +138,39 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
 
   it("프리뷰를 맨 아래로 내리면 에디터도 맨 아래에 닿는다", async () => {
     const { editorScroller, previewPane } = await renderUnevenDocPage();
-    // 렌더 스왑 억제 창(150ms)을 지나서 스크롤한다 — 바닥 스크롤이 스왑 보정으로
-    // 오인되지 않게(실사용에서 렌더 직후 즉시 바닥까지 내리는 경우는 드물다).
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // 렌더 스왑 억제 창을 지나서 스크롤한다 — 바닥 스크롤이 스왑 보정으로 오인되지
+    // 않게(실사용에서 렌더 직후 즉시 바닥까지 내리는 경우는 드물다). 상수를 참조해
+    // 창 길이가 바뀌어도 이 대기가 함께 늘어난다.
+    await new Promise((resolve) => setTimeout(resolve, SWAP_SUPPRESS_WINDOW_MS + 50));
 
     previewPane.scrollTop = previewPane.scrollHeight;
 
     await waitFor(() => {
       const editorMax = editorScroller.scrollHeight - editorScroller.clientHeight;
       expect(editorScroller.scrollTop).toBeGreaterThanOrEqual(editorMax - 1);
+    });
+  });
+
+  it("에디터는 마지막 줄 너머로 스크롤할 수 있다 — scrollPastEnd 바닥 여백(→ preview-strategy.md)", async () => {
+    // 이 확장이 제거돼도 다른 테스트는 전부 통과한다(스냅은 '각자의 바닥' 기준이라서).
+    // 사용자 가시 동작(마지막 줄을 눈높이로 올려 편집)의 유일한 회귀 방지선이다.
+    const { editorScroller } = await renderUnevenDocPage();
+
+    editorScroller.scrollTop = editorScroller.scrollHeight;
+
+    await waitFor(() => {
+      // 문서의 진짜 마지막 줄로 판정한다 — 스크롤 직후 CM6가 옛 화면 영역의 줄만
+      // 렌더한 순간에는 "마지막 렌더 줄"이 화면 위로 지나간 줄이라 단언이 공허해진다.
+      const lastLine = Array.from(editorScroller.querySelectorAll(".cm-line")).find((line) =>
+        line.textContent?.includes("150번째 제목"),
+      ) as HTMLElement | undefined;
+      expect(lastLine).toBeDefined();
+      const lastLineTop =
+        (lastLine as HTMLElement).getBoundingClientRect().top -
+        editorScroller.getBoundingClientRect().top;
+      // 최대로 내리면 마지막 줄이 화면 안 위쪽 절반에 온다 — 확장 제거 시 바닥에 붙는다.
+      expect(lastLineTop).toBeGreaterThan(-10);
+      expect(lastLineTop).toBeLessThan(editorScroller.clientHeight * 0.5);
     });
   });
 

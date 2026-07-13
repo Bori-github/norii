@@ -4,6 +4,7 @@ import {
   applyGuardedScrollTop,
   createEchoGuard,
   createSwapSuppressor,
+  isAtBottom,
   publishScroll,
   resetScrollSync,
   subscribeScroll,
@@ -110,6 +111,30 @@ describe("applyGuardedScrollTop — 가드 짝 맞춤 적용", () => {
     applyGuardedScrollTop(guard, target, 100.5);
     expect(target.scrollTop).toBe(100);
     expect(guard.shouldIgnore()).toBe(false);
+  });
+});
+
+// 왜: 가장자리 스냅의 판정 기준 — 잘못되면 스냅이 안 걸리거나(바닥 어긋남 재발)
+//     너무 일찍 걸린다(중간 스크롤이 바닥으로 슬램).
+// 보장: 최대 위치와 1px 허용 오차 안은 바닥, 그 밖은 바닥 아님. 스크롤이 아예 없는
+//       패널(내용 < 화면)은 항상 바닥으로 판정된다 — 짧은 문서는 늘 edge를 실어 보낸다.
+// 경계: 실제 DOM 연결·발행 여부는 위젯·통합 테스트가 다룬다.
+describe("isAtBottom — 바닥 판정", () => {
+  it("최대 스크롤 위치는 바닥이다", () => {
+    expect(isAtBottom(fakeTarget(600))).toBe(true); // max = 1000 - 400
+  });
+
+  it("허용 오차(1px) 안은 바닥으로 본다", () => {
+    expect(isAtBottom(fakeTarget(599))).toBe(true);
+  });
+
+  it("허용 오차 밖은 바닥이 아니다", () => {
+    expect(isAtBottom(fakeTarget(598))).toBe(false);
+    expect(isAtBottom(fakeTarget(0))).toBe(false);
+  });
+
+  it("스크롤이 없는 패널(내용 ≤ 화면)은 항상 바닥이다", () => {
+    expect(isAtBottom(fakeTarget(0, 400, 400))).toBe(true);
   });
 });
 
