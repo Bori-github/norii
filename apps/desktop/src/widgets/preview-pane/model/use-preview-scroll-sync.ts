@@ -54,6 +54,9 @@ export function usePreviewScrollSync(
   const swapSuppressorRef = useRef(createSwapSuppressor());
   // 마지막 scroll 이벤트 시점에 바닥이었는지 — 재렌더 후 바닥 고정의 판정 기준.
   const wasAtBottomRef = useRef(false);
+  // 에코 가드는 두 효과(바닥 고정·이벤트 핸들러)가 공유한다 — 프로그램적 스크롤은
+  // 예외 없이 이 가드와 짝을 맞춰야 한다(휴리스틱 의존 금지, 탭 전환 시 새로 만든다).
+  const echoGuardRef = useRef(createEchoGuard());
 
   // 렌더 스왑 — 위치 캐시를 무효화하고, 브라우저의 scrollTop 강제 보정이 만드는
   // 진짜 scroll 이벤트가 동기화 신호로 새 나가는 것을 잠깐 막는다(→ scroll-sync).
@@ -61,11 +64,11 @@ export function usePreviewScrollSync(
     cacheRef.current = null;
     swapSuppressorRef.current.noteSwap();
     // 바닥 고정 — 바닥에서 타이핑하면 프리뷰가 '자라는데' 스크롤은 그대로라 새 내용이
-    // 잘린다. 스왑 직전에 바닥이었다면 새 바닥으로 따라 내린다(이때 생기는 scroll
-    // 이벤트는 위 억제 창이 걸러 동기화 신호로 새 나가지 않는다).
+    // 잘린다. 스왑 직전에 바닥이었다면 새 바닥으로 따라 내린다. 다른 프로그램적
+    // 스크롤과 똑같이 가드 헬퍼를 경유한다 — 이 이벤트는 카운터로 정확히 상쇄된다.
     const pane = paneRef.current;
     if (pane && wasAtBottomRef.current) {
-      pane.scrollTop = pane.scrollHeight;
+      applyGuardedScrollTop(echoGuardRef.current, pane, Number.MAX_SAFE_INTEGER);
     }
   }, [paneRef, html]);
 
@@ -78,7 +81,10 @@ export function usePreviewScrollSync(
     // 렌더 직후 바닥으로 점프할 수 있다(현재는 에디터의 탭 전환 리셋 신호가 우연한
     // 순서로 덮어주지만, 순서에 기대지 않고 여기서 결정적으로 끊는다).
     wasAtBottomRef.current = false;
-    const echoGuard = createEchoGuard();
+    // 에코 가드도 탭마다 새로 — 이전 탭에서 arm만 되고 소비되지 않은 카운트가
+    // 새 탭의 진짜 사용자 스크롤을 삼키지 않게 한다.
+    echoGuardRef.current = createEchoGuard();
+    const echoGuard = echoGuardRef.current;
 
     const measured = (): BlockPositionCache => {
       let cache = cacheRef.current;
