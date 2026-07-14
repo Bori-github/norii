@@ -112,17 +112,20 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
           cacheSvg(key, svg);
           placeholder.innerHTML = svg;
         } catch {
+          // mermaid는 실패 시 임시 노드를 문서에 남긴다 — 우리가 치운다. 이름이 두 가지다:
+          // 우리가 준 id 그대로인 것과, mermaid가 앞에 d를 붙여 만드는 것(#d<id>). 후자를
+          // 놓치면 문법 오류를 고치는 동안 디바운스 틱마다 노드가 하나씩 샌다(실측).
+          // **취소 판정보다 먼저 치운다** — 취소는 "낡은 DOM에 그리지 마라"지 "청소를
+          // 건너뛰라"가 아니다. 깨진 다이어그램을 타이핑으로 고치는 동안은 매 틱이 취소라,
+          // 취소 뒤에 치우면 같은 누수가 취소 경로로 되돌아온다.
+          document.getElementById(id)?.remove();
+          document.getElementById(`d${id}`)?.remove();
           if (cancelled) {
             return;
           }
           // 문법 오류는 사용자가 고칠 수 있는 일상이다 — 앱을 깨거나 배너를 띄우지 않고
           // 그 자리에만 알린다. 실패는 캐시하지 않는다(고치는 즉시 다시 시도해야 한다).
           placeholder.textContent = STRINGS.mermaidRenderError;
-          // mermaid는 실패 시 임시 노드를 문서에 남긴다 — 우리가 치운다. 이름이 두 가지다:
-          // 우리가 준 id 그대로인 것과, mermaid가 앞에 d를 붙여 만드는 것(#d<id>). 후자를
-          // 놓치면 문법 오류를 고치는 동안 디바운스 틱마다 노드가 하나씩 샌다(실측).
-          document.getElementById(id)?.remove();
-          document.getElementById(`d${id}`)?.remove();
         }
         painted = true;
       }
