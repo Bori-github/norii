@@ -16,11 +16,30 @@ import { STRINGS } from "@shared/config";
 //      엔진 출력이다. securityLevel 'strict'가 라벨 속 스크립트·HTML을 봉쇄한다.
 
 type MermaidApi = typeof import("mermaid").default;
+type MermaidImporter = () => Promise<{ default: MermaidApi }>;
+
+const realImporter: MermaidImporter = () => import("mermaid");
+let importMermaid: MermaidImporter = realImporter;
+
+/** 테스트 전용 — 로드 실패(간헐 네트워크)를 주입한다. null이면 실제 import로 되돌린다. */
+export function setMermaidImporterForTest(importer: MermaidImporter | null): void {
+  importMermaid = importer ?? realImporter;
+}
 
 let mermaidPromise: Promise<MermaidApi> | null = null;
 
 function loadMermaid(): Promise<MermaidApi> {
-  mermaidPromise ??= import("mermaid").then((module) => module.default);
+  if (mermaidPromise === null) {
+    const loading = importMermaid().then((module) => module.default);
+    // **실패한 로드는 캐시하지 않는다.** mermaid는 동적 청크가 많아 로드가 간헐적으로
+    // 실패한다(실측 — 브라우저 테스트를 직렬화한 사유). 거부된 프로미스를 캐시하면
+    // 그 순간부터 앱을 재시작할 때까지 모든 다이어그램이 죽는다. 지워 두면 다음
+    // 갱신이 처음부터 다시 시도한다.
+    loading.catch(() => {
+      mermaidPromise = null;
+    });
+    mermaidPromise = loading;
+  }
   return mermaidPromise;
 }
 
@@ -73,7 +92,14 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
     let cancelled = false;
 
     const paint = async () => {
-      const mermaid = await loadMermaid();
+      let mermaid: MermaidApi;
+      try {
+        mermaid = await loadMermaid();
+      } catch {
+        // 로드 실패 — 이 틱은 조용히 끝낸다(paint는 void 호출이라 여기서 안 잡으면
+        // unhandled rejection이 된다). 실패는 캐시되지 않았으므로 다음 갱신이 재시도한다.
+        return;
+      }
       if (cancelled) {
         return;
       }
