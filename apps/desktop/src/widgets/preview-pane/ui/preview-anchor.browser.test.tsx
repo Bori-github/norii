@@ -133,18 +133,24 @@ describe("프리뷰 — 문서 내 앵커 이동", () => {
   });
 
   it("프리뷰 밖의 같은 id는 잡지 않는다 — 앱 UI를 스크롤하지 않는다", async () => {
-    // 문서 전체(document.getElementById)에서 찾으면 앱 UI의 같은 id를 잡는다.
+    // 문서 전체(document.querySelector)에서 찾으면 앱 UI의 같은 id를 잡는다.
+    // 미끼는 패널보다 **아래쪽**(top: 5000px)에 절대배치한다 — 패널 위쪽에 두면 전역
+    // 탐색으로 잘못 구현해도 목표 scrollTop이 음수→0 클램프되어 이 테스트가 공허해진다
+    // (변이 검증으로 확인한 함정 — 이 프로젝트에서 세 번째다).
     const decoy = document.createElement("div");
     decoy.id = "결론";
-    decoy.dataset["decoy"] = "true";
+    decoy.style.cssText = "position:absolute; top:5000px; height:10px";
     document.body.append(decoy);
+    try {
+      openTabWith(`[결론으로](#결론)\n\n${FILLER}`); // 문서 안에는 그 헤딩이 없다
+      const { container } = render(<PreviewPane />);
+      const pane = mountPane(container);
 
-    openTabWith(`[결론으로](#결론)\n\n${FILLER}`); // 문서 안에는 그 헤딩이 없다
-    const { container } = render(<PreviewPane />);
-    const pane = mountPane(container);
-
-    await clickLinkByText(container, "결론으로");
-    expect(pane.scrollTop).toBe(0);
-    decoy.remove();
+      await clickLinkByText(container, "결론으로");
+      expect(pane.scrollTop).toBe(0);
+    } finally {
+      // 실패해도 미끼를 남기지 않는다 — 남으면 다음 테스트의 앵커가 미끼에 걸린다.
+      decoy.remove();
+    }
   });
 });
