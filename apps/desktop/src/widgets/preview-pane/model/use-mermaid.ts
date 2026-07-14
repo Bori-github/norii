@@ -64,6 +64,22 @@ function cacheSvg(key: string, svg: string): void {
 // mermaid는 렌더마다 고유 id를 요구한다(같은 id를 재사용하면 임시 노드가 충돌한다).
 let renderSeq = 0;
 
+// id에는 난수 꼬리를 붙인다 — 순번만 쓰면 예측 가능해서, 문서가 원시 HTML로 같은 id를
+// 선점해 mermaid의 임시 노드 처리와 충돌시킬 수 있다(문서 내용은 우리가 못 믿는 입력이다).
+function nextRenderId(): string {
+  renderSeq += 1;
+  return `norii-mermaid-${renderSeq}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// 에러 임시 노드 제거는 **프리뷰 밖**만 겨눈다 — mermaid의 임시 노드는 body에 살고,
+// 문서 콘텐츠는 패널 안에 산다. 문서가 선점한 id를 지우면 사용자 콘텐츠가 사라진다.
+function removeStrayNode(id: string, pane: HTMLElement): void {
+  const node = document.getElementById(id);
+  if (node !== null && !pane.contains(node)) {
+    node.remove();
+  }
+}
+
 function cacheKey(theme: string, code: string): string {
   return `${theme}\u0000${code}`;
 }
@@ -116,8 +132,7 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
         if (encoded === null) {
           continue;
         }
-        renderSeq += 1;
-        const id = `norii-mermaid-${renderSeq}`;
+        const id = nextRenderId();
         try {
           // 디코딩도 이 try 안이다. 문서는 원시 HTML을 통과시키므로 사용자가 플레이스홀더를
           // 흉내 낼 수 있고, 그 값이 퍼센트 인코딩이 아니면 디코딩이 예외를 던진다. 그 예외가
@@ -144,8 +159,8 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
           // **취소 판정보다 먼저 치운다** — 취소는 "낡은 DOM에 그리지 마라"지 "청소를
           // 건너뛰라"가 아니다. 깨진 다이어그램을 타이핑으로 고치는 동안은 매 틱이 취소라,
           // 취소 뒤에 치우면 같은 누수가 취소 경로로 되돌아온다.
-          document.getElementById(id)?.remove();
-          document.getElementById(`d${id}`)?.remove();
+          removeStrayNode(id, pane);
+          removeStrayNode(`d${id}`, pane);
           if (cancelled) {
             return;
           }
