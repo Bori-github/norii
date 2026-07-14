@@ -25,7 +25,23 @@ function loadMermaid(): Promise<MermaidApi> {
 }
 
 // 렌더 결과 캐시 — 키는 (테마, 원문). 프리뷰가 스왑돼도 살아남아야 하므로 모듈 수준이다.
+//
+// **상한이 필요하다.** 다이어그램을 타이핑하는 동안 디바운스 갱신마다 "그때까지 쓴 원문"이
+// 새 키가 되므로, 상한이 없으면 편집 중간 상태의 SVG가 무한히 쌓인다(SVG 하나가 수십 KB다).
+// 삽입 순서가 곧 나이인 Map의 성질을 이용해 가장 오래된 것부터 버린다.
+const SVG_CACHE_LIMIT = 32;
 const svgCache = new Map<string, string>();
+
+function cacheSvg(key: string, svg: string): void {
+  svgCache.set(key, svg);
+  for (const oldest of svgCache.keys()) {
+    if (svgCache.size <= SVG_CACHE_LIMIT) {
+      break;
+    }
+    svgCache.delete(oldest);
+  }
+}
+
 // mermaid는 렌더마다 고유 id를 요구한다(같은 id를 재사용하면 임시 노드가 충돌한다).
 let renderSeq = 0;
 
@@ -74,22 +90,26 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
         if (encoded === null) {
           continue;
         }
-        const code = decodeMermaidSource(encoded);
-        const key = cacheKey(theme, code);
-        const cached = svgCache.get(key);
-        if (cached !== undefined) {
-          placeholder.innerHTML = cached;
-          painted = true;
-          continue;
-        }
         renderSeq += 1;
         const id = `norii-mermaid-${renderSeq}`;
         try {
+          // 디코딩도 이 try 안이다. 문서는 원시 HTML을 통과시키므로 사용자가 플레이스홀더를
+          // 흉내 낼 수 있고, 그 값이 퍼센트 인코딩이 아니면 디코딩이 예외를 던진다. 그 예외가
+          // 루프를 뚫고 나가면 **뒤에 오는 멀쩡한 다이어그램이 통째로 안 그려진다** — 실패는
+          // 언제나 그 플레이스홀더 하나에 가둔다.
+          const code = decodeMermaidSource(encoded);
+          const key = cacheKey(theme, code);
+          const cached = svgCache.get(key);
+          if (cached !== undefined) {
+            placeholder.innerHTML = cached;
+            painted = true;
+            continue;
+          }
           const { svg } = await mermaid.render(id, code);
           if (cancelled) {
             return;
           }
-          svgCache.set(key, svg);
+          cacheSvg(key, svg);
           placeholder.innerHTML = svg;
         } catch {
           if (cancelled) {
@@ -98,8 +118,11 @@ export function useMermaid(paneRef: RefObject<HTMLElement | null>, html: string)
           // 문법 오류는 사용자가 고칠 수 있는 일상이다 — 앱을 깨거나 배너를 띄우지 않고
           // 그 자리에만 알린다. 실패는 캐시하지 않는다(고치는 즉시 다시 시도해야 한다).
           placeholder.textContent = STRINGS.mermaidRenderError;
-          // mermaid는 실패 시 임시 노드를 문서에 남긴다 — 우리가 치운다.
+          // mermaid는 실패 시 임시 노드를 문서에 남긴다 — 우리가 치운다. 이름이 두 가지다:
+          // 우리가 준 id 그대로인 것과, mermaid가 앞에 d를 붙여 만드는 것(#d<id>). 후자를
+          // 놓치면 문법 오류를 고치는 동안 디바운스 틱마다 노드가 하나씩 샌다(실측).
           document.getElementById(id)?.remove();
+          document.getElementById(`d${id}`)?.remove();
         }
         painted = true;
       }
