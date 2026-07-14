@@ -1,4 +1,5 @@
 import { type MouseEvent, useEffect, useRef, useState } from "react";
+import { css, cx } from "styled-system/css";
 
 import { STRINGS } from "@shared/config";
 import { CheckIcon, CopyRightIcon } from "@shared/ui";
@@ -10,11 +11,44 @@ import { copyTextToClipboard } from "../model/use-code-copy";
 // 프리뷰 내용은 React 소유가 아니므로 이 컴포넌트는 **포털**로 각 pre에 꽂힌다
 // (→ use-code-copy.ts). 아이콘·복사됨 상태·타이머는 React가 관리한다.
 
-/** 스타일(preview-pane)과 테스트가 이 클래스로 버튼을 찾는다. */
+/** 노출 조건(preview-pane의 pre:hover 규칙)과 테스트가 이 클래스로 버튼을 찾는다. */
 export const COPY_BUTTON_CLASS = "norii-copy-button";
 
 /** 복사 피드백(체크 아이콘)이 원래 아이콘으로 돌아가기까지의 시간. */
 const COPY_FEEDBACK_MS = 1500;
+
+// 노출 조건(pre:hover 시 opacity 1)과 기준점(pre의 position: relative)은 preview-pane에
+// 있다 — 파서 DOM인 pre에 걸어야 해서 여기서는 표현할 수 없다.
+const buttonClass = css({
+  position: "absolute",
+  top: "2",
+  right: "2",
+  // 평소에는 투명하다(읽는 동안에는 화면에 없다) — 노출은 pre:hover(패널 쪽)·키보드
+  // 포커스·복사됨 상태가 되살린다.
+  opacity: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bg: "bg.paper",
+  borderWidth: "1px",
+  borderColor: "border",
+  borderRadius: "sm",
+  padding: "1",
+  color: "text.muted",
+  cursor: "pointer",
+  _hover: { color: "text" },
+  _focusVisible: {
+    opacity: 1,
+    outline: "2px solid",
+    outlineColor: "accent",
+    outlineOffset: "2px",
+  },
+  // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/0005),
+  // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
+  "&[data-copied]": { opacity: 1, color: "accent" },
+  // 아이콘 크기는 소비 측 CSS가 정한다 — 생성된 svg에는 width/height가 없다(viewBox만).
+  "& svg": { width: "4", height: "4" },
+});
 
 export function CopyCodeButton() {
   const [copied, setCopied] = useState(false);
@@ -58,7 +92,7 @@ export function CopyCodeButton() {
     // 스크롤 동기화의 라인 꼬리표(data-source-line)는 달지 않는다 — 매핑 테이블 오염 방지.
     <button
       type="button"
-      className={COPY_BUTTON_CLASS}
+      className={cx(COPY_BUTTON_CLASS, buttonClass)}
       aria-label={copied ? STRINGS.copyCodeDoneText : STRINGS.copyCodeLabel}
       aria-live="polite"
       data-copied={copied ? "true" : undefined}

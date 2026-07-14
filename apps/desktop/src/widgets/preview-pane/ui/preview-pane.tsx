@@ -53,38 +53,10 @@ const paneClass = css({
   "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
   "& pre code": { display: "block", overflowX: "auto" },
   "& code": { fontFamily: "editor", fontSize: "sm" },
-  // 코드 복사 버튼 — 우리가 프리뷰 DOM에 붙이는 UI(→ use-code-copy.ts). 코드 블록을
-  // 가리킬 때만 보인다 — 읽는 동안에는 화면에 없다(preview-strategy.md#코드-복사-버튼).
-  // 키보드로 접근하면 hover 없이도 보여야 한다 — focus-visible이 opacity를 되살린다.
-  "& pre .norii-copy-button": {
-    position: "absolute",
-    top: "2",
-    right: "2",
-    opacity: 0,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    bg: "bg.paper",
-    borderWidth: "1px",
-    borderColor: "border",
-    borderRadius: "sm",
-    padding: "1",
-    color: "text.muted",
-    cursor: "pointer",
-    _hover: { color: "text" },
-    _focusVisible: {
-      opacity: 1,
-      outline: "2px solid",
-      outlineColor: "accent",
-      outlineOffset: "2px",
-    },
-  },
-  // 아이콘 크기는 CSS가 정한다 — svg 파일에는 width/height가 없다(viewBox만).
-  "& pre .norii-copy-button svg": { width: "4", height: "4" },
+  // 코드 복사 버튼의 노출 조건 — 코드 블록을 가리킬 때만 보인다(→ preview-strategy.md).
+  // 파서 DOM인 pre에 거는 규칙이라 여기 있다 — 버튼 생김새는 copy-code-button.tsx에 있다.
+  // 클래스는 그 컴포넌트의 COPY_BUTTON_CLASS다(Panda 정적 추출 때문에 리터럴).
   "& pre:hover .norii-copy-button": { opacity: 1 },
-  // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/0005),
-  // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
-  "& pre .norii-copy-button[data-copied]": { opacity: 1, color: "accent" },
   // 인라인 코드도 문장 속에서 구별돼야 한다 — 블록과 같은 틴트를 옅게 두른다.
   // 펜스 안의 code는 이미 블록이 배경을 가지므로 제외한다.
   "& :not(pre) > code": {
