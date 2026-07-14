@@ -42,13 +42,20 @@ export function calloutPlugin(md: MarkdownIt): void {
       // 마커는 화면에서 사라져야 한다 — 상자 자체가 종류를 말해 준다.
       // 인라인 토큰의 content와 이미 파싱된 자식 텍스트를 함께 자른다.
       inline.content = inline.content.slice(match[0].length);
-      const first = inline.children?.[0];
-      if (first?.type === "text") {
+      const children = inline.children;
+      const first = children?.[0];
+      if (children && first?.type === "text") {
         first.content = first.content.slice(match[0].length);
+        // 마커만 담고 있던 토큰은 빈 채 남는다 — 치워야 뒤 줄바꿈 토큰이 맨 앞에 드러난다.
+        if (first.content === "") {
+          children.shift();
+        }
       }
-      // 마커 뒤에 오던 줄바꿈(softbreak)도 함께 지운다 — 상자 안이 빈 줄로 시작하지 않게.
-      if (inline.children?.[0]?.type === "softbreak") {
-        inline.children.shift();
+      // 마커 뒤에 오던 줄바꿈도 지운다 — 상자 안이 빈 줄로 시작하지 않게.
+      // 공백 2개로 끝난 마커 줄은 hardbreak(<br>)라 지우지 않으면 빈 첫 줄이 눈에 보인다.
+      const next = children?.[0];
+      if (children && (next?.type === "softbreak" || next?.type === "hardbreak")) {
+        children.shift();
       }
     }
   });

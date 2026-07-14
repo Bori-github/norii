@@ -55,6 +55,23 @@ describe("콜아웃 (GFM alerts)", () => {
     expect(parsed.querySelector("blockquote")?.className).toBe("");
   });
 
+  it("상자 안이 줄바꿈 잔재로 시작하지 않는다 — 마커를 지운 자리가 깨끗해야 한다", () => {
+    const html = renderMarkdown("> [!NOTE]\n> 내용.");
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const paragraph = parsed.querySelector("blockquote p");
+    // 마커를 지우고 남은 빈 텍스트·줄바꿈 토큰이 앞에 남으면 본문이 공백/줄바꿈으로 시작한다.
+    expect(paragraph?.innerHTML.startsWith("내용.")).toBe(true);
+  });
+
+  it("마커 뒤 공백 2개(하드브레이크)도 빈 첫 줄을 만들지 않는다", () => {
+    // 마크다운에서 줄 끝 공백 2개는 <br>다 — 마커 줄에 붙으면 상자가 빈 줄로 시작해 버린다.
+    const html = renderMarkdown("> [!NOTE]  \n> 내용.");
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const paragraph = parsed.querySelector("blockquote p");
+    expect(paragraph?.querySelector("br")).toBeNull();
+    expect(paragraph?.innerHTML.startsWith("내용.")).toBe(true);
+  });
+
   it("여러 문단·목록을 담을 수 있다 — 상자는 인용문이므로 안에 마크다운이 산다", () => {
     const html = renderMarkdown("> [!TIP]\n> 첫 문단.\n>\n> - 목록\n> - 둘");
     const parsed = new DOMParser().parseFromString(html, "text/html");
