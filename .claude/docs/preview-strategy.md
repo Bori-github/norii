@@ -15,7 +15,7 @@ norii는 소스 옆에 렌더된 프리뷰를 분할로 보여준다. 이 문서
 
 파이프라인 로직은 `packages/markdown`에 둔다. DOM 삽입은 소비 측(`apps/desktop`)이 담당한다(→ [파일/폴더 구조](project-structure.md)).
 
-**markdown-it 구성**: 테이블·취소선은 기본 프리셋, 오토링크는 `linkify` 옵션. 체크박스(작업 목록)는 markdown-it 본체에 없어 **자체 코어 룰(norii-task-list)** 로 구현한다 — 프리뷰는 표시 전용이고 진실은 소스이므로 **disabled 체크박스**로 렌더한다. 스크롤 동기화용 라인 꼬리표(`data-source-line`)는 자체 룰(norii-source-line)이 주입하며, 이때 원시 HTML 토큰에 들어 있는 **위조 꼬리표는 제거**한다(신뢰 경계 — 아래 sanitize 정책).
+**markdown-it 구성**: 테이블·취소선은 기본 프리셋, 오토링크는 `linkify` 옵션 — 단 **`fuzzyLink`는 끈다**. 켜 두면 확장자를 TLD로 착각해 **파일명이 링크가 된다**(`.md`는 몰도바, `.sh`는 세인트헬레나의 실제 도메인이라 `README.md`가 `http://readme.md`로 나간다). 마크다운 문서에 파일명은 늘 나오므로 오탐이 상시적이고, 누르면 OS 브라우저가 엉뚱한 사이트를 연다. 대가로 `www.`로 시작하는 표기의 자동 링크를 잃는다 — 프로토콜을 붙이면 그대로 링크가 된다. 체크박스(작업 목록)는 markdown-it 본체에 없어 **자체 코어 룰(norii-task-list)** 로 구현한다 — 프리뷰는 표시 전용이고 진실은 소스이므로 **disabled 체크박스**로 렌더한다. 스크롤 동기화용 라인 꼬리표(`data-source-line`)는 자체 룰(norii-source-line)이 주입하며, 이때 원시 HTML 토큰에 들어 있는 **위조 꼬리표는 제거**한다(신뢰 경계 — 아래 sanitize 정책).
 
 ## 디바운스
 

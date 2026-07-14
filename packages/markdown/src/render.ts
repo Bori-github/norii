@@ -67,6 +67,13 @@ const md = new MarkdownIt({ html: true, linkify: true })
   .use(sourceLinePlugin)
   .use(mermaidFencePlugin);
 
+// 프로토콜이 없는 "맨 도메인"은 링크로 만들지 않는다(fuzzyLink 끔).
+// 기본값으로 두면 확장자를 TLD로 착각해 **파일명이 링크가 된다** — .md는 몰도바, .sh는
+// 세인트헬레나의 실제 도메인이라 README.md·deploy.sh가 http://readme.md로 나간다. 마크다운
+// 문서에 파일명은 늘 나오므로 오탐이 상시적이고, 누르면 OS 브라우저가 엉뚱한 사이트를 연다.
+// 잃는 것은 `www.`로 시작하는 표기의 자동 링크뿐이다 — 프로토콜을 붙이면 그대로 링크가 된다.
+md.linkify.set({ fuzzyLink: false });
+
 // <style>은 기본 허용이지만 문서 CSS가 프리뷰 밖 앱 UI를 위장·은폐할 수 있어 차단한다
 // (→ preview-strategy.md#sanitize는-필수다의 DOMPurify 정책).
 //

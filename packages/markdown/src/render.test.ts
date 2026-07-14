@@ -109,3 +109,29 @@ describe("renderMarkdown — sanitize (필수)", () => {
     expect(html).toContain("내용");
   });
 });
+
+// 왜: 이 앱의 문서에는 파일명이 늘 나온다(README.md·deploy.sh·index.ts). linkify의 기본
+//     동작(fuzzyLink)은 확장자를 TLD로 착각해 이것들을 http:// 링크로 만든다 — .md는 몰도바,
+//     .sh는 세인트헬레나의 실제 도메인이다. 그러면 사용자가 파일명을 눌렀을 때 OS 브라우저가
+//     엉뚱한(심지어 타이포스쿼팅된) 사이트로 나간다.
+// 보장: 프로토콜이 붙은 URL과 이메일만 자동 링크가 되고, 맨 파일명·도메인은 글자로 남는다.
+// 경계: 링크를 눌렀을 때의 처리(웹뷰 차단·OS 브라우저 위임)는 소비 측의 몫이라 여기서 다루지 않는다.
+describe("자동 링크 (linkify)", () => {
+  it("프로토콜이 붙은 URL은 링크가 된다", () => {
+    expect(renderMarkdown("https://tauri.app 를 보라")).toContain('href="https://tauri.app"');
+  });
+
+  it("이메일은 링크가 된다", () => {
+    expect(renderMarkdown("hi@example.com 로 연락")).toContain("mailto:");
+  });
+
+  it("파일명은 링크가 아니다 — 확장자를 도메인으로 착각하지 않는다", () => {
+    for (const source of ["README.md 참고", "deploy.sh 실행", "문서는 file-lifecycle.md 다"]) {
+      expect(renderMarkdown(source)).not.toContain("<a ");
+    }
+  });
+
+  it("맨 도메인도 링크가 아니다 — 프로토콜이 있어야 링크다", () => {
+    expect(renderMarkdown("example.com 방문")).not.toContain("<a ");
+  });
+});
