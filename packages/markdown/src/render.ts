@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
 import footnotePlugin from "markdown-it-footnote";
 
+import { headingAnchorPlugin } from "./heading-anchor";
 import { sourceLinePlugin } from "./line-map";
 import { mermaidFencePlugin } from "./mermaid";
 
@@ -62,6 +63,7 @@ const katex: MarkdownItPlugin =
 // 사실상 대체됐다(→ preview-strategy.md#수식-katex). 각주는 markdown-it-footnote.
 const md = new MarkdownIt({ html: true, linkify: true })
   .use(taskListPlugin)
+  .use(headingAnchorPlugin)
   .use(footnotePlugin)
   .use(katex)
   .use(sourceLinePlugin)
