@@ -7,7 +7,7 @@ import { clearTabText, setInitialText } from "./text-access";
 import type { Tab } from "./types";
 
 // 다중 탭 상태 — 규칙의 단일 출처: .claude/docs/document-model.md#다중-탭-규칙.
-// WorkspaceState의 rootDir·fileTree(M4)·recentFiles는 해당 마일스톤에서 추가한다.
+// WorkspaceState의 rootDir·fileTree(M5)·recentFiles는 해당 마일스톤에서 추가한다.
 
 interface DocumentState {
   tabs: Tab[];
