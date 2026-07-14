@@ -18,7 +18,8 @@ export type CalloutType = (typeof CALLOUT_TYPES)[number];
 export const CALLOUT_CLASS = "norii-callout";
 
 // 첫 줄이 마커 하나로만 이뤄져야 한다 — "> 앞말\n> [!NOTE]"처럼 중간에 나오면 그냥 텍스트다.
-const MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][^\S\n]*(\n|$)/i;
+// 타입 목록은 CALLOUT_TYPES에서 파생한다 — 두 곳에 적으면 언젠가 서로 어긋난다.
+const MARKER = new RegExp(String.raw`^\[!(${CALLOUT_TYPES.join("|")})\][^\S\n]*(\n|$)`, "i");
 
 export function calloutPlugin(md: MarkdownIt): void {
   md.core.ruler.after("inline", "norii-callout", (state) => {
