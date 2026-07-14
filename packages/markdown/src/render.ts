@@ -67,7 +67,10 @@ const md = new MarkdownIt({ html: true, linkify: true })
   .use(calloutPlugin)
   .use(headingAnchorPlugin)
   .use(footnotePlugin)
-  .use(katex)
+  // maxSize: 사용자가 지정하는 크기(\rule 등)의 상한(em). 기본값이 Infinity라 수식 하나로
+  // 문서 높이를 수백만 px로 만들 수 있다 — 문서는 못 믿는 입력이다. 100em(≈화면 두 장)은
+  // 정상 수식이 닿지 않는 넉넉한 상한이다(→ preview-strategy.md#수식-katex).
+  .use(katex, { maxSize: 100 })
   .use(sourceLinePlugin)
   .use(mermaidFencePlugin);
 

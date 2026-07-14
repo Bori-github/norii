@@ -52,6 +52,17 @@ describe("수식 (KaTeX)", () => {
     const html = renderMarkdown("$\\frac{1}{$");
     expect(html).toContain("<p");
   });
+
+  it("사용자가 지정한 크기는 상한에서 잘린다 — 수식 하나가 문서 레이아웃을 폭파하지 못한다", () => {
+    // KaTeX의 maxSize 기본값은 Infinity다 — \rule{9999em}{9999em} 하나로 문서 높이가
+    // 수백만 px이 되어 레이아웃·스크롤 동기화가 무너진다. 상한이 걸리면 **렌더되는**
+    // 크기(스타일 값·MathML 속성)가 잘린다. annotation의 TeX 원문에는 지정값이 남는 것이
+    // 정상이다(스크린리더용 원문 보존).
+    const html = renderMarkdown("$\\rule{9999em}{9999em}$");
+    expect(html).not.toContain(":9999em"); // style="height:9999em" 꼴
+    expect(html).not.toContain('"9999em"'); // width="9999em" 속성 꼴
+    expect(html).toContain(":100em"); // 상한값으로 실제로 잘렸다
+  });
 });
 
 describe("각주", () => {
