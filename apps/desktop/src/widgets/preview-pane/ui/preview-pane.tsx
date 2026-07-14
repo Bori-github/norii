@@ -5,6 +5,7 @@ import { useDocumentStore } from "@entities/document";
 import { openExternalLink } from "@features/open-link";
 import { STRINGS } from "@shared/config";
 
+import { isAnchorHref, scrollToAnchor } from "../model/anchor";
 import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
@@ -112,16 +113,7 @@ const contentClass = css({
   marginX: "auto",
 });
 
-// 링크 클릭 — 웹뷰 내비게이션은 **항상** 막는다(앱 창이 문서 속 URL로 이동하면 앱 UI가
-// 사라진다). 그중 안전한 스킴만 OS 기본 브라우저로 넘긴다(→ preview-strategy.md 링크 정책).
-function handleLinkClick(event: MouseEvent<HTMLDivElement>): void {
-  const anchor = (event.target as Element).closest("a[href]");
-  if (!anchor) {
-    return;
-  }
-  event.preventDefault();
-  openExternalLink(anchor.getAttribute("href") ?? "");
-}
+// (링크 클릭 처리는 컴포넌트 안에 있다 — 앵커 이동이 패널·콘텐츠 요소를 필요로 한다.)
 
 // 프리뷰 패널 — 활성 탭의 마크다운을 분할로 렌더한다(→ preview-strategy.md).
 // HTML은 packages/markdown이 DOMPurify sanitize까지 마친 것이다 — 이 위젯의 책임은
@@ -149,6 +141,26 @@ export function PreviewPane() {
   const mermaidRevision = useMermaid(paneRef, html);
   // 렌더 키는 캐시 무효화 신호 — 렌더 스왑·다이어그램 도착마다 블록 위치를 다시 잰다.
   usePreviewScrollSync(paneRef, activeTabId, `${mermaidRevision} ${html}`);
+
+  // 링크 클릭 — 웹뷰 내비게이션은 **항상** 막는다(앱 창이 문서 속 URL로 이동하면 앱 UI가
+  // 사라진다). 가로챈 뒤 세 갈래다(→ preview-strategy.md#링크-정책):
+  //   #앵커  → 앱이 직접 스크롤 (문서 밖으로 나가지 않으므로 스킴 판정 이전에 갈라진다)
+  //   그 외  → 허용 스킴만 OS 기본 브라우저로, 나머지는 조용한 무동작
+  const handleLinkClick = (event: MouseEvent<HTMLDivElement>): void => {
+    const anchor = (event.target as Element).closest("a[href]");
+    if (!anchor) {
+      return;
+    }
+    event.preventDefault();
+    const href = anchor.getAttribute("href") ?? "";
+    const pane = paneRef.current;
+    const content = contentRef.current;
+    if (isAnchorHref(href) && pane !== null && content !== null) {
+      scrollToAnchor(pane, content, href);
+      return;
+    }
+    openExternalLink(href);
+  };
 
   if (activeTabId === null) {
     return null;
