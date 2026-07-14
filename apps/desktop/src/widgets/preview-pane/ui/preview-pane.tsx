@@ -84,6 +84,37 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
+  // 콜아웃 — 인용문에 얹는 강조 상자(→ preview-strategy.md#콜아웃-gfm-alerts).
+  // **색으로 구별하지 않는다** — 이 디자인 시스템에는 아직 상태색이 없다(열린 결정).
+  // 구별은 아이콘·라벨·굵은 경계선이 맡고, 아이콘과 라벨은 **마크업이 아니라 CSS**로 그린다
+  // (마크업으로 넣으면 sanitize 허용 표면이 늘고 문서가 위조한 콜아웃도 아이콘을 갖는다).
+  "& blockquote.norii-callout": {
+    borderLeftWidth: "4px",
+    borderColor: "accent",
+    bg: "bg.hover",
+    color: "text",
+    paddingX: "4",
+    paddingY: "3",
+    borderRadius: "md",
+    marginY: "3",
+    // 라벨 자리 — 첫 줄 위에 종류를 적는다.
+    _before: {
+      display: "block",
+      marginBottom: "1",
+      fontSize: "sm",
+      fontWeight: "bold",
+      color: "text.muted",
+    },
+  },
+  // 아이콘 + 라벨은 한 문자열이다. 라벨은 GitHub과 같은 이름을 쓴다 — 사용자가 GitHub에서
+  // 쓰던 문서를 그대로 열었을 때 같은 것을 본다.
+  "& blockquote.norii-callout-note::before": { content: '"ℹ︎ NOTE"' },
+  "& blockquote.norii-callout-tip::before": { content: '"✓ TIP"' },
+  "& blockquote.norii-callout-important::before": { content: '"★ IMPORTANT"' },
+  "& blockquote.norii-callout-warning::before": { content: '"⚠︎ WARNING"' },
+  "& blockquote.norii-callout-caution::before": { content: '"⛔︎ CAUTION"' },
+  // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.
+  "& blockquote.norii-callout p": { color: "text" },
   // 각주 — 문서 끝에 얇은 경계선으로 본문과 갈라 두고, 참조 번호는 본문보다 작게 뜬다.
   // 목록 자체는 위 ol 규칙을 그대로 쓴다(별도 스타일을 만들지 않는다).
   "& .footnotes": {
