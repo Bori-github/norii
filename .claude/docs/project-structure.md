@@ -28,8 +28,8 @@ norii/
   DESIGN.md                  디자인 규칙 (불변식·표면 표 → 상세는 .claude/docs/design/)
   .github/
     pull_request_template.md PR 본문 템플릿 (→ .claude/rules/commit-convention.md)
-  examples/                  앱으로 열어 눈으로 확인하는 예시 문서 (빌드·테스트에 들어가지 않는다)
-    README.md                작성 규칙·목록의 단일 출처 (→ ../rules/project-rules.md 품질 게이트)
+  examples/                  앱으로 열어 눈으로 확인하는 예시 문서
+    README.md                목록·작성 규칙의 단일 출처 (생성 여부 판단은 rules/project-rules.md)
   scripts/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
