@@ -30,6 +30,11 @@ export default defineConfig({
         test: {
           name: "browser",
           include: ["src/**/*.browser.test.{ts,tsx}"],
+          // 브라우저 테스트 파일은 **직렬로** 돈다. 병렬로 돌리면 여러 파일이 동시에 무거운
+          // 동적 청크(mermaid는 청크가 100개 가까이 된다)를 받아 오다가 로딩이 간헐적으로
+          // 실패한다("Importing a module script failed") — 실측으로 확인했다. 느려지는 대신
+          // 결과가 결정적이 된다(E2E 설정과 같은 선택).
+          fileParallelism: false,
           browser: {
             enabled: true,
             headless: true,
