@@ -50,7 +50,7 @@ M7  → platform-strategy.md
 유리 설정 노출    불투명도(--norii-glass-opacity)·흐림 반경(DEFAULT_BLUR_RADIUS)을 설정 화면에 어떻게 노출할지 — 슬라이더 최솟값은 대비 게이트가 정한 하한과 같아야 한다. M6 설정 영속화와 함께 확정 (→ design/decisions/0007-glass-is-opacity-not-color.md · design/window-chrome.md)
 타이포 스케일     글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정 시점. M6 (→ design/design-system.md)
 네이티브 E2E     창 드래그·마우스 글자 선택·유리 투과·기동 프레임은 자동 검증이 없다 — 실제 OS 입력 합성(손쉬운 사용 권한)과 픽셀 판정이 필요하다. 이 공백 때문에 회귀 5건을 사람이 발견했다(유리가 유리가 아님·기동 시 흰 화면·선택 영역 소실·에디터 글자 선택 불가·앱 이름 위 드래그 불가). M6 설정 화면이 유리 값을 만질 때 함께 만든다 (→ testing.md · design/window-chrome.md#검증)
-탭 ⚠ 배지 색    M2가 추가한 충돌·삭제 배지는 유리(탭바) 위에 있다 — 지금은 본문색 상속. 상태색을 쓰려면 유리 위 대비를 다시 계산해야 한다 (→ design/design-system.md#대비-게이트 · design/decisions/0005-accent-is-never-text.md)
+상태색 도입      팔레트에 상태색(정보·성공·경고·위험)이 없다. 이해관계자가 셋이다 — 탭 ⚠ 배지(유리 위, 지금은 본문색 상속) · 에러 배너 · M4 콜아웃(지금은 아이콘·경계선으로만 구별). 한 팔레트로 셋을 함께 정해야 하며, 라이트/다크 × 종이/유리 네 조합에서 대비 게이트를 통과해야 한다. 확정 시 ADR로 남긴다 (→ design/design-system.md#대비-게이트 · design/decisions/0005-accent-is-never-text.md · preview-strategy.md#콜아웃-gfm-alerts)
 떠 있는 면 흐림   투명 창에서 backdrop-filter가 동작하지 않는다는 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ design/decisions/0002-glass-is-made-by-os.md)
 한글 고정폭 폰트  표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB) 필요 — 15MB 예산과 함께 판단 (→ design/design-system.md#글자액센트-토큰)
 탭 세션 복원      커서 위치까지 복원할지 · 에디터/프리뷰 스크롤 위치도 탭별 복원할지(VS Code 방식 — 현재는 화면 1개 공유, 전환 시 맨 위) (→ document-model.md)
