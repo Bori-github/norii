@@ -1,6 +1,10 @@
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+// 프리뷰 스타일(Panda)을 로드한다 — 실제 앱은 main.tsx에서 넣는다. 표의 가로 스크롤처럼
+// **CSS가 있어야 성립하는 동작**을 여기서 검증하므로, 없으면 브라우저 기본값을 재는 셈이 된다.
+import "@app/index.css";
+
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import { resetScrollSync } from "@features/scroll-sync";
 import { STRINGS } from "@shared/config";
@@ -44,6 +48,26 @@ describe("PreviewPane", () => {
     const { container } = render(<PreviewPane />);
     await waitFor(() => expect(container.querySelector(".katex")).not.toBeNull());
     expect(container.querySelector(".katex-error")).toBeNull();
+  });
+
+  // 왜: 넘치는 표가 패널을 밀면 본문 전체가 가로로 흔들린다. 넘침은 **표 안에** 가둬야 한다
+  //     (코드 블록·다이어그램과 같은 처리). 셀 글자를 줄바꿈해도 더는 줄일 수 없는 표가 그 경우다.
+  // 보장: 더 줄일 수 없는 표는 자기 안에서 가로 스크롤된다.
+  // 경계: 줄바꿈으로 들어가는 표는 스크롤이 생기지 않는 것이 정상이다(표준 마크다운 뷰어와 동일).
+  //       스크롤바의 생김새·감각은 실앱 수동 확인의 몫이다.
+  it("더 줄일 수 없는 넓은 표는 표 안에서 가로 스크롤된다 — 패널을 밀지 않는다", async () => {
+    const wide = `| ${Array.from({ length: 12 }, (_, i) => `아주 긴 열 제목 ${i}`).join(" | ")} |
+| ${Array.from({ length: 12 }, () => "---").join(" | ")} |
+| ${Array.from({ length: 12 }, (_, i) => `내용이 제법 긴 셀 ${i}`).join(" | ")} |`;
+    openTabWith(wide);
+    const { container } = render(<PreviewPane />);
+    const table = await waitFor(() => {
+      const found = container.querySelector("table");
+      expect(found).not.toBeNull();
+      return found as HTMLTableElement;
+    });
+    // 내용이 표 상자보다 넓다 = 가로 스크롤이 생긴다(찌그러졌다면 둘이 같다).
+    expect(table.scrollWidth).toBeGreaterThan(table.clientWidth);
   });
 
   it("활성 탭의 마크다운을 렌더한다", async () => {

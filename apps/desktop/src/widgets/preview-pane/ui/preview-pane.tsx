@@ -62,6 +62,8 @@ const paneClass = css({
     marginY: "2",
   },
   // 넓은 표는 패널 전체가 아니라 표만 가로 스크롤한다(코드 블록과 동일한 처리).
+  // 셀 글자는 먼저 줄바꿈되고, 더 줄일 수 없을 때(열이 많을 때) 비로소 가로 스크롤이 생긴다 —
+  // GitHub 등 표준 마크다운 뷰어와 같은 동작이다.
   "& table": {
     borderCollapse: "collapse",
     marginY: "2",
