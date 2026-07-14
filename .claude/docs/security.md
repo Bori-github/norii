@@ -47,6 +47,8 @@ markdown-it이 만든 HTML은 삽입 전 DOMPurify로 정화한다. 마크다운
                         악성 문서가 클릭 한 번으로 로컬 파일·외부 앱을 열지 못하게.
 ```
 
+**문서 내 `#앵커`는 이 허용목록의 대상이 아니다** — 문서 밖으로 나가지 않기 때문이다. 그 처리는 [프리뷰 전략 — 링크 정책](preview-strategy.md#링크-정책)이 소유한다. 위 1번(웹뷰 내비게이션 금지)은 링크의 종류를 가리지 않는다.
+
 **허용목록(deny-by-default)이지 차단목록이 아니다.** OS 오프너는 등록된 모든 스킴을 프로그램 실행으로 바꿔 준다(`file:` · `smb:` · 설치된 앱의 커스텀 스킴). 차단목록은 새 스킴이 생길 때마다 뚫린다. 이 집합(http·https·mailto)은 VS Code의 `standardSupportedLinkSchemes`와 `tauri-plugin-opener` 기본 권한이 수렴하는 곳이고, **허용목록 없는 에디터들이 바로 이 지점에서 RCE를 겪었다**(Joplin CVE-2024-49362 "RCE on click of `<a>` link in markdown preview" · DeepChat CVE-2025-55733 · Obsidian CVE-2022-36450). 판정은 **URL 파싱**으로 한다 — 접두사 비교(`startsWith`)는 `https://example.com.attacker.com` 류에 뚫린다(Electron 보안 가이드가 명시).
 
 `mailto:`는 조사한 모든 허용목록에 들어 있다(VS Code · Tauri 기본 권한). 잔여 위험(수신자·본문 프리필, 일부 메일 클라이언트의 비표준 `?attach=`)은 취약한 메일 클라이언트를 전제하고 작성 창이 눈에 보이므로, 업계가 공통으로 수용한다.
