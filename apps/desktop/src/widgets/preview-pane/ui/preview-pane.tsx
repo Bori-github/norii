@@ -1,4 +1,5 @@
 import { type MouseEvent, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
@@ -6,9 +7,11 @@ import { openExternalLink } from "@features/open-link";
 import { STRINGS } from "@shared/config";
 
 import { isAnchorHref, scrollToAnchor } from "../model/anchor";
+import { useCodeBlocks } from "../model/use-code-copy";
 import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
+import { CopyCodeButton } from "./copy-code-button";
 
 // 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/0001).
 // 유리(투명 창)가 켜져 있으므로 bg.canvas를 쓰면 본문 뒤로 바탕화면이 비친다.
@@ -45,8 +48,43 @@ const paneClass = css({
   "& li.task-list-item": { listStyleType: "none", marginLeft: "-6" },
   // 코드 블록은 종이 위의 옅은 틴트다 — bg.canvas는 유리에서 투명해지므로 쓰지 않는다.
   // 전용 토큰이 없어 상태 배경(bg.hover)을 빌린다(→ 열린 결정: 프리뷰 코드면 토큰).
-  "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", overflowX: "auto", marginY: "2" },
+  // 가로 스크롤은 pre가 아니라 **안쪽 code가** 진다 — pre가 스크롤 컨테이너면 그 안에
+  // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
+  "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
+  "& pre code": { display: "block", overflowX: "auto" },
   "& code": { fontFamily: "editor", fontSize: "sm" },
+  // 코드 복사 버튼 — 우리가 프리뷰 DOM에 붙이는 UI(→ use-code-copy.ts). 코드 블록을
+  // 가리킬 때만 보인다 — 읽는 동안에는 화면에 없다(preview-strategy.md#코드-복사-버튼).
+  // 키보드로 접근하면 hover 없이도 보여야 한다 — focus-visible이 opacity를 되살린다.
+  "& pre .norii-copy-button": {
+    position: "absolute",
+    top: "2",
+    right: "2",
+    opacity: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    bg: "bg.paper",
+    borderWidth: "1px",
+    borderColor: "border",
+    borderRadius: "sm",
+    padding: "1",
+    color: "text.muted",
+    cursor: "pointer",
+    _hover: { color: "text" },
+    _focusVisible: {
+      opacity: 1,
+      outline: "2px solid",
+      outlineColor: "accent",
+      outlineOffset: "2px",
+    },
+  },
+  // 아이콘 크기는 CSS가 정한다 — svg 파일에는 width/height가 없다(viewBox만).
+  "& pre .norii-copy-button svg": { width: "4", height: "4" },
+  "& pre:hover .norii-copy-button": { opacity: 1 },
+  // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/0005),
+  // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
+  "& pre .norii-copy-button[data-copied]": { opacity: 1, color: "accent" },
   // 인라인 코드도 문장 속에서 구별돼야 한다 — 블록과 같은 틴트를 옅게 두른다.
   // 펜스 안의 code는 이미 블록이 배경을 가지므로 제외한다.
   "& :not(pre) > code": {
@@ -167,6 +205,8 @@ export function PreviewPane() {
     }
   }, [html]);
 
+  // 복사 버튼(포털)의 대상 수집 — 내용 교체가 버튼을 지우므로 이 효과도 위 삽입 뒤에 돈다.
+  const codeBlocks = useCodeBlocks(contentRef, html);
   // 다이어그램은 비동기로 도착해 블록 높이를 바꾼다 — 리비전이 오르면 스크롤 동기화가
   // 낡은 측정을 버리고 다시 잰다(→ use-mermaid.ts). 이 효과는 위 삽입 뒤에 돈다.
   const mermaidRevision = useMermaid(paneRef, html);
@@ -177,6 +217,7 @@ export function PreviewPane() {
   // 사라진다). 가로챈 뒤 세 갈래다(→ preview-strategy.md#링크-정책):
   //   #앵커  → 앱이 직접 스크롤 (문서 밖으로 나가지 않으므로 스킴 판정 이전에 갈라진다)
   //   그 외  → 허용 스킴만 OS 기본 브라우저로, 나머지는 조용한 무동작
+  // (복사 버튼 클릭은 여기 오지 않는다 — 버튼이 자기 onClick에서 전파를 끊는다.)
   const handleLinkClick = (event: MouseEvent<HTMLDivElement>): void => {
     const anchor = (event.target as Element).closest("a[href]");
     if (!anchor) {
@@ -210,6 +251,9 @@ export function PreviewPane() {
     >
       {/* 내용은 위 이펙트가 채운다 — React는 이 요소의 자식을 소유하지 않는다. */}
       <div ref={contentRef} className={contentClass} />
+      {/* 복사 버튼만 예외로 React가 소유한다 — 내용(비 React DOM) 속 각 코드 블록에
+          포털로 꽂는다. 내용 교체가 버튼을 지우면 대상 재수집이 포털을 다시 그린다. */}
+      {codeBlocks.map(({ key, element }) => createPortal(<CopyCodeButton />, element, key))}
     </div>
   );
 }
