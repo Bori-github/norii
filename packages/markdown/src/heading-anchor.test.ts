@@ -50,6 +50,23 @@ describe("헤딩 앵커 — 렌더", () => {
     expect(html).not.toContain('id="준비-1"');
   });
 
+  // slug는 **렌더된 텍스트**(화면의 textContent)에서 뽑는다 — 원시 마크업에서 뽑으면
+  // URL·구두점이 slug에 섞여 GitHub과 갈라진다(GitHub은 렌더 결과의 글자만 본다).
+  it("링크가 든 헤딩은 링크 텍스트로만 slug를 만든다 — URL이 섞이면 GitHub 목차가 죽는다", () => {
+    const html = renderMarkdown("# [설계 문서](https://example.com/spec)");
+    expect(html).toContain('id="설계-문서"');
+  });
+
+  it("코드 스팬이 든 헤딩은 코드 내용을 살린다 — 백틱만 사라진다", () => {
+    const html = renderMarkdown("# `renderMarkdown` 사용법");
+    expect(html).toContain('id="rendermarkdown-사용법"');
+  });
+
+  it("강조 표기는 slug에 남지 않는다", () => {
+    const html = renderMarkdown("# **굵게** 그리고 _기울임_");
+    expect(html).toContain('id="굵게-그리고-기울임"');
+  });
+
   it("slug가 비면 자리 번호로 대체한다 — id 없는 헤딩을 남기지 않는다", () => {
     const html = renderMarkdown("# !!!");
     expect(html).toMatch(/<h1[^>]*id="[^"]+"/);

@@ -16,6 +16,22 @@ export function slugify(text: string): string {
   return text.trim().toLowerCase().replace(WHITESPACE, "-").replace(DROPPED, "");
 }
 
+type InlineToken = { type: string; content: string; children?: InlineToken[] | null };
+
+// slug의 재료는 **렌더된 텍스트**(화면의 textContent)다 — 원시 마크업(inline.content)을
+// 쓰면 `[제목](url)`의 URL·구두점이 slug에 섞여 GitHub과 갈라진다. GitHub은 렌더 결과의
+// 글자만 보므로, 글자를 내는 토큰(text·code_inline)만 모은다. 링크 URL·강조 표식·이미지는
+// textContent에 나타나지 않으니 제외한다.
+function renderedText(inline: InlineToken): string {
+  let text = "";
+  for (const child of inline.children ?? []) {
+    if (child.type === "text" || child.type === "code_inline") {
+      text += child.content;
+    }
+  }
+  return text;
+}
+
 export function headingAnchorPlugin(md: MarkdownIt): void {
   md.core.ruler.push("norii-heading-anchor", (state) => {
     // 번호는 **문서 하나 안에서만** 센다 — 모듈 수준에 두면 렌더를 거듭할수록 번호가 자라
@@ -27,7 +43,7 @@ export function headingAnchorPlugin(md: MarkdownIt): void {
         continue;
       }
       const inline = state.tokens[index + 1];
-      const text = inline?.type === "inline" ? inline.content : "";
+      const text = inline?.type === "inline" ? renderedText(inline) : "";
       // 글자가 하나도 남지 않는 제목(예: "# !!!")도 앵커의 대상이 될 수 있어야 하므로
       // 자리 번호로 대체한다 — id 없는 헤딩을 남기지 않는다.
       const base = slugify(text) || `section-${index}`;
