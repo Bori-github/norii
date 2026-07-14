@@ -60,7 +60,7 @@ importers:
         specifier: 0.16.47
         version: 0.16.47
       mermaid:
-        specifier: ^11.16.0
+        specifier: 11.16.0
         version: 11.16.0
       react:
         specifier: 19.2.7
@@ -152,26 +152,26 @@ importers:
   packages/markdown:
     dependencies:
       '@vscode/markdown-it-katex':
-        specifier: ^1.1.2
+        specifier: 1.1.2
         version: 1.1.2
       dompurify:
         specifier: 3.4.11
         version: 3.4.11
       katex:
-        specifier: ^0.16.47
+        specifier: 0.16.47
         version: 0.16.47
       markdown-it:
         specifier: 14.3.0
         version: 14.3.0
       markdown-it-footnote:
-        specifier: ^4.0.0
+        specifier: 4.0.0
         version: 4.0.0
     devDependencies:
       '@types/markdown-it':
         specifier: 14.1.2
         version: 14.1.2
       '@types/markdown-it-footnote':
-        specifier: ^3.0.4
+        specifier: 3.0.4
         version: 3.0.4
       '@vitest/browser-playwright':
         specifier: 4.1.9
