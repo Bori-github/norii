@@ -83,6 +83,28 @@ describe("프리뷰 — 다이어그램(mermaid)", () => {
     expect(container.querySelector(".norii-mermaid svg")?.getAttribute("id")).toBe(firstSvgId);
   });
 
+  it("테마를 바꾸면 같은 다이어그램을 다른 색으로 다시 그린다 — 캐시 키의 테마 절반", async () => {
+    // 캐시 키는 (테마, 원문)이다. 테마가 키에서 빠지거나 이펙트가 테마 변화에 반응하지
+    // 않으면, 다크로 바꿔도 라이트 색의 SVG가 그대로 남는다(위 캐시 테스트의 대칭 —
+    // 거기서는 "안 다시 그린다", 여기서는 "다시 그린다"가 계약이다).
+    openTabWith(DIAGRAM);
+    const { container } = render(<PreviewPane />);
+    await waitFor(() => expect(container.querySelector(".norii-mermaid svg")).not.toBeNull(), {
+      timeout: 10_000,
+    });
+    const lightId = container.querySelector(".norii-mermaid svg")?.getAttribute("id");
+    expect(lightId).toBeDefined();
+
+    useThemeStore.setState({ preference: "dark" });
+    // 다시 그리면 렌더 id(렌더마다 증가·난수)가 바뀐다 — 캐시 히트면 같은 노드가 남는다.
+    await waitFor(
+      () => {
+        expect(container.querySelector(".norii-mermaid svg")?.getAttribute("id")).not.toBe(lightId);
+      },
+      { timeout: 10_000 },
+    );
+  });
+
   it("문법 오류가 반복돼도 임시 노드가 쌓이지 않는다 — 렌더 실패의 뒷정리", async () => {
     // mermaid는 실패하면 렌더용 임시 노드를 문서에 남긴다. 사용자는 다이어그램을 고치는 동안
     // 계속 실패하므로(디바운스 틱마다 한 번), 뒷정리를 놓치면 노드가 조용히 쌓인다.
