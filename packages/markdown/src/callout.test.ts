@@ -49,6 +49,16 @@ describe("콜아웃 (GFM alerts)", () => {
     expect(parsed.querySelector("blockquote")?.className).toBe("");
   });
 
+  it("마커 뒤 같은 줄에 텍스트가 있으면 콜아웃이 아니다 — GitHub과 같다", () => {
+    // GitHub은 `[!NOTE] 제목`처럼 마커 줄에 딸린 텍스트가 있으면 평범한 인용문으로 둔다.
+    // 이 경계가 풀리면(정규식 완화) 같은 문서가 두 앱에서 다르게 보인다.
+    const html = renderMarkdown("> [!NOTE] 제목\n> 내용");
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const quote = parsed.querySelector("blockquote");
+    expect(quote?.className).toBe("");
+    expect(quote?.textContent).toContain("[!NOTE] 제목");
+  });
+
   it("마커가 첫 줄이 아니면 콜아웃이 아니다 — 본문 속 [!NOTE]는 텍스트다", () => {
     const html = renderMarkdown("> 앞말\n> [!NOTE]\n> 뒷말");
     const parsed = new DOMParser().parseFromString(html, "text/html");

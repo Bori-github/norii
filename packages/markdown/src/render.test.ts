@@ -9,7 +9,8 @@ import { renderMarkdown } from "./render";
 // 보장: GFM 문법(테이블·체크박스·취소선)이 렌더되고, 위험한 HTML은 삽입 전에 제거되며,
 //       의도적으로 통과시키는 원시 HTML(<details>)은 살아남는다.
 // 경계: 소스 라인 매핑(단위 2)·디바운스·DOM 삽입(소비 측 책임)은 다루지 않는다.
-//       KaTeX·Mermaid·각주는 이후 마일스톤이라 다루지 않는다(→ preview-strategy.md#수식다이어그램-지원-채택).
+//       KaTeX·각주는 extensions.test.ts, mermaid는 mermaid.test.ts, 콜아웃은 callout.test.ts,
+//       헤딩 앵커는 heading-anchor.test.ts가 각각 다룬다.
 describe("renderMarkdown — 마크다운 파싱 (GFM)", () => {
   it("헤딩과 문단을 렌더한다", () => {
     // 블록 태그에는 라인 매핑 속성(data-source-line, → line-map.test.ts)이 함께 달린다.

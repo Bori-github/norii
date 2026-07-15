@@ -48,9 +48,15 @@ describe("수식 (KaTeX)", () => {
     expect(html).toContain("$5");
   });
 
-  it("문법이 틀린 수식은 문서를 깨지 않는다 — 그 자리에만 오류로 남는다", () => {
-    const html = renderMarkdown("$\\frac{1}{$");
-    expect(html).toContain("<p");
+  it("문법이 틀린 수식은 렌더를 깨지 않고, 원문이 화면에 남는다", () => {
+    // 이전 단언(<p 포함)은 KaTeX 플러그인을 통째로 빼도 통과하는 준공허였다.
+    // 계약을 직접 겨눈다: 예외가 새지 않고, 사용자가 고칠 수 있게 원문이 보인다.
+    let html = "";
+    expect(() => {
+      html = renderMarkdown("$\\frac{1}{$");
+    }).not.toThrow();
+    const text = new DOMParser().parseFromString(html, "text/html").body.textContent ?? "";
+    expect(text).toContain("\\frac{1}{");
   });
 
   it("사용자가 지정한 크기는 상한에서 잘린다 — 수식 하나가 문서 레이아웃을 폭파하지 못한다", () => {
