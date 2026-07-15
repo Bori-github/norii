@@ -124,6 +124,53 @@ describe("프리뷰 — 코드 복사 버튼", () => {
     expect((buttons[1] as HTMLButtonElement).innerHTML).toBe(idleIcon);
   });
 
+  it("클립보드 API가 거부해도 폴백으로 복사한다 — API가 '있지만 거부'가 폴백의 제1 사유다", async () => {
+    // 비 secure context(배포 tauri:// origin)에서는 navigator.clipboard가 존재해도
+    // writeText가 거부된다 — "부재" 분기와는 다른 경로다.
+    stubClipboard({ writeText: () => Promise.reject(new Error("denied (테스트 주입)")) });
+    const copied: string[] = [];
+    vi.spyOn(document, "execCommand").mockImplementation((command: string) => {
+      if (command === "copy") {
+        copied.push(document.querySelector("textarea")?.value ?? "");
+        return true;
+      }
+      return false;
+    });
+    openTabWith(TWO_FENCES);
+    const { container } = render(<PreviewPane />);
+    const buttons = await findCopyButtons(container, 2);
+    click(buttons[0] as HTMLButtonElement);
+    await waitFor(() => expect(copied).toEqual(["const a = 1;\nconst b = 2;"]));
+  });
+
+  it("복사 피드백은 잠시 뒤 원래 아이콘으로 돌아온다 — 영구 '복사됨'은 회귀다", async () => {
+    stubClipboard({ writeText: () => Promise.resolve() });
+    openTabWith(TWO_FENCES);
+    const { container } = render(<PreviewPane />);
+    const buttons = await findCopyButtons(container, 2);
+    const pressed = buttons[0] as HTMLButtonElement;
+    const idleIcon = pressed.innerHTML;
+    click(pressed);
+    await waitFor(() => expect(pressed.dataset["copied"]).toBe("true"));
+    // 되돌림 타이머(1.5초)를 실시간으로 기다린다 — 타이머 유실 회귀를 잡는 값싼 방법이다.
+    await waitFor(() => expect(pressed.dataset["copied"]).toBeUndefined(), { timeout: 4000 });
+    expect(pressed.innerHTML).toBe(idleIcon);
+    expect(pressed.getAttribute("aria-label")).toBe(STRINGS.copyCodeLabel);
+  });
+
+  it("복사가 양쪽 다 실패하면 '복사됨'이 뜨지 않는다 — 거짓 성공 표시 금지", async () => {
+    stubClipboard(undefined);
+    vi.spyOn(document, "execCommand").mockImplementation(() => false);
+    openTabWith(TWO_FENCES);
+    const { container } = render(<PreviewPane />);
+    const buttons = await findCopyButtons(container, 2);
+    const pressed = buttons[0] as HTMLButtonElement;
+    click(pressed);
+    // "안 뜬다"의 검증 — 성공 경로가 피드백을 켜고도 남을 시간을 주고 확인한다.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(pressed.dataset["copied"]).toBeUndefined();
+  });
+
   it("클립보드 API가 없으면 execCommand 폴백으로 복사한다 — 배포 빌드의 origin 대비", async () => {
     stubClipboard(undefined);
     const copied: string[] = [];
