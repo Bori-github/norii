@@ -141,6 +141,22 @@ widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소
 - 토큰 정의는 `panda.config.ts` 한 곳. `shared`가 이를 감싸 앱에 노출한다.
 - `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
 
+## 아이콘
+
+아이콘은 **SVG 원본 파일을 단일 출처**로 두고, 도구(SVGR CLI, → [기술 스택 — 코드 품질](../tech-stack.md#코드-품질))가 React 컴포넌트를 생성한다. 빌드 플러그인이 아니라 커밋되는 코드젠이다 — vite·vitest 설정에 침투하지 않아 설정 드리프트(katex alias류 함정)가 생기지 않고, 생성물이 리뷰·게이트를 그대로 통과한다.
+
+```text
+apps/desktop/src/shared/ui/icons/
+├── svg/          ← 단일 출처 — 디자인 산출물(Figma 내보내기 등)을 그대로 둔다
+├── generated/    ← mise run icons가 생성한 TSX — 손으로 고치지 않는다
+└── index.ts      ← 공개 배럴 — 컴포넌트 이름(XxxIcon)을 사람이 관리한다
+```
+
+- **원본은 손보지 않고 그대로 넣는다.** 색 정규화(`black` → `currentColor`)·고정 크기 제거(width/height)·`aria-hidden` 부여는 생성 설정(`svgr.config.cjs`)이 모든 아이콘에 강제한다 — 규칙이 사람 기억이 아니라 파이프라인에 산다.
+- **`generated/`는 수정 금지.** 고칠 것이 있으면 원본 svg나 생성 설정을 고치고 `mise run icons`로 다시 생성한다.
+- **아이콘은 자기 색·크기가 없다.** 색은 `currentColor`로 품는 컨트롤의 글자색(시맨틱 토큰)을 따르고, 크기는 소비 측 CSS가 정한다. 원본은 24×24 그리드 · 스트로크 2 기준으로 그린다.
+- **아이콘은 장식이다.** 접근성 이름(aria-label)은 아이콘을 품는 컨트롤이 진다.
+
 ## 통합
 
 - Panda는 **PostCSS 플러그인**(`@pandacss/dev/postcss`)으로 동작한다. Vite의 PostCSS 파이프라인에 얹는다.

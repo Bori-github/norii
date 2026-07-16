@@ -33,6 +33,7 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 //   (rename은 파일 잠금을 우회하므로 명시적으로 검사 → file-lifecycle.md)
 // - 디스크 내용 해시 ≠ expected_hash면 쓰지 않고 AppError::Conflict 반환
 //   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
+// - expected_hash가 있는데 파일이 디스크에 없어도 Conflict다 — 기준으로 삼은 원본이 사라진 것도 외부 변경이다
 
 #[tauri::command]
 async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
@@ -110,7 +111,7 @@ notify               파일 외부 변경 감시(watch_paths)
 encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
-plugin-store         설정·세션 상태 저장 (→ document-model.md)
+plugin-store         설정·세션 상태 저장 — 세션 복원과 함께 M6 예정, 미설치 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
 
@@ -122,7 +123,7 @@ plugin-log           통합 로깅 (→ error-handling.md)
 
 ```text
 1. Capabilities (apps/desktop/src-tauri/capabilities/)
-   - 프론트가 부를 수 있는 커맨드 · plugin-dialog/store 권한을 명시 선언
+   - 프론트가 부를 수 있는 커맨드 · plugin-dialog 권한을 명시 선언 (plugin-store 권한은 M6 도입 시 추가)
    - 불필요한 플러그인·커맨드 노출 차단
 
 2. 커맨드 내부 경로 검증  ← 실제 스코프 강제는 여기 있다

@@ -3,6 +3,7 @@
   "ignorePatterns": [
     ".claude/**",
     ".github/**",
+    "examples/**",
     "**/src-tauri/gen/**",
     "**/styled-system/**",
     "**/dist/**",

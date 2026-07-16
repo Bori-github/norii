@@ -74,7 +74,7 @@ BREAKING CHANGE: 프리뷰 설정 키 이름 변경 (mathEnabled → katex)
 
 ## 강제 (Enforcement)
 
-**commitlint**(`@commitlint/config-conventional`)로 검증하고, **lefthook `commit-msg` 훅**이 매 커밋에 이를 실행한다(→ [코드 품질 전략](../docs/code-quality.md#lefthook-커밋-전-자동화)). 규칙 위반 시 커밋이 거부된다.
+**commitlint**(`@commitlint/config-conventional`)로 검증하고, **lefthook `commit-msg` 훅**이 매 커밋에 이를 실행한다(→ [코드 품질 전략](../docs/code-quality.md#게이트-자동화-훅과-ci)). 규칙 위반 시 커밋이 거부된다.
 
 - 타입·형식은 commitlint가 강제한다.
 - 요약을 한국어로 쓰는 것은 이 문서의 팀 규칙이다(commitlint는 언어를 검사하지 않음).

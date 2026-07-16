@@ -1,6 +1,10 @@
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+// 프리뷰 스타일(Panda)을 로드한다 — 실제 앱은 main.tsx에서 넣는다. 표의 가로 스크롤처럼
+// **CSS가 있어야 성립하는 동작**을 여기서 검증하므로, 없으면 브라우저 기본값을 재는 셈이 된다.
+import "@app/index.css";
+
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import { resetScrollSync } from "@features/scroll-sync";
 import { STRINGS } from "@shared/config";
@@ -14,6 +18,7 @@ import { PreviewPane } from "../index";
 //     보고 편집한다. 삽입 지점은 XSS의 마지막 관문이기도 하다.
 // 보장: 활성 탭 본문이 렌더되고, 본문 변경(타이핑·교체)이 디바운스 뒤 반영되며,
 //       삽입 HTML은 sanitize를 거친다(통합 확인 1건 — 정책 상세는 packages/markdown 테스트).
+//       수식은 여기서 **앱 설정까지 포함해** 조판되는지만 본다(문법 커버리지는 packages/markdown).
 // 경계: 스크롤 동기화(별도 feature)·디바운스 구체 값(M3 마감 실측)·타이포그래피는
 //       다루지 않는다. 실제 WKWebView 충실도는 실앱 E2E 계층의 몫이다.
 
@@ -35,6 +40,36 @@ function openTabWith(text: string): string {
 }
 
 describe("PreviewPane", () => {
+  it("수식이 앱 번들에서도 조판된다 — katex ESM 고정이 앱 설정에도 걸려 있는가", async () => {
+    // 이 확인은 앱 레벨에서만 가능하다: 수식 플러그인이 내부에서 잡는 katex의 CJS 빌드는
+    // 번들되면 제어 시퀀스가 전부 죽는다(모든 수식이 깨진다). 그 방어(ESM alias)는 앱의
+    // vite/vitest 설정에 따로 걸려 있어, 패키지 테스트가 통과해도 여기서 깨질 수 있다.
+    openTabWith("$\\frac{1}{2}$");
+    const { container } = render(<PreviewPane />);
+    await waitFor(() => expect(container.querySelector(".katex")).not.toBeNull());
+    expect(container.querySelector(".katex-error")).toBeNull();
+  });
+
+  // 왜: 넘치는 표가 패널을 밀면 본문 전체가 가로로 흔들린다. 넘침은 **표 안에** 가둬야 한다
+  //     (코드 블록·다이어그램과 같은 처리). 셀 글자를 줄바꿈해도 더는 줄일 수 없는 표가 그 경우다.
+  // 보장: 더 줄일 수 없는 표는 자기 안에서 가로 스크롤된다.
+  // 경계: 줄바꿈으로 들어가는 표는 스크롤이 생기지 않는 것이 정상이다(표준 마크다운 뷰어와 동일).
+  //       스크롤바의 생김새·감각은 실앱 수동 확인의 몫이다.
+  it("더 줄일 수 없는 넓은 표는 표 안에서 가로 스크롤된다 — 패널을 밀지 않는다", async () => {
+    const wide = `| ${Array.from({ length: 12 }, (_, i) => `아주 긴 열 제목 ${i}`).join(" | ")} |
+| ${Array.from({ length: 12 }, () => "---").join(" | ")} |
+| ${Array.from({ length: 12 }, (_, i) => `내용이 제법 긴 셀 ${i}`).join(" | ")} |`;
+    openTabWith(wide);
+    const { container } = render(<PreviewPane />);
+    const table = await waitFor(() => {
+      const found = container.querySelector("table");
+      expect(found).not.toBeNull();
+      return found as HTMLTableElement;
+    });
+    // 내용이 표 상자보다 넓다 = 가로 스크롤이 생긴다(찌그러졌다면 둘이 같다).
+    expect(table.scrollWidth).toBeGreaterThan(table.clientWidth);
+  });
+
   it("활성 탭의 마크다운을 렌더한다", async () => {
     openTabWith("# 제목\n\n본문");
     const { container } = render(<PreviewPane />);

@@ -103,6 +103,20 @@ run = "bash scripts/upload-attachment.sh"
 description = "번들 크기 측정 (프론트엔드 dist + 앱 번들, 목표 <15MB — build 후 실행)"
 run = "node scripts/bundle-size.mjs"
 
+# --- 아이콘 생성 (SVG 원본 → React 컴포넌트 — 생성물을 커밋한다) ---
+[tasks.icons]
+description = "아이콘 생성 (shared/ui/icons/svg → generated, SVGR — 생성물은 커밋한다)"
+dir = "apps/desktop"
+run = """
+mkdir -p src/shared/ui/icons/svg src/shared/ui/icons/generated
+pnpm svgr --config-file svgr.config.cjs --no-index \
+  --out-dir src/shared/ui/icons/generated src/shared/ui/icons/svg
+# 생성물이 있을 때만 포맷한다 — 원본이 아직 없으면 svgr는 no-op이고 포맷할 것도 없다.
+if ls src/shared/ui/icons/generated/*.tsx >/dev/null 2>&1; then
+  oxfmt src/shared/ui/icons/generated
+fi
+"""
+
 # --- 문서-코드 정합 ---
 [tasks.docs-drift]
 description = "문서-코드 드리프트 검사 (계약 문서 ↔ 코드 기계 대조)"

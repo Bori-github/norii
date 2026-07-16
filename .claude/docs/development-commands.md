@@ -36,6 +36,7 @@ mise run fmt-check    # oxfmt --check (포맷 검증, 수정 없음)
 mise run fsd-lint     # steiger (FSD 아키텍처 검증)
 mise run typecheck    # tsc (타입 체크)
 mise run test         # Vitest (테스트)
+mise run icons        # SVGR 아이콘 생성 (shared/ui/icons/svg → generated — 생성물은 커밋한다)
 
 # Rust
 mise run rust-fmt-check  # cargo fmt --check

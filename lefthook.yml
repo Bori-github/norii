@@ -1,4 +1,4 @@
-# Git 훅 — 커밋 전 자동화의 단일 출처는 .claude/docs/code-quality.md#lefthook-커밋-전-자동화
+# Git 훅 — 게이트 자동화(훅·CI 2단)의 단일 출처는 .claude/docs/code-quality.md#게이트-자동화-훅과-ci
 # 2단 구조: 커밋 훅은 변경 파일만 빠르게 검사하고, 전체 게이트(mise run check)는 지속적 통합에서 강제한다.
 
 pre-commit:

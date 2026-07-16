@@ -48,7 +48,9 @@ function indexAtOrBelow(tops: number[], value: number): number {
 export function usePreviewScrollSync(
   paneRef: RefObject<HTMLDivElement | null>,
   activeTabId: string | null,
-  html: string,
+  /** 렌더 스왑 신호 — 값이 바뀌면 측정을 버린다. HTML 교체뿐 아니라 뒤늦게 도착하는
+   * 다이어그램(→ use-mermaid.ts)처럼 블록 높이를 바꾸는 모든 사건이 여기 포함된다. */
+  renderKey: string,
 ): void {
   const cacheRef = useRef<BlockPositionCache | null>(null);
   const swapSuppressorRef = useRef(createSwapSuppressor());
@@ -70,7 +72,7 @@ export function usePreviewScrollSync(
     if (pane && wasAtBottomRef.current) {
       applyGuardedScrollTop(echoGuardRef.current, pane, Number.MAX_SAFE_INTEGER);
     }
-  }, [paneRef, html]);
+  }, [paneRef, renderKey]);
 
   useEffect(() => {
     const pane = paneRef.current;
