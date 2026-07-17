@@ -53,7 +53,7 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 한글 고정폭 폰트  표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB) 필요 — 15MB 예산과 함께 판단 (→ design/design-system.md#글자액센트-토큰)
 탭 세션 복원      커서 위치까지 복원할지 · 에디터/프리뷰 스크롤 위치도 탭별 복원할지(VS Code 방식 — 현재는 화면 1개 공유, 전환 시 맨 위) (→ document-model.md)
 oxfmt 1.0 재확인  베타(0.x) → 1.0 도달 시 안정성 재점검   (→ code-quality.md)
-playwright 재상향 로컬 macOS 13이 WebKit을 지원하는 마지막 버전(1.57.0)으로 다운핀 — 로컬 macOS 14+ 업그레이드 시 최신으로 복귀 (→ tech-stack.md#코드-품질)
+playwright 재상향 로컬 macOS 13이 WebKit을 지원하는 마지막 버전으로 다운핀 — 로컬 macOS 14+ 업그레이드 시 최신으로 복귀 (→ tech-stack.md#코드-품질)
 E2E 도구 재확인   tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검 — 도입 시점은 확정(하네스 M0 · 실전 시나리오 M1) (→ testing.md)
 tauri-specta 2.0  rc 핀 → 정식 2.0 도달 시 재확인            (→ tech-stack.md)
 원격 이미지       프리뷰에서 http(s) 이미지 로드 허용 여부   (→ security.md)
