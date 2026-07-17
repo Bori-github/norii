@@ -76,4 +76,4 @@ interface WorkspaceState {
 
 ## 세션 복원
 
-마지막에 열려 있던 탭 목록·활성 탭·루트 폴더는 `plugin-store`(JSON)에, 창 크기·위치는 `plugin-window-state`에 저장하고 재시작 시 복원한다(버전 → [기술 스택](tech-stack.md#tauri-플러그인-네이티브-기능)). 커서 위치까지 복원할지는 열린 결정이다(→ [실제 구현 계획](implementation-plan.md)). 이 상태는 `.md`가 아니라 앱 config에 저장한다(→ [파일 생명주기 정책](file-lifecycle.md)).
+마지막에 열려 있던 탭 목록·활성 탭·루트 폴더는 `plugin-store`(JSON)에, 창 크기·위치는 `plugin-window-state`에 저장하고 재시작 시 복원한다(→ [Rust 커맨드 계약](rust-commands.md#구현-크레이트플러그인)). 커서 위치까지 복원할지는 열린 결정이다(→ [실제 구현 계획](implementation-plan.md)). 이 상태는 `.md`가 아니라 앱 config에 저장한다(→ [파일 생명주기 정책](file-lifecycle.md)).

@@ -4,7 +4,7 @@
 
 새 파일 커맨드는 **구현 전에 이 문서에 계약을 먼저 추가**한다.
 
-## 커맨드 시그니처 (초안)
+## 커맨드 시그니처
 
 ```rust
 #[tauri::command]
@@ -81,6 +81,8 @@ async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
 #[tauri::command]
 async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppError>;
+// 두 다이얼로그 모두 Markdown 필터(.md·.markdown — read_dir 필터와 동일 집합)를 걸고,
+// 취소하면 None을 반환한다. 선택된 경로는 허용 루트로 등록된다(→ 권한)
 ```
 
 ## 이벤트 계약 (Rust → 웹뷰)
@@ -111,7 +113,7 @@ notify               파일 외부 변경 감시(watch_paths)
 encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
-plugin-store         설정·세션 상태 저장 — 세션 복원과 함께 M6 예정, 미설치 (→ document-model.md)
+plugin-store         설정·세션 상태 저장 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
 
@@ -123,7 +125,7 @@ plugin-log           통합 로깅 (→ error-handling.md)
 
 ```text
 1. Capabilities (apps/desktop/src-tauri/capabilities/)
-   - 프론트가 부를 수 있는 커맨드 · plugin-dialog 권한을 명시 선언 (plugin-store 권한은 M6 도입 시 추가)
+   - 프론트가 부를 수 있는 커맨드 · plugin-dialog 권한을 명시 선언 (plugin-store 권한은 도입 시 추가)
    - 불필요한 플러그인·커맨드 노출 차단
 
 2. 커맨드 내부 경로 검증  ← 실제 스코프 강제는 여기 있다
