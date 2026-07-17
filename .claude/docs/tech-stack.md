@@ -44,17 +44,15 @@
 
 ## Tauri 플러그인 (네이티브 기능)
 
-문서가 설명하는 기능(다이얼로그·설정 저장·세션 복원·자동 업데이트·로깅)이 요구하는 공식 플러그인이다. JS(`@tauri-apps/plugin-*`)와 Rust(`tauri-plugin-*`)는 동일 버전이다.
+웹뷰가 못 하는 네이티브 기능은 Tauri 팀이 유지보수하는 공식 플러그인으로 채운다. 플러그인 하나는 JS 패키지(`@tauri-apps/plugin-*`)와 Rust 크레이트(`tauri-plugin-*`) 한 쌍이며, 두 쪽은 동일 버전으로 맞춘다.
 
-| 플러그인              | 버전   | 용도                                                                                                      |
-| --------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
-| `plugin-dialog`       | 2.7.1  | 파일 열기/저장 네이티브 다이얼로그 (→ [Rust 커맨드 계약](rust-commands.md))                               |
-| `plugin-store`        | 2.4.3  | 설정·최근 파일·세션 상태 JSON 저장 (→ [문서 모델](document-model.md), [파일 생명주기](file-lifecycle.md)) |
-| `plugin-opener`       | 2.5.4  | 프리뷰의 외부 링크를 OS 기본 브라우저로 (스킴 허용목록은 프론트가 강제 → [보안](security.md#4-외부-링크-프리뷰에서-문서-밖으로-나가는-유일한-통로)) |
-| `plugin-window-state` | 2.4.1  | 창 크기·위치 복원                                                                                         |
-| `plugin-updater`      | 2.10.1 | 자동 업데이트 (→ [플랫폼 전략](platform-strategy.md))                                                     |
-| `plugin-process`      | 2.3.1  | 업데이트 후 재실행                                                                                        |
-| `plugin-log`          | 2.8.0  | Rust·프론트 통합 로깅 (→ [에러 처리와 로깅](error-handling.md))                                           |
+이 표는 **실제 설치된 핀만** 등재한다 — 설계 문서가 예고한 플러그인(설정·세션 저장 · 창 상태 복원 · 자동 업데이트 → [문서 모델 — 세션 복원](document-model.md#세션-복원) · [플랫폼 전략](platform-strategy.md))은 도입하는 커밋에서 여기에 추가한다.
+
+| 플러그인        | 버전  | 용도                                                                        |
+| --------------- | ----- | --------------------------------------------------------------------------- |
+| `plugin-dialog` | 2.7.1 | 파일 열기/저장 네이티브 다이얼로그 (→ [Rust 커맨드 계약](rust-commands.md)) |
+| `plugin-opener` | 2.5.4 | 프리뷰의 외부 링크를 OS 기본 브라우저로 (스킴 허용목록은 프론트가 강제 → [보안](security.md#4-외부-링크-프리뷰에서-문서-밖으로-나가는-유일한-통로)) |
+| `plugin-log`    | 2.8.0 | Rust·프론트 통합 로깅 (→ [에러 처리와 로깅](error-handling.md))             |
 
 ## Rust 크레이트 (백엔드)
 
@@ -96,7 +94,6 @@
 | 실앱 E2E           | `tauri-plugin-webdriver` (Choochmeque · MIT)                     | **0.2.1 · 2026-02 (pre-1.0)**                     | 임베디드 W3C WebDriver — macOS WKWebView 지원. 대안: 공식 임베디드 provider `@wdio/tauri-service`·CrabNebula(상용). **운영 동일 E2E**                               |
 | E2E 클라이언트     | `webdriverio` (programmatic `remote()`)                          | 9.29.1                                            | 임베디드 WebDriver(127.0.0.1:4445)에 붙는 JS 클라이언트. wdio 테스트러너 없이 Vitest 안에서 직접 구동 (→ [테스트 전략](testing.md#레이어별--무엇을-어디서-테스트하나))    |
 | IPC 타입 계약      | `tauri-specta`                                                   | **2.0.0-rc.25 (pre-1.0)**                         | Rust 커맨드 → TS 타입 생성 (계약 드리프트 차단). **Tauri 2 지원은 2.0.0-rc 라인뿐**(1.x는 Tauri v1 전용)                                                            |
-| 커버리지           | `@vitest/coverage-v8`                                            | 4.1.9                                             | 커버리지 측정 (V8 기반)                                                                                                                                             |
 | 아이콘 생성        | SVGR (`@svgr/cli`)                                               | 8.1.0                                             | SVG 원본 → React 컴포넌트 코드젠(생성물 커밋, `mise run icons`). CLI 단독 — vite·vitest 설정에 플러그인을 심지 않는다 (→ [디자인 시스템 — 아이콘](design/design-system.md#아이콘)) |
 | Rust 포맷          | rustfmt (`cargo fmt`)                                            | Rust 툴체인 기본                                  | 별도 설치 없음                                                                                                                                                      |
 | Rust 린트          | Clippy (`cargo clippy`)                                          | Rust 툴체인 기본                                  | `-D warnings`                                                                                                                                                       |
