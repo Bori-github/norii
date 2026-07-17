@@ -39,36 +39,48 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 
 ## 열린 결정 (Open Decisions)
 
-로드맵을 진행하며 확정한다. 이 목록에 없는 새 결정이 필요하면 [작업 규칙](../rules/project-rules.md)에 따라 사용자에게 보고한다.
+로드맵을 진행하며 확정한다. 이 목록에 없는 새 결정이 필요하면 [작업 규칙](../rules/project-rules.md)에 따라 사용자에게 보고한다. 각 항목은 **무엇을 결정하는가**만 적는다 — 배경·제약의 상세는 화살표가 가리키는 소유 문서에 있다.
 
-```text
-스냅샷 백업       주기 스냅샷(File Recovery류) 도입 여부  (→ file-lifecycle.md)
-접힘 상태 영속화  사이드카 도입 시점                     (→ editor-strategy.md, non-goals.md)
-테마 커스터마이징 프리셋 토큰 vs 사용자 커스텀 깊이     (→ design/design-system.md)
-유리 설정 노출    불투명도(--norii-glass-opacity)·흐림 반경(DEFAULT_BLUR_RADIUS)을 설정 화면에 어떻게 노출할지 — 슬라이더 최솟값은 대비 게이트가 정한 하한과 같아야 한다. M6 설정 영속화와 함께 확정 (→ design/decisions/0007-glass-is-opacity-not-color.md · design/window-chrome.md)
-타이포 스케일     글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정 시점. M6 (→ design/design-system.md)
-네이티브 E2E     창 드래그·마우스 글자 선택·유리 투과·기동 프레임은 자동 검증이 없다 — 실제 OS 입력 합성(손쉬운 사용 권한)과 픽셀 판정이 필요하다. 이 공백 때문에 회귀 5건을 사람이 발견했다(유리가 유리가 아님·기동 시 흰 화면·선택 영역 소실·에디터 글자 선택 불가·앱 이름 위 드래그 불가). M6 설정 화면이 유리 값을 만질 때 함께 만든다 (→ testing.md · design/window-chrome.md#검증)
-상태색 도입      팔레트에 상태색(정보·성공·경고·위험)이 없다. 이해관계자가 셋이다 — 탭 ⚠ 배지(유리 위, 지금은 본문색 상속) · 에러 배너 · M4 콜아웃(지금은 아이콘·경계선으로만 구별). 한 팔레트로 셋을 함께 정해야 하며, 라이트/다크 × 종이/유리 네 조합에서 대비 게이트를 통과해야 한다. 확정 시 ADR로 남긴다 (→ design/design-system.md#대비-게이트 · design/decisions/0005-accent-is-never-text.md · preview-strategy.md#콜아웃-gfm-alerts)
-떠 있는 면 흐림   투명 창에서 backdrop-filter가 동작하지 않는다는 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ design/decisions/0002-glass-is-made-by-os.md)
-한글 고정폭 폰트  표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB) 필요 — 15MB 예산과 함께 판단 (→ design/design-system.md#글자액센트-토큰)
-탭 세션 복원      커서 위치까지 복원할지 · 에디터/프리뷰 스크롤 위치도 탭별 복원할지(VS Code 방식 — 현재는 화면 1개 공유, 전환 시 맨 위) (→ document-model.md)
-oxfmt 1.0 재확인  베타(0.x) → 1.0 도달 시 안정성 재점검   (→ code-quality.md)
-playwright 재상향 로컬 macOS 13이 WebKit을 지원하는 마지막 버전으로 다운핀 — 로컬 macOS 14+ 업그레이드 시 최신으로 복귀 (→ tech-stack.md#코드-품질)
-E2E 도구 재확인   tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검 — 도입 시점은 확정(하네스 M0 · 실전 시나리오 M1) (→ testing.md)
-tauri-specta 2.0  rc 핀 → 정식 2.0 도달 시 재확인            (→ tech-stack.md)
-원격 이미지       프리뷰에서 http(s) 이미지 로드 허용 여부   (→ security.md)
-커버리지 임계값   도입 시점·수치                              (→ testing.md)
-경로 정규화 비교   스코프 허용 루트 비교가 바이트 단위 — 대소문자·NFC/NFD가 다른 입구(M5 트리·M6 세션 복원) 추가 전 비교 전략 확정. 심링크 별칭(/tmp↔/private/tmp)으로 같은 파일이 두 탭으로 열리는 문제도 이 결정에 포함 (→ rust-commands.md)
-삭제 파일 부활 확인 밖에서 지운 파일의 dirty 탭을 닫기/종료 플러시가 확인 없이 재생성한다(데이터 보존 우선) — 자동 저장의 "조용히 되살리지 않는다"와 정책 비대칭. 확인 다이얼로그 도입 여부 (→ file-lifecycle.md#외부-변경-처리)
-손실 변환 안내     감지 인코딩으로 못 읽는 바이트는 대체 문자(U+FFFD)로 변환되는데 배너가 손실 여부를 알리지 않음 — FileContent에 손실 플래그 추가 여부(계약 변경, 문서 선행) (→ file-lifecycle.md#인코딩-정책 · rust-commands.md)
-자동 저장 maxWait   순수 디바운스라 연속 타이핑 중에는 자동 저장이 무기한 연기됨 — 상한(예: 30초) 도입 여부. 정책 변경이므로 문서 선행 (→ file-lifecycle.md#자동-저장)
-트리 외부 변경    사이드바 트리의 외부 생성/삭제 반영 방식 — M5 (→ document-model.md)
-프리뷰 상대 경로 링크  `#앵커` 이동은 M4에서 확정·구현한다(→ preview-strategy.md#링크-정책). 남은 것은 **상대 경로로 다른 .md를 여는 것** — 허용 루트 밖 경로 차단·이미 열린 탭 전환·미저장 문서의 기준 디렉터리 부재를 함께 풀어야 하므로 별도 결정이다 (→ security.md#4-외부-링크 · rust-commands.md)
-프리뷰 코드면 토큰 프리뷰 코드 블록 배경에 전용 토큰이 없어 상태 배경(bg.hover)을 빌려 쓴다 — bg.canvas는 유리에서 투명해져 못 쓴다. 종이 위 "옅게 눌린 면"(bg.inset류) 토큰을 디자인 시스템에 추가할지 — M6 (→ design/design-system.md · design/decisions/0001-surface-role-and-material.md)
-프리뷰 렌더 후속   적응형 디바운스가 문자열 렌더만 측정(DOM 반영 비용 제외)·탭 전환은 동기 렌더 — 측정 확장·탭별 캐시·증분 렌더 도입 여부 (→ preview-strategy.md#디바운스)
-번들 크기 임계값  앱 번들 15MB 예산 확정. 프론트엔드 dist 하드 임계값 도입 여부는 열림 (→ platform-strategy.md)
-i18n 도입         현재 미도입(UI 문자열은 shared/config 상수). 다국어 필요 시 도입 (→ frontend-architecture.md)
-```
+### 파일 안전 · 데이터
+
+- **스냅샷 백업** — 주기 스냅샷(File Recovery류) 도입 여부 (→ [파일 생명주기](file-lifecycle.md))
+- **삭제 파일 부활 확인** — 밖에서 지운 파일의 dirty 탭을 닫기/종료 플러시가 확인 없이 재생성한다(데이터 보존 우선). 자동 저장의 "조용히 되살리지 않는다"와 비대칭 — 확인 다이얼로그 도입 여부 (→ [외부 변경 처리](file-lifecycle.md#외부-변경-처리))
+- **손실 변환 안내** — 감지 인코딩으로 못 읽는 바이트가 대체 문자(U+FFFD)로 변환될 때 배너가 손실을 알리지 않는다 — FileContent 손실 플래그 추가 여부(계약 변경, 문서 선행) (→ [인코딩 정책](file-lifecycle.md#인코딩-정책) · [Rust 커맨드 계약](rust-commands.md))
+- **자동 저장 maxWait** — 순수 디바운스라 연속 타이핑 중 자동 저장이 무기한 연기된다 — 상한(예: 30초) 도입 여부(정책 변경, 문서 선행) (→ [자동 저장](file-lifecycle.md#자동-저장))
+- **경로 정규화 비교** — 허용 루트 비교가 바이트 단위다. 대소문자·NFC/NFD·심링크 별칭(/tmp↔/private/tmp, 같은 파일이 두 탭으로 열림)까지 포함한 비교 전략 — 새 입구(M5 트리·M6 세션 복원) 추가 전 확정 (→ [Rust 커맨드 계약](rust-commands.md))
+
+### 에디터 · 세션
+
+- **접힘 상태 영속화** — 사이드카 도입 시점 (→ [에디터 전략](editor-strategy.md) · [비목표](../rules/non-goals.md))
+- **탭 세션 복원** — 커서 위치까지 복원할지 · 에디터/프리뷰 스크롤도 탭별 복원할지(VS Code 방식 — 현재는 화면 1개 공유, 전환 시 맨 위) (→ [문서 모델](document-model.md))
+- **트리 외부 변경** — 사이드바 트리의 외부 생성/삭제 반영 방식 — M5 (→ [문서 모델](document-model.md))
+
+### 프리뷰
+
+- **원격 이미지** — http(s) 이미지 로드 허용 여부 (→ [보안](security.md))
+- **상대 경로 링크** — 상대 경로로 다른 `.md`를 여는 것(`#앵커` 이동은 확정·구현됨 → [링크 정책](preview-strategy.md#링크-정책)). 허용 루트 밖 차단·이미 열린 탭 전환·미저장 문서의 기준 디렉터리 부재를 함께 풀어야 한다 (→ [보안](security.md#4-외부-링크-프리뷰에서-문서-밖으로-나가는-유일한-통로) · [Rust 커맨드 계약](rust-commands.md))
+- **렌더 후속** — 적응형 디바운스가 문자열 렌더만 측정(DOM 반영 비용 제외)하고 탭 전환은 동기 렌더다 — 측정 확장·탭별 캐시·증분 렌더 도입 여부 (→ [디바운스](preview-strategy.md#디바운스))
+
+### 디자인
+
+- **테마 커스터마이징** — 프리셋 토큰 vs 사용자 커스텀 깊이 (→ [디자인 시스템](design/design-system.md))
+- **유리 설정 노출** — 불투명도(`--norii-glass-opacity`)·흐림 반경(`DEFAULT_BLUR_RADIUS`)의 설정 화면 노출 방식 — 슬라이더 최솟값은 대비 게이트 하한과 같아야 한다. M6 설정 영속화와 함께 (→ [결정 0007](design/decisions/0007-glass-is-opacity-not-color.md) · [창 표면 계약](design/window-chrome.md))
+- **타이포 스케일** — 글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정, M6 (→ [디자인 시스템](design/design-system.md))
+- **상태색 도입** — 팔레트에 상태색(정보·성공·경고·위험)이 없다. 이해관계자 셋(탭 ⚠ 배지 · 에러 배너 · 콜아웃)을 한 팔레트로 함께 정하고, 라이트/다크 × 종이/유리 네 조합에서 대비 게이트를 통과해야 한다. 확정 시 ADR로 남긴다 (→ [대비 게이트](design/design-system.md#대비-게이트) · [결정 0005](design/decisions/0005-accent-is-never-text.md) · [콜아웃](preview-strategy.md#콜아웃-gfm-alerts))
+- **떠 있는 면 흐림** — 투명 창에서 `backdrop-filter` 미동작 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ [결정 0002](design/decisions/0002-glass-is-made-by-os.md))
+- **한글 고정폭 폰트** — 표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB)이 필요하다 — 15MB 예산과 함께 판단 (→ [디자인 시스템](design/design-system.md#글자액센트-토큰))
+- **프리뷰 코드면 토큰** — 코드 블록 배경이 상태 배경(bg.hover)을 빌려 쓴다(bg.canvas는 유리에서 투명해져 못 씀) — 종이 위 "옅게 눌린 면"(bg.inset류) 토큰 추가 여부, M6 (→ [디자인 시스템](design/design-system.md) · [결정 0001](design/decisions/0001-surface-role-and-material.md))
+
+### 테스트 · 도구
+
+- **네이티브 E2E** — 창 드래그·마우스 글자 선택·유리 투과·기동 프레임은 자동 검증이 없다(실제 OS 입력 합성과 픽셀 판정 필요). 이 공백 때문에 회귀 5건을 사람이 발견했다. M6 설정 화면이 유리 값을 만질 때 함께 만든다 (→ [테스트 전략](testing.md) · [창 표면 계약 — 검증](design/window-chrome.md#검증))
+- **커버리지 임계값** — 도입 시점·수치 (→ [테스트 전략](testing.md))
+- **번들 크기 임계값** — 앱 번들 15MB 예산은 확정. 프론트엔드 dist 하드 임계값 도입 여부가 열림 (→ [플랫폼 전략](platform-strategy.md))
+- **oxfmt 1.0 재확인** — 베타(0.x) → 1.0 도달 시 안정성 재점검 (→ [코드 품질](code-quality.md))
+- **playwright 재상향** — 로컬 macOS 13이 WebKit을 지원하는 마지막 버전으로 다운핀 — macOS 14+ 업그레이드 시 최신으로 복귀 (→ [기술 스택](tech-stack.md#코드-품질))
+- **E2E 도구 재확인** — tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검(도입 자체는 확정, 재점검만 열림) (→ [테스트 전략](testing.md))
+- **tauri-specta 2.0** — rc 핀 → 정식 2.0 도달 시 재확인 (→ [기술 스택](tech-stack.md))
+- **i18n 도입** — 현재 미도입(UI 문자열은 shared/config 상수) — 다국어 필요 시 (→ [프론트엔드 아키텍처](frontend-architecture.md))
 
 ## 성공 기준 (상시 게이트)
 
