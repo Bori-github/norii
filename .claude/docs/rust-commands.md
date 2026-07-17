@@ -114,6 +114,7 @@ encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
 plugin-store         설정·세션 상태 저장 (→ document-model.md)
+plugin-window-state  창 크기·위치 저장·복원 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
 
