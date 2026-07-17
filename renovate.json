@@ -1,0 +1,59 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Asia/Seoul",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "build",
+  "semanticCommitScope": "deps",
+  "commitMessageAction": "",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "{{#if newVersion}}{{newVersion}} 업데이트{{else}}업데이트{{/if}}",
+  "labels": ["build"],
+  "packageRules": [
+    {
+      "description": "CodeMirror·Lezer 패키지는 한 PR로 묶는다",
+      "groupName": "codemirror",
+      "matchPackageNames": ["@codemirror/**", "@lezer/**"]
+    },
+    {
+      "description": "Tauri JS 패키지·Rust 크레이트는 한 PR로 묶는다 — JS/Rust 동일 버전 유지(→ .claude/docs/tech-stack.md)",
+      "groupName": "tauri",
+      "matchPackageNames": ["@tauri-apps/**", "tauri", "tauri-build", "tauri-plugin-**"]
+    },
+    {
+      "description": "Vitest 계열은 한 PR로 묶는다 — 브라우저 프로바이더가 본체와 동일 버전을 요구한다",
+      "groupName": "vitest",
+      "matchPackageNames": ["vitest", "@vitest/**"]
+    },
+    {
+      "description": "린트·포맷 툴링은 한 PR로 묶는다",
+      "groupName": "lint-format-tooling",
+      "matchPackageNames": [
+        "oxlint",
+        "oxfmt",
+        "steiger",
+        "@feature-sliced/**",
+        "@commitlint/**",
+        "lefthook"
+      ]
+    },
+    {
+      "description": "저위험(1.0 이상 devDependencies의 patch·minor)만 CI 통과 시 자동 머지 — major·런타임 의존성은 사람이 검토한다",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchCurrentVersion": "!/^0\\./",
+      "automerge": true
+    },
+    {
+      "description": "0.x·pre-release 핀은 베타 라벨 — 열린 결정의 재확인 항목과 연결(→ .claude/docs/implementation-plan.md)",
+      "matchCurrentVersion": "/(^0\\.|-rc|-alpha|-beta)/",
+      "addLabels": ["deps-beta"],
+      "automerge": false
+    },
+    {
+      "description": "playwright는 로컬 macOS 13이 WebKit을 지원하는 마지막 버전으로 다운핀 — OS 업그레이드까지 갱신 보류(→ .claude/docs/tech-stack.md)",
+      "matchPackageNames": ["playwright"],
+      "enabled": false
+    }
+  ]
+}
