@@ -14,7 +14,7 @@ app → pages → widgets → features → entities → shared
 
 > `processes` 레이어는 FSD에서 **deprecated**다. norii는 쓰지 않는다(다중 페이지 흐름은 `features`나 `app`으로 흡수).
 
-| 레이어 | 책임 (FSD 정의) | norii 슬라이스(예정) |
+| 레이어 | 책임 (FSD 정의) | norii 슬라이스 |
 |---|---|---|
 | `app/` | 앱 전역 관심사 — Provider·전역 스토어·전역 스타일·부트스트랩 | `providers/`, `layouts/`, Tauri 초기화(window·menu·IPC), `index.css`, 테마 **적용**(data-theme 심기 — 상태는 entities가 소유) |
 | `pages/` | 화면(스크린) 단위 조합. 데이터 페칭·에러 바운더리 포함 가능 | `editor/`(메인 워크스페이스), `settings/`(후) |

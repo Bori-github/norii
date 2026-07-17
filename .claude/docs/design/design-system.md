@@ -98,7 +98,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 
 선택지는 셋이다 — `system`(OS를 따른다) · `light` · `dark`. **`system`은 기본값이자 하나의 선택**이다: 그 의도를 버리고 light/dark만 저장하면 OS를 바꿔도 앱이 따라오지 않는다.
 
-**아직 저장하지 않는다.** 스토어는 매 기동 `system`으로 시작하고, 토글은 그 세션에만 남는다. 영속화는 설정 화면과 함께 M5에서 들어온다(→ [실제 구현 계획](../implementation-plan.md)) — 그전까지 토글로 고정한 테마에서 `system`으로 돌아가는 길은 재시작뿐이다.
+**아직 저장하지 않는다.** 스토어는 매 기동 `system`으로 시작하고, 토글은 그 세션에만 남는다. 영속화는 설정 화면과 함께 들어온다(→ [실제 구현 계획](../implementation-plan.md)) — 그전까지 토글로 고정한 테마에서 `system`으로 돌아가는 길은 재시작뿐이다.
 
 ```text
 semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.950}' } }
