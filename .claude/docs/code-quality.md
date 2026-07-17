@@ -97,7 +97,7 @@ mise run fsd-lint    # steiger — apps/desktop/src의 FSD 위반 검출
 job: check
   - mise install            툴체인 고정 버전 세팅
   - pnpm install
-  - mise run check          fmt-check·lint·fsd-lint·typecheck·test·rust(fmt/clippy/test)
+  - mise run check          fmt-check·lint·fsd-lint·typecheck·test·rust(fmt/clippy/test)·docs-drift
 
 matrix (확장 시):
   - macOS  (1차 — 기준 플랫폼)
