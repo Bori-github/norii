@@ -115,7 +115,7 @@ Rust 빌드는 캐시(예: `Swatinem/rust-cache`)로 가속한다. 릴리스 빌
   - **자동 머지 범위 한정** — devDependencies의 patch/minor 등 저위험만 CI 그린 시 자동 머지 후보로 두고, major·런타임 의존성은 사람이 검토한다.
   - **베타 의존성 주의 라벨** — 0.x·rc·pre-1.0 핀은 별도 라벨을 달아 [열린 결정](implementation-plan.md#열린-결정-open-decisions)의 재확인 항목(oxfmt 1.0·tauri-specta 2.0 등)과 연결한다.
 - Renovate PR도 `mise run check` 게이트를 CI에서 통과해야 머지된다 — 자동 갱신이 품질 게이트를 우회하지 않는다.
-- 커밋 메시지는 [커밋 컨벤션](../rules/commit-convention.md)의 `build(deps):` 형식에 맞춘다 — `semanticCommitType`·`semanticCommitScope` 설정으로 타입을, `commitMessage*` 템플릿으로 한국어 요약(예: `oxfmt 0.58.0 업데이트`)을 강제한다.
+- 커밋 메시지는 [커밋 컨벤션](../rules/commit-convention.md)의 `build(deps):` 형식에 맞춘다 — `:semanticCommitTypeAll(build)` 프리셋으로 타입을(최상위 설정은 `config:recommended`의 packageRules에 덮이므로 프리셋이어야 한다), `commitMessage*` 템플릿으로 한국어 요약(예: `oxfmt 0.58.0 업데이트`)을 강제한다.
 
 ## 실제 앱 E2E (운영 동일)
 

@@ -104,7 +104,7 @@ file-removed   { path }                열려 있던 파일이 삭제/이동됨
 
 ## 구현 크레이트·플러그인
 
-버전은 [기술 스택](tech-stack.md#rust-크레이트-백엔드)을 단일 출처로 둔다.
+버전은 [기술 스택](tech-stack.md)을 단일 출처로 둔다 — 크레이트는 Rust 크레이트 표, `plugin-*`은 Tauri 플러그인 표가 소유한다.
 
 ```text
 serde / serde_json   커맨드 인자·반환의 직렬화
