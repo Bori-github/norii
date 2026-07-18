@@ -35,8 +35,10 @@ interface TreeNode {
 }
 
 interface WorkspaceState {
-  rootDir: string | null;    // 사이드바에 표시할 루트 폴더
+  rootDir: string | null;    // 사이드바에 표시할 루트 폴더 (다이얼로그가 반환한 canonical 경로)
   fileTree: TreeNode[];      // read_dir(한 단계 목록) 결과를 프론트가 조립한 트리
+                             // 폴더 펼침 상태는 트리 데이터가 아니라 에디터 표현 상태로
+                             // 스토어가 별도 보유한다 — 영속화하지 않는다(접힘 영속화와 동일 원칙)
   tabs: Tab[];
   activeTabId: string | null;
   recentFiles: string[];
