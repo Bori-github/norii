@@ -30,10 +30,11 @@ import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
-import { reopenTabWithEncoding } from "./open-file";
+import { openPathInTab, reopenTabWithEncoding } from "./open-file";
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
+    path: "/vault/legacy.md",
     text: "�� 깨진 본문\n",
     encoding: "euc-kr",
     hasBom: false,
@@ -53,6 +54,28 @@ beforeEach(() => {
   openFile.mockReset();
 });
 
+// 집행: document-model.md#다중-탭-규칙 — ""이미 열림" 판정은 open_file이 반환한 canonical
+//       경로로 한다 — 같은 파일을 별칭으로 열어도 기존 탭에 합류한다".
+// 왜: 신원이 요청 문자열이면 같은 파일이 별칭(/tmp↔/private/tmp 등)으로 두 탭이 되어
+//     서로의 저장을 외부 변경으로 오인한다. M5 트리가 두 번째 입구가 되기 전에 고정한다.
+// 보장: 요청 표기가 달라도 열기 결과의 canonical 경로가 같으면 새 탭 없이 기존 탭 활성화.
+// 경계: 실제 canonicalize는 Rust 테스트 소관 — 여기는 반환값을 신원으로 쓰는 규칙만 다룬다.
+describe("openPathInTab", () => {
+  it("별칭 표기로 열어도 canonical 경로가 같으면 기존 탭에 합류한다", async () => {
+    const existing = useDocumentStore
+      .getState()
+      .openFileTab(fileContent({ path: "/private/tmp/doc.md" }));
+    useDocumentStore.getState().addUntitledTab(); // 활성 탭을 다른 곳으로 옮겨 둔다.
+    openFile.mockResolvedValueOnce(fileContent({ path: "/private/tmp/doc.md" }));
+
+    await openPathInTab("/tmp/doc.md"); // 별칭 표기 — 문자열은 기존 탭과 다르다.
+
+    const { tabs, activeTabId } = useDocumentStore.getState();
+    expect(tabs.filter((tab) => tab.filePath !== null)).toHaveLength(1);
+    expect(activeTabId).toBe(existing);
+  });
+});
+
 // 집행: file-lifecycle.md#인코딩-정책(수동 재해석) — 배너에서 다른 인코딩으로 다시 연다.
 // 왜: chardetng 오판의 유일한 인앱 구제 수단이다 — 없으면 오판 파일은 norii에서 편집 불가.
 // 보장: 재해석이 encoding_override로 다시 열어 본문·메타를 갱신하고 승인을 원점으로 돌리며,
@@ -60,7 +83,7 @@ beforeEach(() => {
 // 경계: 실제 라벨 디코드는 Rust 소관. 배너 표시·선택 UI는 위젯·E2E 소관.
 describe("reopenTabWithEncoding", () => {
   function openLegacyTab(): string {
-    return useDocumentStore.getState().openFileTab("/vault/legacy.md", fileContent());
+    return useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/legacy.md" }));
   }
 
   it("지정 인코딩으로 다시 열어 본문과 메타를 갱신한다", async () => {

@@ -30,6 +30,8 @@ static SAVE_LOCK: Mutex<()> = Mutex::new(());
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileContent {
+    /// canonicalize된 정식 경로 — 탭 신원·중복 판정·감시 선언의 기준값(→ rust-commands.md).
+    pub path: String,
     pub text: String,
     pub encoding: String,
     pub has_bom: bool,
@@ -45,6 +47,9 @@ pub struct FileContent {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveResult {
+    /// 실제로 쓴 대상의 canonical 경로 — Untitled 첫 저장·다른 이름 저장의 탭 신원도
+    /// 다이얼로그 문자열이 아니라 이 값으로 확정한다(→ rust-commands.md).
+    pub path: String,
     /// ms 단위라 2^53 안에 들므로 TS number로 내보낸다(specta는 u64를 기본 금지).
     #[specta(type = specta_typescript::Number)]
     pub mtime: u64,
@@ -91,6 +96,7 @@ pub fn open_file_impl(
 
     let mtime = mtime_millis(&fs::metadata(&canonical)?);
     Ok(FileContent {
+        path: canonical.to_string_lossy().into_owned(),
         text: normalize_to_lf(&decoded.text),
         encoding: decoded.encoding,
         has_bom: decoded.has_bom,
@@ -157,6 +163,7 @@ pub fn save_file_impl(
 
     let mtime = mtime_millis(&fs::metadata(&target)?);
     Ok(SaveResult {
+        path: target.to_string_lossy().into_owned(),
         mtime,
         hash: content_hash(&bytes),
     })
@@ -728,5 +735,63 @@ mod tests {
             open_file_impl(&scope, path.to_str().unwrap(), None),
             Err(AppError::NotFound(_))
         ));
+    }
+
+    // 집행: rust-commands.md open_file — "path는 canonicalize된 정식 경로다".
+    // 왜: 탭 신원이 요청 문자열이면 같은 파일이 별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)
+    //     으로 두 번 열려, 두 탭의 저장이 서로를 외부 변경으로 오인한다(M5 트리 = 새 입구).
+    // 보장: 어떤 표기로 요청해도 반환 path가 디스크의 정식 경로 한 값으로 수렴한다.
+    // 경계: 프론트가 이 값을 실제 신원으로 쓰는지는 프론트 테스트가 검증한다.
+    #[test]
+    fn 열기는_요청_표기와_무관하게_canonical_경로를_반환한다() {
+        // mac의 tempdir는 /var/…(실제는 /private/var/…)라 요청 표기와 정식 표기가
+        // 실제로 갈라지는 환경이다 — 그 갈라짐이 없는 플랫폼에서도 동등성은 성립한다.
+        let (dir, scope) = scoped_tempdir();
+        let path = dir.path().join("doc.md");
+        fs::write(&path, "본문\n").unwrap();
+
+        let opened = open_file_impl(&scope, path.to_str().unwrap(), None).unwrap();
+        let canonical = fs::canonicalize(&path).unwrap();
+        assert_eq!(opened.path, canonical.to_str().unwrap());
+    }
+
+    // 왜: 심볼릭 링크는 한 파일의 두 번째 표기다 — 링크 표기가 신원으로 남으면 중복 탭을
+    //     막을 수 없다.
+    // 보장: 링크로 열어도 대상 파일로 연 것과 같은 path가 나온다(한 신원으로 수렴).
+    // 경계: 루트 밖을 가리키는 링크는 스코프 거부 테스트가 다룬다.
+    #[test]
+    fn 링크로_열어도_대상과_같은_canonical_경로로_수렴한다() {
+        let (dir, scope) = scoped_tempdir();
+        let real = dir.path().join("real.md");
+        fs::write(&real, "본문\n").unwrap();
+        let link = dir.path().join("link.md");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        let via_link = open_file_impl(&scope, link.to_str().unwrap(), None).unwrap();
+        let via_real = open_file_impl(&scope, real.to_str().unwrap(), None).unwrap();
+        assert_eq!(via_link.path, via_real.path);
+    }
+
+    // 집행: rust-commands.md save_file — "path는 저장이 실제로 쓴 대상의 canonical 경로다".
+    // 왜: Untitled 첫 저장·다른 이름 저장이 다이얼로그 문자열을 신원으로 삼으면,
+    //     열기(canonical 신원)와 표기가 어긋나 같은 파일이 두 신원을 가진다.
+    // 보장: 아직 없던 새 파일의 저장도 부모 canonicalize 기준의 정식 경로를 반환한다.
+    // 경계: 기존 파일 저장은 열기와 같은 canonicalize 경로라 새 파일 경우만 고정한다.
+    #[test]
+    fn 새_파일_저장은_canonical_경로를_반환한다() {
+        let (dir, scope) = scoped_tempdir();
+        let path = dir.path().join("new.md");
+
+        let saved = save_file_impl(
+            &scope,
+            path.to_str().unwrap(),
+            "본문\n",
+            Eol::Lf,
+            false,
+            None,
+        )
+        .unwrap();
+        let canonical = fs::canonicalize(&path).unwrap();
+        assert_eq!(saved.path, canonical.to_str().unwrap());
     }
 }

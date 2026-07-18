@@ -9,8 +9,13 @@
 ```rust
 #[tauri::command]
 async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
-// FileContent { text: String, encoding: String, has_bom: bool,
+// FileContent { path: String, text: String, encoding: String, has_bom: bool,
 //               eol: String, eol_mixed: bool, mtime: u64, hash: String }
+// - path는 canonicalize된 정식 경로다 — 심볼릭 링크를 끝까지 해소하고 디스크에 실제로
+//   기록된 표기(대소문자·유니코드 형태)로 수렴한 값. 같은 파일은 어떤 별칭
+//   (/tmp↔/private/tmp · 대소문자 · NFC/NFD)으로 요청해도 같은 문자열이 나온다.
+//   프론트는 탭 신원(Tab.filePath)·중복 탭 판정·감시 선언을 요청 문자열이 아니라
+//   전부 이 값으로 통일한다(→ document-model.md#다중-탭-규칙)
 // - text는 항상 UTF-8. 비UTF-8(EUC-KR 등)은 감지 후 변환해 반환하고,
 //   encoding에 감지된 원본 인코딩("utf-8"|"euc-kr"…)을 담는다 (파이프라인 → file-lifecycle.md)
 // - encoding_override 지정 시 파이프라인 전 단계(BOM 스니핑 포함)를 건너뛰고 전체 바이트를
@@ -25,7 +30,10 @@ async fn open_file(path: String, encoding_override: Option<String>) -> Result<Fi
 #[tauri::command]
 async fn save_file(path: String, text: String, eol: String, has_bom: bool,
                    expected_hash: Option<String>) -> Result<SaveResult, AppError>;
-// SaveResult { mtime: u64, hash: String }
+// SaveResult { path: String, mtime: u64, hash: String }
+// - path는 저장이 실제로 쓴 대상의 canonical 경로다(새 파일은 부모를 canonicalize하고
+//   파일명을 붙인다). Untitled 첫 저장·다른 이름 저장의 탭 신원도 다이얼로그가 준
+//   문자열이 아니라 이 값으로 확정한다(open_file의 path와 같은 신원 규칙)
 // - 항상 UTF-8로 쓴다. has_bom=true면 BOM을 다시 붙인다(원본 유지)
 // - 경로를 canonicalize해 심볼릭 링크의 "실제 대상"에 저장한다(링크를 일반 파일로 교체하지 않음)
 // - 원자적 쓰기: 대상과 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename

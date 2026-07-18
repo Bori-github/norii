@@ -48,6 +48,7 @@ import { noteDocumentChanged, saveTabNow } from "./save-tab";
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
+    path: "/vault/doc.md",
     text: "# 본문\n",
     encoding: "utf-8",
     hasBom: false,
@@ -60,7 +61,7 @@ function fileContent(overrides: Partial<FileContent> = {}): FileContent {
 }
 
 function openTab(path = "/vault/doc.md"): string {
-  return useDocumentStore.getState().openFileTab(path, fileContent());
+  return useDocumentStore.getState().openFileTab(fileContent({ path }));
 }
 
 beforeEach(() => {
@@ -177,7 +178,7 @@ describe("저장 중 이벤트 지연", () => {
   it("저장 중 도착한 자기 에코는 저장 완료 후 판정되어 무시된다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    let finishSave!: (result: { mtime: number; hash: string }) => void;
+    let finishSave!: (result: { path: string; mtime: number; hash: string }) => void;
     saveFile.mockReturnValueOnce(
       new Promise((resolve) => {
         finishSave = resolve;
@@ -187,7 +188,7 @@ describe("저장 중 이벤트 지연", () => {
     const saving = saveTabNow(id);
     // 저장이 만든 file-changed가 저장 응답보다 먼저 도착한다.
     const handling = handleFileChanged({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
-    finishSave({ mtime: 2_000, hash: "hash-2" });
+    finishSave({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
     await Promise.all([saving, handling]);
 
     expect(openFile).not.toHaveBeenCalled();
@@ -226,7 +227,7 @@ describe("handleFileRemoved", () => {
     useDocumentStore.getState().setDirty(id, true);
     openFile.mockRejectedValueOnce(new IpcError("notFound", "없음"));
     await handleFileRemoved({ path: "/vault/doc.md" });
-    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+    saveFile.mockResolvedValueOnce({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
 
     await expect(saveTabNow(id)).resolves.toBe("saved");
 
@@ -282,7 +283,7 @@ describe("handleFileRemoved", () => {
   it("삭제 신호의 재확인은 진행 중 저장이 끝난 뒤에 실행된다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    let finishSave!: (result: { mtime: number; hash: string }) => void;
+    let finishSave!: (result: { path: string; mtime: number; hash: string }) => void;
     saveFile.mockReturnValueOnce(
       new Promise((resolve) => {
         finishSave = resolve;
@@ -296,7 +297,7 @@ describe("handleFileRemoved", () => {
     expect(openFile).not.toHaveBeenCalled(); // 큐 지연 — 저장 완료 전엔 재확인 금지.
 
     openFile.mockResolvedValueOnce(fileContent({ hash: "hash-2" })); // 재확인: 파일이 존재.
-    finishSave({ mtime: 2_000, hash: "hash-2" });
+    finishSave({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
     await Promise.all([saving, removing]);
 
     expect(openFile).toHaveBeenCalledTimes(1);
@@ -306,7 +307,7 @@ describe("handleFileRemoved", () => {
   it("큐 대기 중 탭이 닫히면 재확인 없이 무시한다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    let finishSave!: (result: { mtime: number; hash: string }) => void;
+    let finishSave!: (result: { path: string; mtime: number; hash: string }) => void;
     saveFile.mockReturnValueOnce(
       new Promise((resolve) => {
         finishSave = resolve;
@@ -316,7 +317,7 @@ describe("handleFileRemoved", () => {
     const saving = saveTabNow(id);
     const removing = handleFileRemoved({ path: "/vault/doc.md" });
     useDocumentStore.getState().removeTab(id); // 큐 대기 중 탭이 닫혔다.
-    finishSave({ mtime: 2_000, hash: "hash-2" });
+    finishSave({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
     await Promise.all([saving, removing]);
 
     expect(openFile).not.toHaveBeenCalled();

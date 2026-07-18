@@ -23,6 +23,8 @@ export type Eol = "lf" | "crlf";
  *  저장 시 save_file이 `eol`로 되돌린다(→ file-lifecycle.md#eol-정책).
  */
 export type FileContent = {
+	/**  canonicalize된 정식 경로 — 탭 신원·중복 판정·감시 선언의 기준값(→ rust-commands.md). */
+	path: string,
 	text: string,
 	encoding: string,
 	hasBom: boolean,
@@ -35,6 +37,11 @@ export type FileContent = {
 
 /**  save_file 반환값(→ rust-commands.md). hash는 방금 쓴 디스크 바이트의 내용 해시다. */
 export type SaveResult = {
+	/**
+	 *  실제로 쓴 대상의 canonical 경로 — Untitled 첫 저장·다른 이름 저장의 탭 신원도
+	 *  다이얼로그 문자열이 아니라 이 값으로 확정한다(→ rust-commands.md).
+	 */
+	path: string,
 	/**  ms 단위라 2^53 안에 들므로 TS number로 내보낸다(specta는 u64를 기본 금지). */
 	mtime: number,
 	hash: string,

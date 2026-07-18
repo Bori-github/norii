@@ -158,8 +158,10 @@ async function performSave(
       hasBom: tab.hasBom,
       expectedHash,
     });
-    if (tab.filePath !== path) {
-      useDocumentStore.getState().assignPath(tabId, path);
+    // 탭에 남는 신원은 다이얼로그가 준 문자열이 아니라 저장이 실제로 쓴 canonical
+    // 경로다(→ rust-commands.md save_file · document-model.md#다중-탭-규칙).
+    if (tab.filePath !== result.path) {
+      useDocumentStore.getState().assignPath(tabId, result.path);
     }
     commitSaveSuccess(tabId, tab, text, result.hash);
     return "saved";

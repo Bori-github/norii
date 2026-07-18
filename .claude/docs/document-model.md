@@ -9,7 +9,10 @@ norii는 여러 문서를 탭으로 동시에 열고, 사이드바로 파일 트
 ```ts
 interface Tab {
   id: string;
-  filePath: string | null;      // null = 미저장 새 문서
+  filePath: string | null;      // null = 미저장 새 문서. 값은 항상 open_file/save_file이
+                                // 반환한 canonical 경로 — 탭 신원·중복 판정·감시 선언의
+                                // 기준이다. 요청 문자열을 그대로 신원으로 쓰지 않는다
+                                // (→ rust-commands.md open_file의 path)
   title: string;                // 파일명 또는 "Untitled"
   isDirty: boolean;             // 자동 저장 대기 중 여부 (→ file-lifecycle.md)
   sourceEncoding: string;       // 감지된 원본 인코딩. 'utf-8' 아니면 변환 배너 표시 (→ file-lifecycle.md)
@@ -56,7 +59,10 @@ interface WorkspaceState {
 
 ```text
 새 문서:   filePath=null, title="Untitled", 첫 저장 시 다이얼로그로 경로 확정
-파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭
+           (탭에 남는 경로는 다이얼로그 문자열이 아니라 save_file이 반환한 canonical 경로)
+파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭.
+           "이미 열림" 판정은 open_file이 반환한 canonical 경로로 한다 — 같은 파일을
+           별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)으로 열어도 기존 탭에 합류한다
 탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
 활성 탭:   activeTabId. 에디터/프리뷰는 활성 탭 문서를 표시
 ```
