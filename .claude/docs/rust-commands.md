@@ -45,7 +45,7 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 
 #[tauri::command]
 async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
-// TreeNode { path, name, kind: "dir"|"file", is_symlink?: bool }
+// TreeNode { path, name, kind: "dir"|"file", is_symlink: bool }
 // (TS에는 rename_all=camelCase로 isSymlink로 노출 → 아래 원칙)
 // 한 호출 = 그 폴더 "한 단계"의 항목 목록 (VS Code의 fetchChildren과 동일한 레벨별 lazy).
 // 응답에 중첩이 없으므로 빈 폴더 = 빈 배열이고, 트리 조립과 "아직 안 읽음" 상태는
@@ -91,6 +91,14 @@ async fn show_open_dialog() -> Result<Option<String>, AppError>;
 async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppError>;
 // 두 다이얼로그 모두 Markdown 필터(.md·.markdown — read_dir 필터와 동일 집합)를 걸고,
 // 취소하면 None을 반환한다. 선택된 경로는 허용 루트로 등록된다(→ 권한)
+
+#[tauri::command]
+async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
+// 폴더 선택 다이얼로그 — 사이드바 루트(rootDir)를 여는 입구(→ document-model.md#파일-트리-사이드바).
+// 취소하면 None. 선택한 폴더는 허용 루트로 등록된다(하위 트리 전체 — read_dir·open·save가 통과)
+
+// 세 다이얼로그 모두 반환 경로는 canonicalize된 정식 경로다 — 탭·트리가 쓰는 신원 규칙
+// (open_file의 path)과 같은 표기로 시작하게 한다
 ```
 
 ## 이벤트 계약 (Rust → 웹뷰)

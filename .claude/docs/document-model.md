@@ -29,7 +29,7 @@ interface TreeNode {
   path: string;
   name: string;
   kind: 'dir' | 'file';
-  isSymlink?: boolean;       // 심볼릭 링크 — 사이드바에서 배지로 표시
+  isSymlink: boolean;        // 심볼릭 링크 — 사이드바에서 배지로 표시
   children?: TreeNode[];     // 프론트가 조립하는 트리 상태. 부재 = 아직 안 읽음, [] = 빈 폴더.
                              // read_dir 응답(한 단계 목록)에는 이 필드가 없다 (→ rust-commands.md)
 }

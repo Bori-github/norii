@@ -6,10 +6,11 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	openFile: (path: string, encodingOverride: string | null) => typedError<FileContent, AppError>(__TAURI_INVOKE("open_file", { path, encodingOverride })),
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
-	readDir: (dir: string) => typedError<TreeNode_Serialize[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
+	readDir: (dir: string) => typedError<TreeNode[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
+	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),
 };
 
 /* Types */
@@ -51,24 +52,12 @@ export type SaveResult = {
 };
 
 /**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
-export type TreeNode = TreeNode_Serialize | TreeNode_Deserialize;
-
-/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
-export type TreeNode_Deserialize = {
+export type TreeNode = {
 	path: string,
 	name: string,
 	kind: NodeKind,
-	/**  심볼릭 링크 표시 — 사이드바 배지용. 링크가 아니면 직렬화에서 생략된다. */
-	isSymlink?: boolean | null,
-};
-
-/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
-export type TreeNode_Serialize = {
-	path: string,
-	name: string,
-	kind: NodeKind,
-	/**  심볼릭 링크 표시 — 사이드바 배지용. 링크가 아니면 직렬화에서 생략된다. */
-	isSymlink?: boolean | null,
+	/**  심볼릭 링크 표시 — 사이드바 배지용. */
+	isSymlink: boolean,
 };
 
 /* Tauri Specta runtime */

@@ -23,6 +23,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         watch::watch_paths,
         dialog_commands::show_open_dialog,
         dialog_commands::show_save_dialog,
+        dialog_commands::show_open_folder_dialog,
     ])
 }
 

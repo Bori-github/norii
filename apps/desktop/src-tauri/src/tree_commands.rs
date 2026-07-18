@@ -21,10 +21,8 @@ pub struct TreeNode {
     pub path: String,
     pub name: String,
     pub kind: NodeKind,
-    /// 심볼릭 링크 표시 — 사이드바 배지용. 링크가 아니면 직렬화에서 생략된다.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
-    pub is_symlink: Option<bool>,
+    /// 심볼릭 링크 표시 — 사이드바 배지용.
+    pub is_symlink: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
@@ -75,7 +73,7 @@ pub fn read_dir_impl(scope: &FileScope, dir: &str) -> Result<Vec<TreeNode>, AppE
             } else {
                 NodeKind::File
             },
-            is_symlink: is_symlink.then_some(true),
+            is_symlink,
         });
     }
 
@@ -257,12 +255,12 @@ mod tests {
 
         let find = |name: &str| nodes.iter().find(|node| node.name == name).unwrap();
         assert_eq!(find("link.md").kind, NodeKind::File);
-        assert_eq!(find("link.md").is_symlink, Some(true));
+        assert!(find("link.md").is_symlink);
         assert_eq!(find("linkdir").kind, NodeKind::Dir);
-        assert_eq!(find("linkdir").is_symlink, Some(true));
+        assert!(find("linkdir").is_symlink);
         assert_eq!(find("broken.md").kind, NodeKind::File);
-        assert_eq!(find("broken.md").is_symlink, Some(true));
-        assert_eq!(find("real.md").is_symlink, None);
+        assert!(find("broken.md").is_symlink);
+        assert!(!find("real.md").is_symlink);
     }
 
     // 집행: rust-commands.md#권한-capabilities — read_dir도 canonicalize 후 허용 루트
