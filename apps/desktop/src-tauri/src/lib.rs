@@ -9,6 +9,7 @@ mod fs_commands;
 mod scope;
 mod text_encoding;
 mod titlebar_drag;
+mod tree_commands;
 mod watch;
 mod window_glass;
 
@@ -18,6 +19,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
         fs_commands::open_file,
         fs_commands::save_file,
+        tree_commands::read_dir,
         watch::watch_paths,
         dialog_commands::show_open_dialog,
         dialog_commands::show_save_dialog,

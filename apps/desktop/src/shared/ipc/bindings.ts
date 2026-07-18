@@ -6,6 +6,7 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	openFile: (path: string, encodingOverride: string | null) => typedError<FileContent, AppError>(__TAURI_INVOKE("open_file", { path, encodingOverride })),
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
+	readDir: (dir: string) => typedError<TreeNode_Serialize[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
@@ -35,6 +36,8 @@ export type FileContent = {
 	hash: string,
 };
 
+export type NodeKind = "dir" | "file";
+
 /**  save_file 반환값(→ rust-commands.md). hash는 방금 쓴 디스크 바이트의 내용 해시다. */
 export type SaveResult = {
 	/**
@@ -45,6 +48,27 @@ export type SaveResult = {
 	/**  ms 단위라 2^53 안에 들므로 TS number로 내보낸다(specta는 u64를 기본 금지). */
 	mtime: number,
 	hash: string,
+};
+
+/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
+export type TreeNode = TreeNode_Serialize | TreeNode_Deserialize;
+
+/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
+export type TreeNode_Deserialize = {
+	path: string,
+	name: string,
+	kind: NodeKind,
+	/**  심볼릭 링크 표시 — 사이드바 배지용. 링크가 아니면 직렬화에서 생략된다. */
+	isSymlink?: boolean | null,
+};
+
+/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
+export type TreeNode_Serialize = {
+	path: string,
+	name: string,
+	kind: NodeKind,
+	/**  심볼릭 링크 표시 — 사이드바 배지용. 링크가 아니면 직렬화에서 생략된다. */
+	isSymlink?: boolean | null,
 };
 
 /* Tauri Specta runtime */
