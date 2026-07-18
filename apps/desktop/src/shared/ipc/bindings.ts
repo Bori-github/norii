@@ -8,6 +8,7 @@ export const commands = {
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
 	readDir: (dir: string) => typedError<TreeNode[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
+	watchTree: (root: string | null) => typedError<null, AppError>(__TAURI_INVOKE("watch_tree", { root })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
 	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),

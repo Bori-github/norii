@@ -10,6 +10,7 @@ mod scope;
 mod text_encoding;
 mod titlebar_drag;
 mod tree_commands;
+mod tree_watch;
 mod watch;
 mod window_glass;
 
@@ -21,6 +22,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         fs_commands::save_file,
         tree_commands::read_dir,
         watch::watch_paths,
+        tree_watch::watch_tree,
         dialog_commands::show_open_dialog,
         dialog_commands::show_save_dialog,
         dialog_commands::show_open_folder_dialog,
@@ -47,6 +49,8 @@ pub fn run() {
         .manage(scope::FileScope::default())
         // 파일 감시 상태 — watch_paths가 선언적으로 교체한다(→ rust-commands.md).
         .manage(watch::SharedWatcher::default())
+        // 트리(폴더) 감시 상태 — watch_tree가 선언적으로 교체한다(→ rust-commands.md).
+        .manage(tree_watch::SharedTreeWatcher::default())
         .invoke_handler(specta_builder().invoke_handler());
 
     // webdriver 피처를 켠 빌드에서만 임베디드 WebDriver 서버(127.0.0.1:4445)를 켠다 — 실앱 E2E용.

@@ -85,6 +85,26 @@ async fn watch_paths(paths: Vec<String>) -> Result<u32, AppError>;
 // 외부 변경 시 프론트로 이벤트 emit (아래 이벤트 계약 참조)
 
 #[tauri::command]
+async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
+// 사이드바 루트의 "재귀" 감시를 선언적으로 교체한다(None = 감시 해제). 트리의 외부
+// 생성/삭제/이름변경을 반영하기 위한 감시로, 열린 파일의 watch_paths와 별개다.
+// root는 canonicalize 후 허용 루트 검증을 거친다(스코프 위반은 Permission).
+// 이벤트: dir-changed { dir } — 그 디렉터리 "한 단계"의 구성이 바뀌었을 수 있다.
+//   dir는 변경 항목의 부모 디렉터리다(감시가 canonical 루트 기준이라 이벤트 경로도
+//   canonical — 트리 노드 경로와 그대로 대조된다). 반영 정책(읽어 둔 폴더만 재읽기·병합)은
+//   document-model.md#파일-트리-사이드바가 단일 출처다.
+// 숨김 필터: 루트 아래에서 '.'로 시작하는 컴포넌트를 지나는 경로의 이벤트는 무시한다
+//   (.git·에디터 임시 파일의 이벤트 폭주 방지 — 트리가 숨김 항목을 표시하지 않으므로
+//   구성 변화도 아니다).
+// 파일 내용 수정(Modify Data/Metadata)·Access 이벤트는 무시한다 — 목록 구성이 변하지
+//   않는 사건이다. 생성·삭제·이름변경(+분류 불명 이벤트)만 알린다.
+// 코얼레싱: 같은 dir의 연속 이벤트는 짧은 창(200ms)으로 합쳐 1회만 알린다 — git
+//   checkout류 대량 변경이 이벤트 수만큼 read_dir 재읽기를 증폭시키지 않게 한다.
+// 새 감시가 준비된 뒤에만 이전 감시를 교체한다(watch_paths와 동일 — 무감시 창 없음).
+// 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
+//   열기가 새 감시를 세운다.
+
+#[tauri::command]
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
 #[tauri::command]
@@ -106,6 +126,7 @@ async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
 ```text
 file-changed   { path, mtime, hash }   외부에서 파일이 수정됨 (hash는 이벤트 처리 시점의 디스크 내용 해시)
 file-removed   { path }                열려 있던 파일이 삭제/이동됨
+dir-changed    { dir }                 트리 감시(watch_tree) — dir 한 단계의 구성이 바뀌었을 수 있음
 ```
 
 자기 저장도 `file-changed`를 발생시킨다 — 프론트는 이벤트의 hash가 탭의 `lastSavedHash`와 같으면 자기 에코로 무시한다. 이 규칙과 외부 변경 처리 정책(리로드·충돌 안내)의 단일 출처는 [파일 생명주기 정책](file-lifecycle.md).
