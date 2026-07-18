@@ -14,14 +14,14 @@ app → pages → widgets → features → entities → shared
 
 > `processes` 레이어는 FSD에서 **deprecated**다. norii는 쓰지 않는다(다중 페이지 흐름은 `features`나 `app`으로 흡수).
 
-| 레이어 | 책임 (FSD 정의) | norii 슬라이스(예정) |
-|---|---|---|
-| `app/` | 앱 전역 관심사 — Provider·전역 스토어·전역 스타일·부트스트랩 | `providers/`, `layouts/`, Tauri 초기화(window·menu·IPC), `index.css`, 테마 **적용**(data-theme 심기 — 상태는 entities가 소유) |
-| `pages/` | 화면(스크린) 단위 조합. 데이터 페칭·에러 바운더리 포함 가능 | `editor/`(메인 워크스페이스), `settings/`(후) |
-| `widgets/` | 독립적으로 완결된 큰 UI 블록 (여러 곳에서 재사용되거나 페이지가 여러 독립 블록으로 구성될 때) | `sidebar/`(파일 트리), `tab-bar/`, `editor-pane/`, `preview-pane/`, `status-bar/` |
-| `features/` | 비즈니스 가치를 가진 사용자 상호작용 (여러 페이지에서 재사용되는 게 좋은 지표) | `open-file/`, `save-file/`, `tab-management/`, `toggle-fold/`, `scroll-sync/`, `switch-theme/`, `reload-on-external-change/` |
-| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 | `document/`(탭·dirty 상태), `theme/`(테마 의도·해석), `file-tree/`, `workspace/`, `settings/` |
-| `shared/` | 외부 시스템·라이브러리·환경과의 연결 기반. **슬라이스 없음, 세그먼트만** | `ipc/`(Tauri 커맨드 래퍼), `ui/`, `lib/`, `config/`, `types/` |
+| 레이어 | 책임 (FSD 정의) |
+|---|---|
+| `app/` | 앱 전역 관심사 — Provider·전역 스토어·전역 스타일·부트스트랩 |
+| `pages/` | 화면(스크린) 단위 조합. 데이터 페칭·에러 바운더리 포함 가능 |
+| `widgets/` | 독립적으로 완결된 큰 UI 블록 (여러 곳에서 재사용되거나 페이지가 여러 독립 블록으로 구성될 때) |
+| `features/` | 비즈니스 가치를 가진 사용자 상호작용 (여러 페이지에서 재사용되는 게 좋은 지표) |
+| `entities/` | 실세계 비즈니스 개념 — 데이터 모델·스키마·API·표현 |
+| `shared/` | 외부 시스템·라이브러리·환경과의 연결 기반. **슬라이스 없음, 세그먼트만** |
 
 ## 슬라이스와 세그먼트
 
@@ -111,6 +111,8 @@ Rust 커맨드 호출(`invoke`)은 **`shared/ipc`** 에 모은다. FSD에서 `sh
 6. **앱 전역 설정·Provider·부트스트랩인가?** → `app`.
 
 애매하면 **더 낮은 레이어**에서 시작하고 필요할 때 끌어올린다.
+
+확정해 둔 경계 사례: **탭 전환·닫기는 features 슬라이스가 아니라 `entities/document` 스토어 액션이다** — 사용자 행동처럼 보이지만 도메인 상태에 직접 붙는 조작이라 상태와 함께 산다(3번이 아니라 2번).
 
 ## 강제 (Enforcement)
 

@@ -17,6 +17,7 @@ norii/
   pnpm-workspace.yaml
   turbo.json                 빌드/타입체크/테스트 파이프라인 + 캐시 (린트·포맷은 루트 oxlint/oxfmt)
   .oxlintrc.json             oxlint 룰 설정
+  .oxfmtrc.json              oxfmt 포맷 설정 (포맷 대상 제외 목록)
   lefthook.yml               Git 훅 (pre-commit: oxlint/oxfmt · commit-msg: commitlint)
   commitlint.config.js       Conventional Commits 규칙 (→ .claude/rules/commit-convention.md)
   renovate.json              의존성 자동 갱신 규칙 (그룹핑·자동머지 범위 → code-quality.md)
@@ -34,6 +35,8 @@ norii/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
     bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
     free-port.mjs            개발 서버 빈 포트 선택 (dev·dev-webdriver 동시 실행 → development-commands.md)
+    record-demo.sh           E2E 화면을 녹화해 PR 데모 영상 생성 (→ development-commands.md)
+    upload-attachment.sh     영상·이미지를 GitHub CDN에 업로드, 커밋 없이 (→ development-commands.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
       design/                디자인 상세 (결정 기록 ADR · Panda 토큰 · 창 표면 계약)
@@ -42,20 +45,25 @@ norii/
 
   apps/
     desktop/                 Tauri 데스크탑 앱
-      src/                   React 프론트엔드 — FSD 레이어 (→ frontend-architecture.md)
-        app/                 Provider·레이아웃·부트스트랩(테마/유리 표식 적용·전역 단축키·종료 방어)
-        pages/               화면 조합 (editor, settings…)
-        widgets/             완결 UI 블록 (sidebar·tab-bar·editor-pane·preview-pane·status-bar)
-        features/            사용자 상호작용 (open-file·save-file·switch-theme·toggle-fold…)
-        entities/            도메인 모델·상태 (document·theme·file-tree·workspace)
-        shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types)
+      src/                   React 프론트엔드 — FSD 레이어 (배치 기준 → frontend-architecture.md)
+        main.tsx             엔트리 — app 레이어를 마운트
+        app/                 레이아웃·부트스트랩(테마/유리 표식 적용·전역 단축키·종료 방어)
+        pages/               화면 조합
+        widgets/             완결 UI 블록
+        features/            사용자 상호작용
+        entities/            도메인 모델·상태
+        shared/              외부 연결·공용 (ipc[Tauri]·ui·lib·config·types 세그먼트)
       src-tauri/             Rust 백엔드
         src/                 커맨드·파일 I/O·감시 · 창 유리·드래그 띠 (→ design/window-chrome.md)
+        build.rs             tauri-build 훅 (빌드 시 코드 생성)
+        icons/               앱 아이콘 번들
         Cargo.toml           (webdriver 피처로 tauri-plugin-webdriver 선택 포함 → testing.md)
         tauri.conf.json
         capabilities/        커맨드·플러그인 노출 선언 (경로 스코프는 커맨드가 강제 → rust-commands.md)
       e2e/                    실앱 E2E 스모크 (webdriverio + 임베디드 WebDriver → testing.md)
+      vitest.config.ts        단위(node)·브라우저(WebKit) 테스트 설정 (→ testing.md)
       vitest.e2e.config.ts    E2E 전용 Vitest 설정 (빠른 test 게이트와 분리)
+      svgr.config.cjs         SVGR 아이콘 코드젠 설정 (mise run icons → design/design-system.md)
       index.html
       vite.config.ts          vite-tsconfig-paths로 @app~@shared 별칭 반영
       tsconfig.app.json       FSD 레이어 path alias 정의
