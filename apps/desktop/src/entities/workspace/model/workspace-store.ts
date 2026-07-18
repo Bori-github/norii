@@ -25,9 +25,41 @@ interface WorkspaceActions {
   /** read_dir 결과를 해당 폴더의 children으로 붙인다(빈 배열 = 빈 폴더로 기록). */
   setChildren(dirPath: string, entries: TreeNode[]): void;
   setExpanded(dirPath: string, expanded: boolean): void;
+  /**
+   * 외부 변경 반영 — 한 단계를 다시 읽은 결과로 그 목록을 교체하되, 살아남은 항목의
+   * 기존 children(하위 트리)은 경로 기준으로 보존한다(재읽기가 하위를 접지 않게 —
+   * → document-model.md#파일-트리-사이드바). dirPath가 rootDir이면 루트 레벨을 갱신한다.
+   */
+  refreshLevel(dirPath: string, entries: TreeNode[]): void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
+
+/** 재읽기 병합 — 새 목록을 채택하되, 경로·종류가 같은 기존 항목의 children을 이어받는다. */
+function mergeLevel(existing: FileTreeNode[] | undefined, entries: TreeNode[]): FileTreeNode[] {
+  const byPath = new Map((existing ?? []).map((node) => [node.path, node]));
+  return entries.map((entry) => {
+    const previous = byPath.get(entry.path);
+    return previous && previous.kind === entry.kind
+      ? { ...entry, children: previous.children }
+      : { ...entry };
+  });
+}
+
+function refreshAt(nodes: FileTreeNode[], dirPath: string, entries: TreeNode[]): FileTreeNode[] {
+  return nodes.map((node) => {
+    if (node.path === dirPath && node.kind === "dir") {
+      // 안 읽은 폴더(children 부재)는 그대로 둔다 — 다음 펼침이 어차피 최신을 읽는다.
+      return node.children === undefined
+        ? node
+        : { ...node, children: mergeLevel(node.children, entries) };
+    }
+    if (node.children) {
+      return { ...node, children: refreshAt(node.children, dirPath, entries) };
+    }
+    return node;
+  });
+}
 
 function attachChildren(
   nodes: FileTreeNode[],
@@ -60,6 +92,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
 
   setChildren(dirPath, entries) {
     set((state) => ({ fileTree: attachChildren(state.fileTree, dirPath, entries) }));
+  },
+
+  refreshLevel(dirPath, entries) {
+    set((state) => ({
+      fileTree:
+        state.rootDir !== null && dirPath === state.rootDir
+          ? mergeLevel(state.fileTree, entries)
+          : refreshAt(state.fileTree, dirPath, entries),
+    }));
   },
 
   setExpanded(dirPath, expanded) {

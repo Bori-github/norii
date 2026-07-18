@@ -58,6 +58,54 @@ describe("트리 조립", () => {
   });
 });
 
+// 집행: document-model.md#파일-트리-사이드바 — "병합은 살아남은 폴더의 기존 children·
+//       펼침 상태를 경로 기준으로 보존한다(재읽기가 하위 트리를 접어버리지 않게)".
+// 왜: 외부 변경 재읽기가 목록을 통째로 갈아끼우면, 사용자가 펼쳐 둔 하위 트리가
+//     이벤트마다 접히고 다시 읽힌다 — 감시 반영이 탐색을 방해하게 된다.
+// 보장: 재읽기 병합이 새 목록을 채택하되 살아남은 폴더의 children을 보존하고,
+//       사라진 항목은 제거, 새 항목은 미해석(children 부재)으로 추가된다.
+//       루트 레벨과 중첩 레벨 모두 같은 규칙이고, 안 읽은 폴더는 건드리지 않는다.
+// 경계: 이벤트 수신·read_dir 호출 판단은 feature(tree-refresh) 테스트 소관.
+describe("refreshLevel (외부 변경 병합)", () => {
+  it("살아남은 폴더의 children은 보존하고, 사라진 항목은 지우고, 새 항목은 미해석으로 더한다", () => {
+    const store = useWorkspaceStore.getState();
+    store.openRoot("/vault", [dir("/vault/keep"), file("/vault/gone.md")]);
+    store.setChildren("/vault/keep", [file("/vault/keep/inner.md")]);
+
+    useWorkspaceStore
+      .getState()
+      .refreshLevel("/vault", [dir("/vault/keep"), file("/vault/new.md")]);
+
+    const tree = useWorkspaceStore.getState().fileTree;
+    expect(tree.map((node) => node.name)).toEqual(["keep", "new.md"]);
+    expect(findTreeNode(tree, "/vault/keep/inner.md")?.name).toBe("inner.md"); // 하위 보존
+    expect(findTreeNode(tree, "/vault/gone.md")).toBeUndefined();
+  });
+
+  it("중첩 폴더의 재읽기도 같은 병합 규칙을 따른다", () => {
+    const store = useWorkspaceStore.getState();
+    store.openRoot("/vault", [dir("/vault/a")]);
+    store.setChildren("/vault/a", [dir("/vault/a/b"), file("/vault/a/old.md")]);
+    store.setChildren("/vault/a/b", [file("/vault/a/b/deep.md")]);
+
+    useWorkspaceStore.getState().refreshLevel("/vault/a", [dir("/vault/a/b")]);
+
+    const tree = useWorkspaceStore.getState().fileTree;
+    expect(findTreeNode(tree, "/vault/a/old.md")).toBeUndefined();
+    expect(findTreeNode(tree, "/vault/a/b/deep.md")?.name).toBe("deep.md"); // 하위 보존
+  });
+
+  it("안 읽은 폴더(children 부재)는 재읽기 대상이 아니다", () => {
+    useWorkspaceStore.getState().openRoot("/vault", [dir("/vault/unread")]);
+
+    useWorkspaceStore.getState().refreshLevel("/vault/unread", [file("/vault/unread/x.md")]);
+
+    expect(
+      findTreeNode(useWorkspaceStore.getState().fileTree, "/vault/unread")?.children,
+    ).toBeUndefined();
+  });
+});
+
 // 왜: 펼침은 에디터 표현 상태다 — 트리 데이터와 분리돼야 접기/펼치기가 children 캐시를
 //     버리지 않는다.
 // 보장: setExpanded가 목록을 중복 없이 켜고 끈다.

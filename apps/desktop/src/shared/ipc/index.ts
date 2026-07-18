@@ -22,6 +22,7 @@ export const ipc = {
     ),
   readDir: (dir: string) => unwrapIpcResult(commands.readDir(dir)),
   watchPaths: (paths: string[]) => unwrapIpcResult(commands.watchPaths(paths)),
+  watchTree: (root: string | null) => unwrapIpcResult(commands.watchTree(root)),
   showOpenDialog: () => unwrapIpcResult(commands.showOpenDialog()),
   showSaveDialog: (defaultName: string) => unwrapIpcResult(commands.showSaveDialog(defaultName)),
   showOpenFolderDialog: () => unwrapIpcResult(commands.showOpenFolderDialog()),
