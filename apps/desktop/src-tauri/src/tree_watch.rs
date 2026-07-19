@@ -74,6 +74,12 @@ impl TreeWatcher {
         let on_dir_changed: Arc<dyn Fn(String) + Send + Sync> = Arc::new(on_dir_changed);
         let generation = Arc::clone(&self.generation);
         let gate = NotifyGate::default();
+        let notify_queue = spawn_notify_worker(
+            Arc::clone(&on_dir_changed),
+            Arc::clone(&generation),
+            token,
+            gate.clone(),
+        )?;
         let callback_root = root.clone();
         let mut watcher =
             notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
@@ -102,13 +108,12 @@ impl TreeWatcher {
                     if !gate.try_schedule(parent) {
                         continue;
                     }
-                    schedule_notify(
-                        parent.to_path_buf(),
-                        Arc::clone(&on_dir_changed),
-                        Arc::clone(&generation),
-                        token,
-                        gate.clone(),
-                    );
+                    let due = std::time::Instant::now() + COALESCE_WINDOW;
+                    if notify_queue.send((parent.to_path_buf(), due)).is_err() {
+                        // 워커가 죽었다(비정상) — 게이트를 되돌려 이 디렉터리의 이후
+                        // 알림이 영구 차단되지 않게 한다.
+                        gate.release(parent);
+                    }
                 }
             })
             .map_err(watch_error)?;
@@ -123,23 +128,36 @@ impl TreeWatcher {
     }
 }
 
-/// 코얼레싱 창이 끝난 뒤 알린다. notify 콜백 스레드에서 자면 후속 이벤트가 밀리므로
-/// 스레드를 분리하고, 발신 직전에 세대를 재검사한다(교체됐으면 발신하지 않는다).
-fn schedule_notify(
-    dir: PathBuf,
+/// 단일 알림 워커 — 감시당 스레드 하나가 (디렉터리, 만기) 큐를 순서대로 소비한다.
+/// 알림마다 스레드를 만들면 대량 변경(압축 해제·git checkout) 시 바뀐 디렉터리 수만큼
+/// 스레드가 생기고, notify 콜백 안의 생성 실패 패닉이 감시를 죽일 수 있다.
+/// 만기는 전부 "지금 + 같은 창"이라 큐가 곧 시간순이다 — 워커는 앞에서부터 자며 소비한다.
+/// notify 콜백 스레드에서 자지 않는 것은 기존과 동일(후속 이벤트가 밀리지 않게).
+/// 워커는 발신 직전에 게이트를 해제하고(창 밖 변경이 새 알림을 예약할 수 있게) 세대를
+/// 재검사한다(교체됐으면 발신하지 않음). 송신자가 모두 드롭되면(감시 교체) 스스로 끝난다.
+fn spawn_notify_worker(
     on_dir_changed: Arc<dyn Fn(String) + Send + Sync>,
     generation: Arc<AtomicU64>,
     token: u64,
     gate: NotifyGate,
-) {
-    std::thread::spawn(move || {
-        std::thread::sleep(COALESCE_WINDOW);
-        // 발신 직전 해제 — 이후 도착한 이벤트는 새 알림을 예약하므로 창 밖 변경을 놓치지 않는다.
-        gate.release(&dir);
-        if generation.load(Ordering::SeqCst) == token {
-            on_dir_changed(dir.to_string_lossy().into_owned());
-        }
-    });
+) -> Result<std::sync::mpsc::Sender<(PathBuf, std::time::Instant)>, AppError> {
+    let (sender, receiver) = std::sync::mpsc::channel::<(PathBuf, std::time::Instant)>();
+    std::thread::Builder::new()
+        .name("norii-tree-notify".into())
+        .spawn(move || {
+            while let Ok((dir, due)) = receiver.recv() {
+                let wait = due.saturating_duration_since(std::time::Instant::now());
+                if !wait.is_zero() {
+                    std::thread::sleep(wait);
+                }
+                gate.release(&dir);
+                if generation.load(Ordering::SeqCst) == token {
+                    on_dir_changed(dir.to_string_lossy().into_owned());
+                }
+            }
+        })
+        .map_err(|err| AppError::Io(format!("폴더 감시 워커를 시작할 수 없습니다: {err}")))?;
+    Ok(sender)
 }
 
 fn watch_error(err: notify::Error) -> AppError {
@@ -317,6 +335,38 @@ mod tests {
         assert_eq!(dir, root.to_str().unwrap());
         // 코얼레싱 창 + 여유를 기다려도 추가 알림이 없어야 한다.
         assert!(receiver.recv_timeout(Duration::from_millis(600)).is_err());
+    }
+
+    // 왜: 알림 배달이 단일 워커 큐로 바뀌었다 — 여러 디렉터리가 한꺼번에 바뀔 때
+    //     워커 하나가 큐를 끝까지 소진하지 못하면 일부 폴더의 변경이 유실된다.
+    // 보장: 서로 다른 디렉터리 20곳의 변경 알림이 모두 기한 내 도착한다.
+    // 경계: 스레드 수 자체(1개)는 구현 세부라 단정하지 않는다 — 소진 동작만 고정한다.
+    #[test]
+    fn 여러_디렉터리의_변경이_모두_알려진다() {
+        let (_dir, root) = canonical_tempdir();
+        let subs: Vec<PathBuf> = (0..20)
+            .map(|index| root.join(format!("d{index}")))
+            .collect();
+        for sub in &subs {
+            fs::create_dir(sub).unwrap();
+        }
+        let mut watcher = TreeWatcher::default();
+        let receiver = watch_root(&mut watcher, &root);
+
+        for sub in &subs {
+            fs::write(sub.join("x.md"), "").unwrap();
+        }
+
+        let mut pending: std::collections::HashSet<PathBuf> = subs.iter().cloned().collect();
+        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        while !pending.is_empty() {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let Ok(dir) = receiver.recv_timeout(remaining) else {
+                break;
+            };
+            pending.remove(Path::new(&dir));
+        }
+        assert!(pending.is_empty(), "미수신 디렉터리: {pending:?}");
     }
 
     // 집행: rust-commands.md watch_tree — "None = 감시 해제"·선언적 교체.
