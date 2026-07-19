@@ -32,7 +32,15 @@ export const STRINGS = {
   copyCodeLabel: "코드 복사",
   copyCodeDoneText: "복사됨",
 
+  // 사이드바 파일 트리(→ document-model.md#파일-트리-사이드바).
+  sidebarTreeLabel: "파일 트리",
+  openFolderButtonLabel: "폴더 열기",
+  sidebarEmptyBody: "폴더를 열면 파일 트리가 표시됩니다",
+  symlinkBadgeLabel: "심볼릭 링크",
+
   openFailedTitle: "파일을 열 수 없습니다",
+  openFolderFailedTitle: "폴더를 열 수 없습니다",
+  expandDirFailedTitle: "폴더를 읽을 수 없습니다",
   saveFailedTitle: "저장하지 못했습니다",
   saveAsAlreadyOpenBody:
     "이미 열려 있는 파일로는 저장할 수 없습니다. 해당 파일의 탭에서 편집해 주세요.",

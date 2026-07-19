@@ -8,6 +8,7 @@ import { needsNormalizationApproval } from "./types";
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
+    path: "/vault/doc.md",
     text: "# 본문\n",
     encoding: "utf-8",
     hasBom: false,
@@ -53,7 +54,7 @@ describe("openFileTab", () => {
   it("FileContent 메타를 탭에 반영하고 초기 본문을 보관한다", () => {
     const id = useDocumentStore
       .getState()
-      .openFileTab("/vault/doc.md", fileContent({ eol: "crlf", hasBom: true }));
+      .openFileTab(fileContent({ path: "/vault/doc.md", eol: "crlf", hasBom: true }));
     expect(useDocumentStore.getState().tabs[0]).toMatchObject({
       filePath: "/vault/doc.md",
       title: "doc.md",
@@ -68,9 +69,9 @@ describe("openFileTab", () => {
 
   it("이미 열린 경로는 기존 탭을 활성화하고 새 탭을 만들지 않는다", () => {
     const store = useDocumentStore.getState();
-    const first = store.openFileTab("/vault/doc.md", fileContent());
+    const first = store.openFileTab(fileContent({ path: "/vault/doc.md" }));
     store.addUntitledTab();
-    const again = useDocumentStore.getState().openFileTab("/vault/doc.md", fileContent());
+    const again = useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/doc.md" }));
     expect(again).toBe(first);
     expect(useDocumentStore.getState().tabs).toHaveLength(2);
     expect(useDocumentStore.getState().activeTabId).toBe(first);
@@ -85,9 +86,9 @@ describe("openFileTab", () => {
 describe("removeTab", () => {
   it("활성 탭을 닫으면 이웃을 활성화하고, 마지막 탭이면 null이 된다", () => {
     const store = useDocumentStore.getState();
-    const a = store.openFileTab("/vault/a.md", fileContent());
-    const b = useDocumentStore.getState().openFileTab("/vault/b.md", fileContent());
-    const c = useDocumentStore.getState().openFileTab("/vault/c.md", fileContent());
+    const a = store.openFileTab(fileContent({ path: "/vault/a.md" }));
+    const b = useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/b.md" }));
+    const c = useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/c.md" }));
 
     useDocumentStore.getState().activateTab(b);
     useDocumentStore.getState().removeTab(b);
@@ -103,8 +104,8 @@ describe("removeTab", () => {
 
   it("비활성 탭을 닫아도 활성 탭은 바뀌지 않는다", () => {
     const store = useDocumentStore.getState();
-    const a = store.openFileTab("/vault/a.md", fileContent());
-    const b = useDocumentStore.getState().openFileTab("/vault/b.md", fileContent());
+    const a = store.openFileTab(fileContent({ path: "/vault/a.md" }));
+    const b = useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/b.md" }));
     useDocumentStore.getState().activateTab(b);
     useDocumentStore.getState().removeTab(a);
     expect(useDocumentStore.getState().activeTabId).toBe(b);
@@ -118,8 +119,8 @@ describe("removeTab", () => {
 describe("cycleActiveTab", () => {
   it("끝에서 반대쪽 끝으로 감싸며 순환한다", () => {
     const store = useDocumentStore.getState();
-    const a = store.openFileTab("/vault/a.md", fileContent());
-    const b = useDocumentStore.getState().openFileTab("/vault/b.md", fileContent());
+    const a = store.openFileTab(fileContent({ path: "/vault/a.md" }));
+    const b = useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/b.md" }));
     useDocumentStore.getState().activateTab(b);
 
     useDocumentStore.getState().cycleActiveTab(1);
@@ -137,7 +138,7 @@ describe("cycleActiveTab", () => {
 describe("updateFileMeta", () => {
   it("파일 유래 메타를 갱신하고 dirty를 해제한다", () => {
     const store = useDocumentStore.getState();
-    const id = store.openFileTab("/vault/doc.md", fileContent());
+    const id = store.openFileTab(fileContent({ path: "/vault/doc.md" }));
     useDocumentStore.getState().setDirty(id, true);
 
     useDocumentStore
@@ -162,13 +163,13 @@ describe("updateFileMeta", () => {
 describe("정규화 승인", () => {
   it("비UTF-8 또는 혼합 EOL 탭만 승인이 필요하다", () => {
     const store = useDocumentStore.getState();
-    const plain = store.openFileTab("/vault/plain.md", fileContent());
+    const plain = store.openFileTab(fileContent({ path: "/vault/plain.md" }));
     const legacy = useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
     const mixed = useDocumentStore
       .getState()
-      .openFileTab("/vault/mixed.md", fileContent({ eolMixed: true }));
+      .openFileTab(fileContent({ path: "/vault/mixed.md", eolMixed: true }));
 
     const tabs = useDocumentStore.getState().tabs;
     expect(needsNormalizationApproval(tabs.find((tab) => tab.id === plain)!)).toBe(false);
@@ -179,7 +180,7 @@ describe("정규화 승인", () => {
   it("approveNormalization 후에는 승인이 더 필요하지 않다", () => {
     const id = useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
     useDocumentStore.getState().approveNormalization(id);
     const tab = useDocumentStore.getState().tabs[0]!;
     expect(tab.normalizationApproved).toBe(true);
@@ -189,7 +190,7 @@ describe("정규화 승인", () => {
   it("markNormalized는 인코딩·혼합 EOL 메타를 정규화 완료 상태로 만든다", () => {
     const id = useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr", eolMixed: true }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr", eolMixed: true }));
     useDocumentStore.getState().markNormalized(id);
     expect(useDocumentStore.getState().tabs[0]).toMatchObject({
       sourceEncoding: "utf-8",
@@ -200,7 +201,7 @@ describe("정규화 승인", () => {
   it("updateFileMeta(디스크 리로드)는 승인을 원점으로 되돌린다", () => {
     const id = useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
     useDocumentStore.getState().approveNormalization(id);
 
     // 디스크를 다시 읽었다 — 파일은 여전히 EUC-KR이므로 승인도 다시 받아야 한다.

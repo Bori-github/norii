@@ -9,7 +9,10 @@ norii는 여러 문서를 탭으로 동시에 열고, 사이드바로 파일 트
 ```ts
 interface Tab {
   id: string;
-  filePath: string | null;      // null = 미저장 새 문서
+  filePath: string | null;      // null = 미저장 새 문서. 값은 항상 open_file/save_file이
+                                // 반환한 canonical 경로 — 탭 신원·중복 판정·감시 선언의
+                                // 기준이다. 요청 문자열을 그대로 신원으로 쓰지 않는다
+                                // (→ rust-commands.md open_file의 path)
   title: string;                // 파일명 또는 "Untitled"
   isDirty: boolean;             // 자동 저장 대기 중 여부 (→ file-lifecycle.md)
   sourceEncoding: string;       // 감지된 원본 인코딩. 'utf-8' 아니면 변환 배너 표시 (→ file-lifecycle.md)
@@ -26,14 +29,16 @@ interface TreeNode {
   path: string;
   name: string;
   kind: 'dir' | 'file';
-  isSymlink?: boolean;       // 심볼릭 링크 — 사이드바에서 배지로 표시
+  isSymlink: boolean;        // 심볼릭 링크 — 사이드바에서 배지로 표시
   children?: TreeNode[];     // 프론트가 조립하는 트리 상태. 부재 = 아직 안 읽음, [] = 빈 폴더.
                              // read_dir 응답(한 단계 목록)에는 이 필드가 없다 (→ rust-commands.md)
 }
 
 interface WorkspaceState {
-  rootDir: string | null;    // 사이드바에 표시할 루트 폴더
+  rootDir: string | null;    // 사이드바에 표시할 루트 폴더 (다이얼로그가 반환한 canonical 경로)
   fileTree: TreeNode[];      // read_dir(한 단계 목록) 결과를 프론트가 조립한 트리
+                             // 폴더 펼침 상태는 트리 데이터가 아니라 에디터 표현 상태로
+                             // 스토어가 별도 보유한다 — 영속화하지 않는다(접힘 영속화와 동일 원칙)
   tabs: Tab[];
   activeTabId: string | null;
   recentFiles: string[];
@@ -50,13 +55,16 @@ interface WorkspaceState {
 - 파일 클릭 → 탭으로 연다.
 - **전체 인덱싱이 아니라 단순 트리 표시**다 — 파일 내용을 읽어 색인하지 않는다. 이 선이 [비목표](../rules/non-goals.md)의 PKM/vault 인덱싱과 norii를 가른다.
 - 호출당 한 단계만 읽으므로 거대 트리에서도 초기 비용이 상수다. 트리 조립과 "아직 안 읽음" 상태는 프론트 모델(`children` 부재)이 담당한다.
-- 외부에서 파일이 생성/삭제됐을 때 트리를 어떻게 갱신할지(폴더 감시·포커스 시 재읽기·수동 새로고침)는 열린 결정이다(→ [실제 구현 계획](implementation-plan.md#열린-결정-open-decisions)). 열린 파일의 watch와 별개 문제다.
+- **외부 생성/삭제는 폴더 감시가 반영한다.** 루트를 재귀 감시(`watch_tree`)하고, `dir-changed`를 받은 프론트는 **그 폴더를 이미 읽어 둔 경우에만**(children 보유) 그 한 단계를 `read_dir`로 다시 읽어 병합한다 — 안 읽은 폴더는 다음 펼침이 어차피 최신을 읽는다. 병합은 살아남은 폴더의 기존 children·펼침 상태를 경로 기준으로 보존하고(재읽기가 하위 트리를 접어버리지 않게), 사라진 폴더의 펼침 상태는 함께 정리한다(같은 이름으로 재생성되면 접힌 채 시작). 열린 파일의 watch(파일 내용)와 별개 문제다(→ [Rust 커맨드 계약](rust-commands.md) `watch_tree`).
 
 ## 다중 탭 규칙
 
 ```text
 새 문서:   filePath=null, title="Untitled", 첫 저장 시 다이얼로그로 경로 확정
-파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭
+           (탭에 남는 경로는 다이얼로그 문자열이 아니라 save_file이 반환한 canonical 경로)
+파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭.
+           "이미 열림" 판정은 open_file이 반환한 canonical 경로로 한다 — 같은 파일을
+           별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)으로 열어도 기존 탭에 합류한다
 탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
 활성 탭:   activeTabId. 에디터/프리뷰는 활성 탭 문서를 표시
 ```

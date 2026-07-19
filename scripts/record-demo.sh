@@ -17,7 +17,11 @@
 set -euo pipefail
 set -m
 
+# 사용법: record-demo.sh [출력.mov] [시나리오 필터(vitest -t 정규식)]
+# 필터를 주면 그 시나리오만 실행·녹화한다 — 전체 스위트는 기계 속도라 사람이 볼 데모로는
+# 빠르므로, 주제별로 잘라 녹화한다. 종료 방어(앱 종료)는 필터 밖이면 실행되지 않는다.
 OUT="${1:-/tmp/norii-demo.mov}"
+TEST_FILTER="${2:-}"
 WIN_X=40
 WIN_Y=40
 WIN_W=1120
@@ -29,8 +33,11 @@ if ! nc -z 127.0.0.1 4445 2>/dev/null; then
   exit 1
 fi
 
-echo "▸ 창을 (${WIN_X},${WIN_Y}) ${WIN_W}×${WIN_H} 논리 좌표에 배치"
-osascript -e "tell application \"System Events\" to tell process \"norii\" to set position of window 1 to {${WIN_X}, ${WIN_Y}}" \
+echo "▸ 창을 (${WIN_X},${WIN_Y}) ${WIN_W}×${WIN_H} 논리 좌표에 배치하고 맨 앞으로"
+# frontmost가 없으면 다른 창이 겹친 채 그 영역이 녹화된다 — screencapture -R은 "화면의
+# 그 자리"를 찍을 뿐 창을 따라가지 않는다(실측).
+osascript -e "tell application \"System Events\" to tell process \"norii\" to set frontmost to true" \
+  -e "tell application \"System Events\" to tell process \"norii\" to set position of window 1 to {${WIN_X}, ${WIN_Y}}" \
   -e "tell application \"System Events\" to tell process \"norii\" to set size of window 1 to {${WIN_W}, ${WIN_H}}" >/dev/null
 
 echo "▸ 녹화 시작 → $OUT"
@@ -49,8 +56,12 @@ screencapture -v -R "${WIN_X},${WIN_Y},${WIN_W},${WIN_H}" -x "$OUT" <"$FIFO" &
 CAPTURE_PID=$!
 sleep 1
 
-echo "▸ E2E 시나리오 실행 (이 화면이 그대로 녹화된다)"
-mise run e2e || echo "⚠ E2E 실패 — 녹화는 그대로 저장한다(실패 화면도 증거다)"
+echo "▸ E2E 시나리오 실행 (이 화면이 그대로 녹화된다)${TEST_FILTER:+ — 필터: ${TEST_FILTER}}"
+if [ -n "$TEST_FILTER" ]; then
+  (cd apps/desktop && pnpm test:e2e -t "$TEST_FILTER") || echo "⚠ E2E 실패 — 녹화는 그대로 저장한다(실패 화면도 증거다)"
+else
+  mise run e2e || echo "⚠ E2E 실패 — 녹화는 그대로 저장한다(실패 화면도 증거다)"
+fi
 
 sleep 2
 kill -INT "$CAPTURE_PID" 2>/dev/null || true

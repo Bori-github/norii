@@ -20,11 +20,14 @@ export const ipc = {
     unwrapIpcResult(
       commands.saveFile(args.path, args.text, args.eol, args.hasBom, args.expectedHash),
     ),
+  readDir: (dir: string) => unwrapIpcResult(commands.readDir(dir)),
   watchPaths: (paths: string[]) => unwrapIpcResult(commands.watchPaths(paths)),
+  watchTree: (root: string | null) => unwrapIpcResult(commands.watchTree(root)),
   showOpenDialog: () => unwrapIpcResult(commands.showOpenDialog()),
   showSaveDialog: (defaultName: string) => unwrapIpcResult(commands.showSaveDialog(defaultName)),
+  showOpenFolderDialog: () => unwrapIpcResult(commands.showOpenFolderDialog()),
 };
 
 export { IpcError, isIpcError } from "./ipc-error";
 export type { IpcErrorKind } from "./ipc-error";
-export type { AppError, Eol, FileContent, SaveResult } from "./bindings";
+export type { AppError, Eol, FileContent, SaveResult, TreeNode } from "./bindings";

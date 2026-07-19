@@ -6,9 +6,12 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	openFile: (path: string, encodingOverride: string | null) => typedError<FileContent, AppError>(__TAURI_INVOKE("open_file", { path, encodingOverride })),
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
+	readDir: (dir: string) => typedError<TreeNode[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
+	watchTree: (root: string | null) => typedError<null, AppError>(__TAURI_INVOKE("watch_tree", { root })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
+	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),
 };
 
 /* Types */
@@ -23,6 +26,8 @@ export type Eol = "lf" | "crlf";
  *  저장 시 save_file이 `eol`로 되돌린다(→ file-lifecycle.md#eol-정책).
  */
 export type FileContent = {
+	/**  canonicalize된 정식 경로 — 탭 신원·중복 판정·감시 선언의 기준값(→ rust-commands.md). */
+	path: string,
 	text: string,
 	encoding: string,
 	hasBom: boolean,
@@ -33,11 +38,27 @@ export type FileContent = {
 	hash: string,
 };
 
+export type NodeKind = "dir" | "file";
+
 /**  save_file 반환값(→ rust-commands.md). hash는 방금 쓴 디스크 바이트의 내용 해시다. */
 export type SaveResult = {
+	/**
+	 *  실제로 쓴 대상의 canonical 경로 — Untitled 첫 저장·다른 이름 저장의 탭 신원도
+	 *  다이얼로그 문자열이 아니라 이 값으로 확정한다(→ rust-commands.md).
+	 */
+	path: string,
 	/**  ms 단위라 2^53 안에 들므로 TS number로 내보낸다(specta는 u64를 기본 금지). */
 	mtime: number,
 	hash: string,
+};
+
+/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
+export type TreeNode = {
+	path: string,
+	name: string,
+	kind: NodeKind,
+	/**  심볼릭 링크 표시 — 사이드바 배지용. */
+	isSymlink: boolean,
 };
 
 /* Tauri Specta runtime */

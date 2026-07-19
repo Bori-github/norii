@@ -61,6 +61,24 @@ pub async fn show_save_dialog(
     Ok(Some(canonical.to_string_lossy().into_owned()))
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn show_open_folder_dialog(
+    app: AppHandle,
+    scope: State<'_, FileScope>,
+) -> Result<Option<String>, AppError> {
+    let picked = app.dialog().file().blocking_pick_folder();
+    let Some(folder_path) = picked else {
+        return Ok(None);
+    };
+    let path = into_path(folder_path)?;
+    // 폴더는 하위 트리 전체가 허용 루트가 된다 — read_dir·open·save가 이 아래를 통과한다
+    // (→ rust-commands.md#권한-capabilities).
+    let canonical = fs::canonicalize(&path)?;
+    scope.allow(canonical.clone());
+    Ok(Some(canonical.to_string_lossy().into_owned()))
+}
+
 fn into_path(file_path: tauri_plugin_dialog::FilePath) -> Result<PathBuf, AppError> {
     file_path
         .into_path()

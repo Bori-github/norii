@@ -2,4 +2,5 @@
 // generated/는 mise run icons가 svg/ 원본에서 생성한다 — 손으로 고치지 않는다
 // (→ .claude/docs/design/design-system.md#아이콘).
 export { default as CheckIcon } from "./generated/check";
+export { default as ChevronRightIcon } from "./generated/chevron-right";
 export { default as CopyRightIcon } from "./generated/copy-right";

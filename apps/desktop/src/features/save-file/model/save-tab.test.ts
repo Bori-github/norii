@@ -48,6 +48,7 @@ import {
 
 function fileContent(overrides: Partial<FileContent> = {}): FileContent {
   return {
+    path: "/vault/doc.md",
     text: "# 본문\n",
     encoding: "utf-8",
     hasBom: false,
@@ -60,7 +61,7 @@ function fileContent(overrides: Partial<FileContent> = {}): FileContent {
 }
 
 function openTab(path = "/vault/doc.md"): string {
-  return useDocumentStore.getState().openFileTab(path, fileContent());
+  return useDocumentStore.getState().openFileTab(fileContent({ path }));
 }
 
 beforeEach(() => {
@@ -91,7 +92,7 @@ describe("충돌 처리", () => {
   it("내 편집으로 덮어쓰기 — expectedHash 없이 강제 저장하고 충돌을 해제한다", async () => {
     const id = openTab();
     useConflictStore.getState().markConflict(id);
-    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+    saveFile.mockResolvedValueOnce({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
 
     await resolveConflictKeepMine(id);
 
@@ -124,7 +125,7 @@ describe("저장 중 추가 편집", () => {
     useDocumentStore.getState().setDirty(id, true);
     saveFile.mockImplementationOnce(async () => {
       setTabText(id, "# 본문\n저장 중 추가 편집"); // IPC 왕복 중 타이핑 시뮬레이션
-      return { mtime: 2_000, hash: "hash-2" };
+      return { path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" };
     });
 
     await expect(saveTabNow(id)).resolves.toBe("saved");
@@ -148,7 +149,7 @@ describe("정규화 승인 게이팅", () => {
   function openLegacyTab(): string {
     return useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
   }
 
   it("미승인 탭은 디바운스가 지나도 자동 저장되지 않는다", async () => {
@@ -168,7 +169,7 @@ describe("정규화 승인 게이팅", () => {
   it("수동 저장(Cmd+S)은 승인이다 — 저장 성공 후 정규화 메타가 해제된다", async () => {
     const id = openLegacyTab();
     useDocumentStore.getState().setDirty(id, true);
-    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+    saveFile.mockResolvedValueOnce({ path: "/vault/legacy.md", mtime: 2_000, hash: "hash-2" });
 
     await expect(saveTabNow(id)).resolves.toBe("saved");
 
@@ -220,7 +221,7 @@ describe("정규화 승인 게이팅", () => {
     const id = openLegacyTab();
     useDocumentStore.getState().setDirty(id, true);
     useConflictStore.getState().markConflict(id);
-    saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+    saveFile.mockResolvedValueOnce({ path: "/vault/legacy.md", mtime: 2_000, hash: "hash-2" });
 
     await resolveConflictKeepMine(id);
 
@@ -240,7 +241,7 @@ describe("정규화 승인 게이팅", () => {
       noteDocumentChanged(id); // 승인 전 — 예약되지 않는다.
 
       approveTabNormalization(id);
-      saveFile.mockResolvedValueOnce({ mtime: 2_000, hash: "hash-2" });
+      saveFile.mockResolvedValueOnce({ path: "/vault/legacy.md", mtime: 2_000, hash: "hash-2" });
 
       await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
       expect(saveFile).toHaveBeenCalledTimes(1);
@@ -270,9 +271,10 @@ describe("requestCloseTab", () => {
     saveFile
       .mockImplementationOnce(async () => {
         setTabText(id, "저장 중 편집 1"); // 1차 저장 중 추가 편집 → dirty 재발
-        return { mtime: 2, hash: "h2" };
+        return { path: "/vault/doc.md", mtime: 2, hash: "h2" };
       })
-      .mockResolvedValueOnce({ mtime: 3, hash: "h3" }); // 2차 저장은 깨끗하게 끝남
+      // 2차 저장은 깨끗하게 끝남
+      .mockResolvedValueOnce({ path: "/vault/doc.md", mtime: 3, hash: "h3" });
 
     await requestCloseTab(id);
 
@@ -294,7 +296,7 @@ describe("requestCloseTab", () => {
   it("정규화 미승인 dirty 탭은 저장(무단 변환) 없이 확인을 요청하고 탭을 유지한다", async () => {
     const id = useDocumentStore
       .getState()
-      .openFileTab("/vault/legacy.md", fileContent({ encoding: "euc-kr" }));
+      .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
     useDocumentStore.getState().setDirty(id, true);
 
     await requestCloseTab(id);
@@ -334,5 +336,25 @@ describe("저장 경로 확정과 중복 탭 금지", () => {
     const untitledTab = useDocumentStore.getState().tabs.find((tab) => tab.id === untitled);
     expect(untitledTab?.filePath).toBeNull();
     expect(useNoticeStore.getState().notices).toHaveLength(1);
+  });
+
+  // 집행: document-model.md#다중-탭-규칙 — "탭에 남는 경로는 다이얼로그 문자열이 아니라
+  //       save_file이 반환한 canonical 경로".
+  // 왜: 다이얼로그가 별칭 표기(/tmp/…)를 줘도 열기(canonical 신원)와 같은 표기로 수렴해야
+  //     같은 파일이 두 신원을 갖지 않는다(M5 트리 = 새 입구 대비).
+  // 보장: Untitled 첫 저장의 탭 filePath·title이 저장 결과의 canonical 경로를 따른다.
+  // 경계: 실제 canonicalize는 Rust 테스트가 검증한다 — 여기는 반환값 채택만 다룬다.
+  it("첫 저장의 탭 신원은 다이얼로그 문자열이 아니라 저장 결과의 canonical 경로다", async () => {
+    const untitled = useDocumentStore.getState().addUntitledTab();
+    useDocumentStore.getState().setDirty(untitled, true);
+    showSaveDialog.mockResolvedValueOnce("/tmp/새 문서.md");
+    saveFile.mockResolvedValueOnce({ path: "/private/tmp/새 문서.md", mtime: 2, hash: "h2" });
+
+    await expect(saveTabNow(untitled)).resolves.toBe("saved");
+
+    expect(useDocumentStore.getState().tabs.find((tab) => tab.id === untitled)).toMatchObject({
+      filePath: "/private/tmp/새 문서.md",
+      title: "새 문서.md",
+    });
   });
 });

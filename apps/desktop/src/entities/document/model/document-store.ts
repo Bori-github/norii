@@ -15,8 +15,11 @@ interface DocumentState {
 }
 
 interface DocumentActions {
-  /** 파일을 탭으로 연다. 이미 열린 파일이면 그 탭을 활성화한다(중복 탭 금지). */
-  openFileTab(path: string, file: FileContent): string;
+  /**
+   * 파일을 탭으로 연다. 탭 신원은 file.path(canonical 경로)다 — 같은 파일이면
+   * 그 탭을 활성화한다(중복 탭 금지 → document-model.md#다중-탭-규칙).
+   */
+  openFileTab(file: FileContent): string;
   /** 새 문서 탭 — filePath=null, title="Untitled". */
   addUntitledTab(): string;
   /** 탭 제거(저장 확인은 호출 측 책임). 활성 탭이 닫히면 이웃을 활성화한다. */
@@ -53,8 +56,8 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
   tabs: [],
   activeTabId: null,
 
-  openFileTab(path, file) {
-    const existing = get().tabs.find((tab) => tab.filePath === path);
+  openFileTab(file) {
+    const existing = get().tabs.find((tab) => tab.filePath === file.path);
     if (existing) {
       set({ activeTabId: existing.id });
       return existing.id;
@@ -64,8 +67,8 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
     setInitialText(id, file.text);
     const tab: Tab = {
       id,
-      filePath: path,
-      title: fileNameOf(path),
+      filePath: file.path,
+      title: fileNameOf(file.path),
       isDirty: false,
       sourceEncoding: file.encoding,
       hasBom: file.hasBom,

@@ -9,8 +9,13 @@
 ```rust
 #[tauri::command]
 async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
-// FileContent { text: String, encoding: String, has_bom: bool,
+// FileContent { path: String, text: String, encoding: String, has_bom: bool,
 //               eol: String, eol_mixed: bool, mtime: u64, hash: String }
+// - path는 canonicalize된 정식 경로다 — 심볼릭 링크를 끝까지 해소하고 디스크에 실제로
+//   기록된 표기(대소문자·유니코드 형태)로 수렴한 값. 같은 파일은 어떤 별칭
+//   (/tmp↔/private/tmp · 대소문자 · NFC/NFD)으로 요청해도 같은 문자열이 나온다.
+//   프론트는 탭 신원(Tab.filePath)·중복 탭 판정·감시 선언을 요청 문자열이 아니라
+//   전부 이 값으로 통일한다(→ document-model.md#다중-탭-규칙)
 // - text는 항상 UTF-8. 비UTF-8(EUC-KR 등)은 감지 후 변환해 반환하고,
 //   encoding에 감지된 원본 인코딩("utf-8"|"euc-kr"…)을 담는다 (파이프라인 → file-lifecycle.md)
 // - encoding_override 지정 시 파이프라인 전 단계(BOM 스니핑 포함)를 건너뛰고 전체 바이트를
@@ -25,7 +30,10 @@ async fn open_file(path: String, encoding_override: Option<String>) -> Result<Fi
 #[tauri::command]
 async fn save_file(path: String, text: String, eol: String, has_bom: bool,
                    expected_hash: Option<String>) -> Result<SaveResult, AppError>;
-// SaveResult { mtime: u64, hash: String }
+// SaveResult { path: String, mtime: u64, hash: String }
+// - path는 저장이 실제로 쓴 대상의 canonical 경로다(새 파일은 부모를 canonicalize하고
+//   파일명을 붙인다). Untitled 첫 저장·다른 이름 저장의 탭 신원도 다이얼로그가 준
+//   문자열이 아니라 이 값으로 확정한다(open_file의 path와 같은 신원 규칙)
 // - 항상 UTF-8로 쓴다. has_bom=true면 BOM을 다시 붙인다(원본 유지)
 // - 경로를 canonicalize해 심볼릭 링크의 "실제 대상"에 저장한다(링크를 일반 파일로 교체하지 않음)
 // - 원자적 쓰기: 대상과 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename
@@ -37,7 +45,7 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 
 #[tauri::command]
 async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
-// TreeNode { path, name, kind: "dir"|"file", is_symlink?: bool }
+// TreeNode { path, name, kind: "dir"|"file", is_symlink: bool }
 // (TS에는 rename_all=camelCase로 isSymlink로 노출 → 아래 원칙)
 // 한 호출 = 그 폴더 "한 단계"의 항목 목록 (VS Code의 fetchChildren과 동일한 레벨별 lazy).
 // 응답에 중첩이 없으므로 빈 폴더 = 빈 배열이고, 트리 조립과 "아직 안 읽음" 상태는
@@ -48,6 +56,9 @@ async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
 //   자연 정렬: 이름을 숫자/비숫자 구간으로 분할해 숫자 구간은 수치 비교,
 //   비숫자 구간은 대소문자 무시 코드포인트 비교 (2.md < 10.md)
 // - 숨김 항목(이름이 '.'으로 시작)은 제외
+// - 항목 단위 부분 실패 허용: 나열 중 개별 항목의 조회가 실패하면(경합 삭제 등) 그 항목만
+//   건너뛴다 — 이 커맨드는 "폴더가 바뀌는 중"(dir-changed 직후)에 불리므로 경합이 일상이고,
+//   항목 하나의 사정이 목록 전체를 죽이면 트리가 조용히 낡는다(watch_paths와 동일 원칙)
 // - 심볼릭 링크: is_symlink로 표시하고 일반 항목처럼 다룬다.
 //   대상이 없는(깨진) 링크도 표시하며, 열면 AppError::NotFound.
 //   루트 밖을 가리키는 링크는 펼칠 때 canonicalize 스코프 검증이 거부한다(→ 권한)
@@ -77,12 +88,43 @@ async fn watch_paths(paths: Vec<String>) -> Result<u32, AppError>;
 // 외부 변경 시 프론트로 이벤트 emit (아래 이벤트 계약 참조)
 
 #[tauri::command]
+async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
+// 사이드바 루트의 "재귀" 감시를 선언적으로 교체한다(None = 감시 해제). 트리의 외부
+// 생성/삭제/이름변경을 반영하기 위한 감시로, 열린 파일의 watch_paths와 별개다.
+// root는 canonicalize 후 허용 루트 검증을 거친다(스코프 위반은 Permission).
+// 이벤트: dir-changed { dir } — 그 디렉터리 "한 단계"의 구성이 바뀌었을 수 있다.
+//   dir는 변경 항목의 부모 디렉터리다(감시가 canonical 루트 기준이라 이벤트 경로도
+//   canonical — 트리 노드 경로와 그대로 대조된다). 반영 정책(읽어 둔 폴더만 재읽기·병합)은
+//   document-model.md#파일-트리-사이드바가 단일 출처다.
+// 숨김 필터: 루트 아래에서 '.'로 시작하는 컴포넌트를 지나는 경로의 이벤트는 무시한다
+//   (.git·에디터 임시 파일의 이벤트 폭주 방지 — 트리가 숨김 항목을 표시하지 않으므로
+//   구성 변화도 아니다).
+// 파일 내용 수정(Modify Data/Metadata)·Access 이벤트는 무시한다 — 목록 구성이 변하지
+//   않는 사건이다. 생성·삭제·이름변경(+분류 불명 이벤트)만 알린다.
+// 코얼레싱: 같은 dir의 연속 이벤트는 짧은 창(200ms)으로 합쳐 1회만 알린다 — git
+//   checkout류 대량 변경이 이벤트 수만큼 read_dir 재읽기를 증폭시키지 않게 한다.
+// 새 감시가 준비된 뒤에만 이전 감시를 교체한다(watch_paths와 동일 — 무감시 창 없음).
+// 감시 백엔드 오류(이벤트 큐 넘침·rescan 요구 등)는 tree-desynced로 발신한다 — 어떤
+//   변경을 놓쳤는지 특정할 수 없으므로, 프론트는 읽어 둔 모든 레벨을 다시 읽어 병합한다
+//   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
+// 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
+//   열기가 새 감시를 세운다.
+
+#[tauri::command]
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
 #[tauri::command]
 async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppError>;
 // 두 다이얼로그 모두 Markdown 필터(.md·.markdown — read_dir 필터와 동일 집합)를 걸고,
 // 취소하면 None을 반환한다. 선택된 경로는 허용 루트로 등록된다(→ 권한)
+
+#[tauri::command]
+async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
+// 폴더 선택 다이얼로그 — 사이드바 루트(rootDir)를 여는 입구(→ document-model.md#파일-트리-사이드바).
+// 취소하면 None. 선택한 폴더는 허용 루트로 등록된다(하위 트리 전체 — read_dir·open·save가 통과)
+
+// 세 다이얼로그 모두 반환 경로는 canonicalize된 정식 경로다 — 탭·트리가 쓰는 신원 규칙
+// (open_file의 path)과 같은 표기로 시작하게 한다
 ```
 
 ## 이벤트 계약 (Rust → 웹뷰)
@@ -90,6 +132,8 @@ async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppErr
 ```text
 file-changed   { path, mtime, hash }   외부에서 파일이 수정됨 (hash는 이벤트 처리 시점의 디스크 내용 해시)
 file-removed   { path }                열려 있던 파일이 삭제/이동됨
+dir-changed    { dir }                 트리 감시(watch_tree) — dir 한 단계의 구성이 바뀌었을 수 있음
+tree-desynced  {}                      트리 감시 — 백엔드가 이벤트를 놓침. 읽어 둔 레벨 전체 재읽기 신호
 ```
 
 자기 저장도 `file-changed`를 발생시킨다 — 프론트는 이벤트의 hash가 탭의 `lastSavedHash`와 같으면 자기 에코로 무시한다. 이 규칙과 외부 변경 처리 정책(리로드·충돌 안내)의 단일 출처는 [파일 생명주기 정책](file-lifecycle.md).

@@ -1,5 +1,6 @@
 import { useDocumentStore } from "@entities/document";
 import { openPathInTab } from "@features/open-file";
+import { openFolderAtPath } from "@features/open-folder";
 
 // E2E 전용 훅 — WebDriver(tauri-plugin-webdriver)는 네이티브 다이얼로그를 열 수 없고
 // 수정자 키(Cmd/Ctrl)도 합성하지 못하므로, 실전 시나리오는 이 API로 동작을 트리거한다
@@ -8,6 +9,8 @@ import { openPathInTab } from "@features/open-file";
 
 interface NoriiE2eApi {
   openPath(path: string): Promise<void>;
+  /** 폴더 다이얼로그 우회 — 사이드바 시나리오용(전제는 → openFolderAtPath). */
+  openFolder(path: string): Promise<void>;
   tabCount(): number;
   closeWindow(): void;
 }
@@ -24,6 +27,7 @@ export function exposeE2eApi(): void {
   }
   window.noriiE2e = {
     openPath: (path) => openPathInTab(path),
+    openFolder: (path) => openFolderAtPath(path),
     tabCount: () => useDocumentStore.getState().tabs.length,
     closeWindow: () => {
       // 실제 종료 경로(onCloseRequested → 종료 방어)를 태운다 — destroy가 아니라 close.

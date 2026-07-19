@@ -1,3 +1,4 @@
+import { useTreeWatch } from "@features/open-folder";
 import { useExternalChanges } from "@features/save-file";
 import { EditorPage } from "@pages/editor";
 
@@ -17,6 +18,7 @@ export function App() {
   useCloseGuard();
   useTheme();
   useExternalChanges();
+  useTreeWatch();
   return (
     <AppErrorBoundary>
       <EditorPage />
