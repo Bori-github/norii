@@ -1,6 +1,5 @@
-//! 파일 트리 커맨드 — read_dir. 시그니처·반환 규칙의 단일 출처: .claude/docs/rust-commands.md.
-//! 한 호출 = 그 폴더 "한 단계"의 항목 목록(레벨별 lazy). 트리 조립과 "아직 안 읽음" 상태는
-//! 프론트 모델 소관이다(→ .claude/docs/document-model.md#파일-트리-사이드바).
+//! 파일 트리 커맨드 — read_dir. 계약: .claude/docs/rust-commands.md,
+//! 프론트 트리 모델: .claude/docs/document-model.md#파일-트리-사이드바.
 //!
 //! 파일 처리 동작(레벨별 lazy 로딩·자연 정렬)은 VS Code(Code – OSS, MIT)의 동작을
 //! 참고했다(→ .claude/rules/prior-art.md).
@@ -14,7 +13,7 @@ use tauri::State;
 use crate::error::AppError;
 use crate::scope::FileScope;
 
-/// read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다.
+/// read_dir 항목(→ rust-commands.md).
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeNode {
@@ -68,8 +67,7 @@ pub fn read_dir_impl(scope: &FileScope, dir: &str) -> Result<Vec<TreeNode>, AppE
             continue;
         }
         nodes.push(TreeNode {
-            // canonical 부모 기준 경로 — 트리 클릭이 탭 신원(canonical)과 맞물린다.
-            // (폴더 링크를 펼치면 다음 호출의 canonicalize가 실제 대상 기준으로 수렴한다.)
+            // 폴더 링크를 펼치면 다음 호출의 canonicalize가 실제 대상 기준으로 수렴한다.
             path: entry.path().to_string_lossy().into_owned(),
             name,
             kind: if is_dir {
@@ -91,8 +89,7 @@ fn has_markdown_extension(name: &str) -> bool {
     })
 }
 
-/// 정렬 규칙(→ rust-commands.md): 디렉터리 우선 → 자연 정렬 → 동률이면 원본 이름의
-/// 코드포인트 비교로 확정한다(결정론).
+/// 정렬 규칙(→ rust-commands.md).
 fn compare_nodes(a: &TreeNode, b: &TreeNode) -> Ordering {
     match (a.kind, b.kind) {
         (NodeKind::Dir, NodeKind::File) => Ordering::Less,
@@ -101,8 +98,7 @@ fn compare_nodes(a: &TreeNode, b: &TreeNode) -> Ordering {
     }
 }
 
-/// 자연 정렬 — 이름을 숫자/비숫자 구간으로 분할해, 숫자 구간은 수치 비교(2 < 10),
-/// 비숫자 구간은 대소문자 무시 코드포인트 비교를 한다.
+/// 자연 정렬(→ rust-commands.md read_dir).
 fn natural_cmp(a: &str, b: &str) -> Ordering {
     let mut runs_a = split_runs(a).into_iter();
     let mut runs_b = split_runs(b).into_iter();

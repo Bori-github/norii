@@ -19,10 +19,8 @@ use crate::error::AppError;
 use crate::scope::FileScope;
 use crate::text_encoding::{decode_document, UTF8_BOM};
 
-/// 저장 직렬화 잠금 — 충돌 검사(해시)와 교체(rename) 사이에 다른 저장이 끼어들면 둘 다
-/// 검사를 통과해 낡은 내용이 이길 수 있다. 단독 사용자 앱에서 저장은 ms 단위라 전역
-/// 직렬화로 충분하다. 외부 프로세스와의 경쟁은 이 잠금 밖의 잔여 위험으로, 저장 직전
-/// 해시 검사가 그 창을 최소화한다(→ file-lifecycle.md#저장-원자성과-충돌-검사).
+/// 저장 직렬화 잠금(→ file-lifecycle.md#저장-원자성과-충돌-검사) — 단독 사용자 앱에서
+/// 저장은 ms 단위라 전역 직렬화로 충분하다.
 static SAVE_LOCK: Mutex<()> = Mutex::new(());
 
 /// open_file 반환값(→ rust-commands.md). text는 CM6용으로 LF 정규화되어 있고,
@@ -90,8 +88,6 @@ pub fn open_file_impl(
     let bytes = fs::read(&canonical)?;
     let hash = content_hash(&bytes);
     let decoded = decode_document(&bytes, encoding_override)?;
-    // 혼합·CR-only는 eol_mixed=true로 열린다 — 저장의 개행 통일 재작성은 프론트의
-    // 정규화 승인을 거친다(→ file-lifecycle.md#eol-정책).
     let eol_info = detect_eol(&decoded.text);
 
     let mtime = mtime_millis(&fs::metadata(&canonical)?);
@@ -117,14 +113,10 @@ pub fn save_file_impl(
 ) -> Result<SaveResult, AppError> {
     let _save_guard = SAVE_LOCK.lock().expect("SAVE_LOCK은 포이즌되지 않는다");
 
-    // canonicalize로 심볼릭 링크의 "실제 대상"을 찾는다 — 링크를 일반 파일로 교체하지 않기
-    // 위해서다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일은 부모를 canonicalize한다.
     let target = resolve_save_target(Path::new(path))?;
     scope.ensure_allowed(&target)?;
 
-    // 읽기 전용 거부 — rename은 디렉터리 권한만 검사해 파일 잠금을 우회하므로
-    // 명시적으로 검사한다. 사용자가 잠근 파일을 자동 저장이 조용히 고치지 않게 하는
-    // 규칙이다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일(메타 없음)은 통과.
+    // 읽기 전용 거부(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일(메타 없음)은 통과.
     if let Ok(metadata) = fs::metadata(&target) {
         if metadata.permissions().readonly() {
             return Err(AppError::Permission(
@@ -133,8 +125,7 @@ pub fn save_file_impl(
         }
     }
 
-    // 충돌 검사 — 디스크 내용 해시가 탭이 마지막으로 알던 값과 다르면 쓰지 않는다.
-    // 새 파일·강제 덮어쓰기는 expected_hash=None으로 검사를 건너뛴다(→ rust-commands.md).
+    // 충돌 검사(→ rust-commands.md save_file).
     if let Some(expected) = expected_hash {
         let disk_bytes = fs::read(&target).map_err(|err| match err.kind() {
             std::io::ErrorKind::NotFound => AppError::Conflict(
@@ -149,9 +140,8 @@ pub fn save_file_impl(
         }
     }
 
-    // 항상 UTF-8로 쓰고, BOM은 원본에 있던 그대로 유지한다(→ file-lifecycle.md#인코딩-정책).
-    // 입력은 LF 정규화 계약(CM6)을 따르지만 여기서 한 번 더 정규화한다 — 디스크에 닿기 전
-    // 마지막 관문이라, 상류 버그가 깨진 개행(\r\r\n)으로 굳는 것을 막는다(→ eol-정책).
+    // 항상 UTF-8로 쓰고 BOM은 원본대로 유지하며, 개행은 디스크에 닿기 전 마지막 관문인
+    // 여기서 한 번 더 정규화한다(→ file-lifecycle.md#인코딩-정책·#eol-정책).
     let body = apply_eol(&normalize_to_lf(text), eol);
     let mut bytes = Vec::with_capacity(body.len() + UTF8_BOM.len());
     if has_bom {
@@ -180,8 +170,7 @@ pub(crate) fn resolve_save_target(path: &Path) -> Result<PathBuf, AppError> {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
         Err(err) => return Err(err.into()),
     }
-    // 경로 자체가 남아 있는(깨진) 심볼릭 링크면 거부한다 — 새 파일로 취급해 그 자리에
-    // rename하면 링크가 일반 파일로 교체된다. 깨진 링크 열기(NotFound)와 대칭인 동작이다.
+    // 경로 자체가 남아 있는(깨진) 심볼릭 링크면 거부한다 — 깨진 링크 열기(NotFound)와 대칭.
     if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
         return Err(AppError::NotFound(
             "심볼릭 링크의 대상이 없습니다 — 링크를 일반 파일로 교체하지 않습니다".into(),
@@ -196,8 +185,7 @@ pub(crate) fn resolve_save_target(path: &Path) -> Result<PathBuf, AppError> {
     Ok(fs::canonicalize(parent)?.join(name))
 }
 
-/// 원자적 쓰기 — 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename으로 교체한다.
-/// 저장 중 크래시가 나도 디스크에는 온전한 옛 파일 아니면 온전한 새 파일만 남는다
+/// 원자적 쓰기 — 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename으로 교체한다
 /// (→ file-lifecycle.md#저장-원자성과-충돌-검사).
 fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     let dir = target
@@ -210,8 +198,7 @@ fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     if let Ok(metadata) = fs::metadata(target) {
         fs::set_permissions(temp.path(), metadata.permissions())?;
     } else {
-        // 새 파일 — tempfile 기본값(0600)은 임시 파일용 보안 기본값이라, 그대로 남기면
-        // 다른 도구·계정이 문서를 읽지 못한다. 일반 문서 관례(0644)로 맞춘다.
+        // 새 파일 — tempfile 기본값(0600) 대신 일반 문서 관례(0644)로 맞춘다.
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
