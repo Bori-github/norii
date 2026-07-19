@@ -8,7 +8,7 @@ import { create } from "zustand";
 // 그 의도가 사라진다.
 //
 // **아직 저장하지 않는다.** 매 기동 system으로 시작하고 토글은 그 세션에만 남는다. 영속화는
-// 설정 화면과 함께 M5에서 들어온다(→ .claude/docs/design/design-system.md#테마-라이트다크).
+// 설정 화면과 함께 들어온다(→ .claude/docs/design/design-system.md#테마-라이트다크).
 // 그때 이 스토어를 다시 만들 필요는 없다 — 세 번째 선택지가 이미 여기 있다.
 
 /** 사용자의 의도. `system`은 "OS 설정을 따른다"이며, 그 자체가 하나의 선택이다. */

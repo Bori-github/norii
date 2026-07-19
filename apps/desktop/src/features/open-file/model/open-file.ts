@@ -37,7 +37,7 @@ export async function openPathInTab(path: string): Promise<void> {
     const file = await ipc.openFile(path);
     useDocumentStore.getState().openFileTab(file);
   } catch (error) {
-    // 비UTF-8·혼합 EOL·바이너리 거부(M1)도 이 경로로 안내된다 — 파일은 건드리지 않았다.
+    // 바이너리·손상 파일의 열기 거부도 이 경로로 안내된다 — 파일은 건드리지 않았다.
     notifyIpcError(STRINGS.openFailedTitle, error);
   }
 }
