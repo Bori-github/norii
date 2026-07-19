@@ -35,29 +35,69 @@ interface WorkspaceActions {
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
 
-/** 재읽기 병합 — 새 목록을 채택하되, 경로·종류가 같은 기존 항목의 children을 이어받는다. */
+// 병합·조립은 참조를 보존한다 — 자기 저장의 rename도 dir-changed를 만들어 자동 저장마다
+// 병합이 도는데, 구성이 그대로인데 새 객체를 만들면 사이드바 전체가 리렌더된다.
+// "안 바뀐 것은 같은 참조"가 TreeItem memo의 전제다.
+
+/**
+ * 재읽기 병합 — 새 목록을 채택하되, 경로·종류가 같은 기존 항목은 노드 참조를 재사용하고
+ * (children 승계 포함), 결과가 기존과 동일하면 기존 배열을 그대로 반환한다.
+ */
 function mergeLevel(existing: FileTreeNode[] | undefined, entries: TreeNode[]): FileTreeNode[] {
-  const byPath = new Map((existing ?? []).map((node) => [node.path, node]));
-  return entries.map((entry) => {
+  const previousNodes = existing ?? [];
+  const byPath = new Map(previousNodes.map((node) => [node.path, node]));
+  let changed = previousNodes.length !== entries.length;
+  const merged = entries.map((entry, index) => {
     const previous = byPath.get(entry.path);
+    if (previous && previous.kind === entry.kind && previous.isSymlink === entry.isSymlink) {
+      if (previousNodes[index] !== previous) {
+        changed = true; // 순서가 바뀌었다.
+      }
+      return previous;
+    }
+    changed = true;
     return previous && previous.kind === entry.kind
       ? { ...entry, children: previous.children }
       : { ...entry };
   });
+  return changed ? merged : previousNodes;
+}
+
+/** dirPath로 가는 경로의 가지만 새로 만든다 — 무관한 가지는 기존 참조를 그대로 반환한다. */
+function updateBranch(
+  nodes: FileTreeNode[],
+  dirPath: string,
+  update: (node: FileTreeNode) => FileTreeNode,
+): FileTreeNode[] {
+  let changed = false;
+  const result = nodes.map((node) => {
+    if (node.path === dirPath && node.kind === "dir") {
+      const updated = update(node);
+      if (updated !== node) {
+        changed = true;
+      }
+      return updated;
+    }
+    if (node.children !== undefined && dirPath.startsWith(`${node.path}/`)) {
+      const children = updateBranch(node.children, dirPath, update);
+      if (children !== node.children) {
+        changed = true;
+        return { ...node, children };
+      }
+    }
+    return node;
+  });
+  return changed ? result : nodes;
 }
 
 function refreshAt(nodes: FileTreeNode[], dirPath: string, entries: TreeNode[]): FileTreeNode[] {
-  return nodes.map((node) => {
-    if (node.path === dirPath && node.kind === "dir") {
-      // 안 읽은 폴더(children 부재)는 그대로 둔다 — 다음 펼침이 어차피 최신을 읽는다.
-      return node.children === undefined
-        ? node
-        : { ...node, children: mergeLevel(node.children, entries) };
+  return updateBranch(nodes, dirPath, (node) => {
+    // 안 읽은 폴더(children 부재)는 그대로 둔다 — 다음 펼침이 어차피 최신을 읽는다.
+    if (node.children === undefined) {
+      return node;
     }
-    if (node.children) {
-      return { ...node, children: refreshAt(node.children, dirPath, entries) };
-    }
-    return node;
+    const children = mergeLevel(node.children, entries);
+    return children === node.children ? node : { ...node, children };
   });
 }
 
@@ -66,15 +106,10 @@ function attachChildren(
   dirPath: string,
   entries: TreeNode[],
 ): FileTreeNode[] {
-  return nodes.map((node) => {
-    if (node.path === dirPath && node.kind === "dir") {
-      return { ...node, children: entries.map((entry) => ({ ...entry })) };
-    }
-    if (node.children) {
-      return { ...node, children: attachChildren(node.children, dirPath, entries) };
-    }
-    return node;
-  });
+  return updateBranch(nodes, dirPath, (node) => ({
+    ...node,
+    children: entries.map((entry) => ({ ...entry })),
+  }));
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
@@ -100,12 +135,19 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
         state.rootDir !== null && dirPath === state.rootDir
           ? mergeLevel(state.fileTree, entries)
           : refreshAt(state.fileTree, dirPath, entries);
+      if (fileTree === state.fileTree) {
+        return state; // 구성 무변경 — 상태를 만들지 않아 구독자 리렌더가 없다.
+      }
       // 사라진 폴더의 펼침 상태는 함께 정리한다 — 같은 이름으로 재생성되면 접힌 채
       // 시작한다(이름표만 남으면 "펼쳐졌는데 빈" 상태가 된다).
       const expandedDirs = state.expandedDirs.filter(
         (path) => findTreeNode(fileTree, path)?.kind === "dir",
       );
-      return { fileTree, expandedDirs };
+      return {
+        fileTree,
+        expandedDirs:
+          expandedDirs.length === state.expandedDirs.length ? state.expandedDirs : expandedDirs,
+      };
     });
   },
 

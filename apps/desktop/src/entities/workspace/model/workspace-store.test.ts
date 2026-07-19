@@ -95,6 +95,48 @@ describe("refreshLevel (외부 변경 병합)", () => {
     expect(findTreeNode(tree, "/vault/a/b/deep.md")?.name).toBe("deep.md"); // 하위 보존
   });
 
+  // 왜: 자기 저장(임시 파일 rename)도 dir-changed를 만들어 자동 저장마다 병합이 돈다 —
+  //     구성이 그대로인데 매번 새 객체를 만들면 참조가 갈려 사이드바 전체가 리렌더된다.
+  // 보장: 구성이 같은 병합은 기존 배열·노드 참조를 그대로 반환하고, 일부만 바뀌면
+  //       바뀐 가지만 새 객체가 된다(무관 형제의 참조 보존). 같은 경로가 file↔dir로
+  //       바뀌면 children을 승계하지 않는다.
+  // 경계: 리렌더 건너뛰기 자체는 TreeItem의 memo가 담당한다(참조가 그 전제다).
+  describe("병합의 참조 보존", () => {
+    it("구성이 같으면 기존 트리 참조를 그대로 반환한다", () => {
+      const store = useWorkspaceStore.getState();
+      store.openRoot("/vault", [dir("/vault/a"), file("/vault/b.md")]);
+      const before = useWorkspaceStore.getState().fileTree;
+
+      useWorkspaceStore.getState().refreshLevel("/vault", [dir("/vault/a"), file("/vault/b.md")]);
+
+      expect(useWorkspaceStore.getState().fileTree).toBe(before);
+    });
+
+    it("한 가지만 바뀌면 무관한 형제의 노드 참조는 보존된다", () => {
+      const store = useWorkspaceStore.getState();
+      store.openRoot("/vault", [dir("/vault/a"), dir("/vault/b")]);
+      store.setChildren("/vault/a", [file("/vault/a/old.md")]);
+      store.setChildren("/vault/b", [file("/vault/b/keep.md")]);
+      const untouchedSibling = useWorkspaceStore.getState().fileTree[1];
+
+      useWorkspaceStore.getState().refreshLevel("/vault/a", [file("/vault/a/new.md")]);
+
+      expect(useWorkspaceStore.getState().fileTree[1]).toBe(untouchedSibling);
+    });
+
+    it("같은 경로가 file↔dir로 바뀌면 children을 승계하지 않는다", () => {
+      const store = useWorkspaceStore.getState();
+      store.openRoot("/vault", [dir("/vault/x")]);
+      store.setChildren("/vault/x", [file("/vault/x/inner.md")]);
+
+      useWorkspaceStore.getState().refreshLevel("/vault", [file("/vault/x")]);
+
+      const node = findTreeNode(useWorkspaceStore.getState().fileTree, "/vault/x");
+      expect(node?.kind).toBe("file");
+      expect(node?.children).toBeUndefined();
+    });
+  });
+
   it("사라진 폴더의 펼침 상태는 함께 정리된다 (재생성 시 접힌 채 시작)", () => {
     const store = useWorkspaceStore.getState();
     store.openRoot("/vault", [dir("/vault/gone"), dir("/vault/keep")]);

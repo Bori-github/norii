@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
@@ -55,7 +56,15 @@ function indentStyle(depth: number): React.CSSProperties {
   return { paddingLeft: `${depth * 12 + 8}px` };
 }
 
-export function TreeItem({ node, depth }: { node: FileTreeNode; depth: number }) {
+// memo — 스토어의 참조 보존(무변경 병합이 기존 노드를 재사용)과 짝을 이룬다.
+// node 참조가 같으면 그 가지의 리렌더를 건너뛴다(자동 저장마다 트리 전체가 그려지지 않게).
+export const TreeItem = memo(function TreeItem({
+  node,
+  depth,
+}: {
+  node: FileTreeNode;
+  depth: number;
+}) {
   const expanded = useWorkspaceStore((state) => state.expandedDirs.includes(node.path));
   const isActiveFile = useDocumentStore(
     (state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.filePath === node.path,
@@ -109,4 +118,4 @@ export function TreeItem({ node, depth }: { node: FileTreeNode; depth: number })
       </button>
     </li>
   );
-}
+});
