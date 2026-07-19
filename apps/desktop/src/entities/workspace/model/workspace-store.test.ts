@@ -95,6 +95,20 @@ describe("refreshLevel (외부 변경 병합)", () => {
     expect(findTreeNode(tree, "/vault/a/b/deep.md")?.name).toBe("deep.md"); // 하위 보존
   });
 
+  it("사라진 폴더의 펼침 상태는 함께 정리된다 (재생성 시 접힌 채 시작)", () => {
+    const store = useWorkspaceStore.getState();
+    store.openRoot("/vault", [dir("/vault/gone"), dir("/vault/keep")]);
+    store.setChildren("/vault/gone", [dir("/vault/gone/inner")]);
+    store.setExpanded("/vault/gone", true);
+    store.setExpanded("/vault/gone/inner", true);
+    store.setExpanded("/vault/keep", true);
+
+    useWorkspaceStore.getState().refreshLevel("/vault", [dir("/vault/keep")]);
+
+    // gone과 그 하위의 펼침은 지워지고, 살아남은 keep의 펼침은 보존된다.
+    expect(useWorkspaceStore.getState().expandedDirs).toEqual(["/vault/keep"]);
+  });
+
   it("안 읽은 폴더(children 부재)는 재읽기 대상이 아니다", () => {
     useWorkspaceStore.getState().openRoot("/vault", [dir("/vault/unread")]);
 

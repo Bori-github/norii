@@ -95,12 +95,18 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
   },
 
   refreshLevel(dirPath, entries) {
-    set((state) => ({
-      fileTree:
+    set((state) => {
+      const fileTree =
         state.rootDir !== null && dirPath === state.rootDir
           ? mergeLevel(state.fileTree, entries)
-          : refreshAt(state.fileTree, dirPath, entries),
-    }));
+          : refreshAt(state.fileTree, dirPath, entries);
+      // 사라진 폴더의 펼침 상태는 함께 정리한다 — 같은 이름으로 재생성되면 접힌 채
+      // 시작한다(이름표만 남으면 "펼쳐졌는데 빈" 상태가 된다).
+      const expandedDirs = state.expandedDirs.filter(
+        (path) => findTreeNode(fileTree, path)?.kind === "dir",
+      );
+      return { fileTree, expandedDirs };
+    });
   },
 
   setExpanded(dirPath, expanded) {
