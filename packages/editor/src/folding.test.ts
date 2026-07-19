@@ -1,9 +1,11 @@
 import { markdown } from "@codemirror/lang-markdown";
-import { foldable } from "@codemirror/language";
+import { foldable, foldEffect, foldedRanges } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
+import { noriiEditorExtensions } from "./extensions";
 import { markdownFolding } from "./folding";
+import type { EditorColors } from "./theme";
 
 // 집행: editor-strategy.md#하이브리드-접기-아웃라이너-대체 — 접기 규칙(헤딩 섹션·리스트
 //       항목·블록)은 lang-markdown 내장을 채택하고, norii는 켜기만 한다.
@@ -94,6 +96,43 @@ describe("리스트 접기 (내장 규칙 고정)", () => {
       ["- 항목", "  이어지는 설명 줄", "", "  더 깊은 설명", "- 다음"].join("\n"),
     );
     expect(foldedLines(state, 1)).toEqual([1, 4]);
+  });
+});
+
+// 왜: 접기 범위 테스트는 markdownFolding()을 직접 켜므로, 에디터 확장 묶음에서 접기가
+//     빠져도(배선 절단) 통과한다 — 배선이 어디에도 고정되지 않으면 기능이 조용히 사라진다.
+// 보장: 앱이 실제로 쓰는 noriiEditorExtensions 상태에서 접기 상태(codeFolding)가 살아
+//       있다 — fold 이펙트를 적용하면 접힌 범위가 기록된다. extensions.ts에서
+//       markdownFolding()을 제거하면 이 테스트가 실패한다(변이 검증).
+// 경계: 거터 표시·키맵 실동작(view 계층)은 CM6 기본을 신뢰한다(단축키 계약 표).
+describe("에디터 확장 배선 (변이 검증)", () => {
+  const COLORS: EditorColors = {
+    paper: "var(--paper)",
+    text: "var(--text)",
+    muted: "var(--muted)",
+    mark: "var(--mark)",
+    accent: "var(--accent)",
+    hover: "var(--hover)",
+    selection: "var(--selection)",
+    match: "var(--match)",
+    border: "var(--border)",
+  };
+
+  it("noriiEditorExtensions에 접기가 배선되어 있다 — fold 이펙트가 기록된다", () => {
+    const state = EditorState.create({
+      doc: ["# 제목", "본문 1", "본문 2"].join("\n"),
+      extensions: noriiEditorExtensions(COLORS),
+    });
+    const line = state.doc.line(1);
+    const range = foldable(state, line.from, line.to);
+    expect(range).not.toBeNull();
+
+    const folded = state.update({ effects: foldEffect.of(range!) }).state;
+    let count = 0;
+    foldedRanges(folded).between(0, folded.doc.length, () => {
+      count += 1;
+    });
+    expect(count).toBe(1);
   });
 });
 

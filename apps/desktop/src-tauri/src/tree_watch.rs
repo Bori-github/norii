@@ -217,6 +217,22 @@ struct DirChangedPayload {
 #[derive(Debug, Clone, Serialize)]
 struct TreeDesyncedPayload {}
 
+/// 감시 루트 해석 — canonicalize 후 허용 루트 검증(→ rust-commands.md watch_tree).
+/// 커맨드 밖에서 검증을 테스트하기 위해 분리한다(watch_paths의 resolve와 같은 구조).
+pub(crate) fn resolve_watch_root(
+    scope: &FileScope,
+    root: Option<&str>,
+) -> Result<Option<PathBuf>, AppError> {
+    match root {
+        Some(requested) => {
+            let canonical = std::fs::canonicalize(requested)?;
+            scope.ensure_allowed(&canonical)?;
+            Ok(Some(canonical))
+        }
+        None => Ok(None),
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn watch_tree(
@@ -225,14 +241,7 @@ pub async fn watch_tree(
     scope: State<'_, FileScope>,
     root: Option<String>,
 ) -> Result<(), AppError> {
-    let canonical = match root {
-        Some(ref requested) => {
-            let canonical = std::fs::canonicalize(requested)?;
-            scope.ensure_allowed(&canonical)?;
-            Some(canonical)
-        }
-        None => None,
-    };
+    let canonical = resolve_watch_root(&scope, root.as_deref())?;
     watcher
         .lock()
         .expect("SharedTreeWatcher는 포이즌되지 않는다")
@@ -391,6 +400,34 @@ mod tests {
             pending.remove(Path::new(&dir));
         }
         assert!(pending.is_empty(), "미수신 디렉터리: {pending:?}");
+    }
+
+    // 집행: rust-commands.md watch_tree — "root는 canonicalize 후 허용 루트 검증을
+    //       거친다(스코프 위반은 Permission)".
+    // 왜: 이 검사가 없으면 트리 감시 입구로 임의 전역 디렉터리의 변경을 관찰할 수 있다.
+    // 보장: 허용 루트 밖은 Permission, 없는 경로는 NotFound, 허용 안은 canonical로
+    //       해석되고, None(해제)은 검증 없이 통과한다.
+    // 경계: 실제 감시 시작·교체는 위 테스트들이 다룬다.
+    #[test]
+    fn 허용_루트_밖과_없는_경로의_감시는_거부한다() {
+        let (_dir, root) = canonical_tempdir();
+        let scope = FileScope::default();
+        scope.allow(root.clone());
+        let outside = tempfile::tempdir().unwrap();
+
+        assert!(matches!(
+            resolve_watch_root(&scope, Some(outside.path().to_str().unwrap())),
+            Err(AppError::Permission(_))
+        ));
+        assert!(matches!(
+            resolve_watch_root(&scope, Some("/no/such/dir")),
+            Err(AppError::NotFound(_))
+        ));
+        assert_eq!(
+            resolve_watch_root(&scope, Some(root.to_str().unwrap())).unwrap(),
+            Some(root.clone())
+        );
+        assert_eq!(resolve_watch_root(&scope, None).unwrap(), None);
     }
 
     // 집행: rust-commands.md watch_tree — "None = 감시 해제"·선언적 교체.

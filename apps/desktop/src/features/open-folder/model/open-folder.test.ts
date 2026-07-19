@@ -85,6 +85,17 @@ describe("openFolderInteractive", () => {
     expect(state.fileTree.map((node) => node.name)).toEqual(["notes"]);
   });
 
+  it("다이얼로그 자체가 실패해도 상태 불변으로 안내만 한다", async () => {
+    showOpenFolderDialog.mockRejectedValueOnce(new IpcError("io", "다이얼로그 실패"));
+
+    await openFolderInteractive();
+
+    expect(useWorkspaceStore.getState().rootDir).toBeNull();
+    expect(useNoticeStore.getState().notices).toHaveLength(1);
+    expect(readDir).not.toHaveBeenCalled();
+    expect(watchTree).not.toHaveBeenCalled();
+  });
+
   it("루트 읽기가 실패하면 워크스페이스를 세우지 않고 안내한다", async () => {
     showOpenFolderDialog.mockResolvedValueOnce("/vault");
     readDir.mockRejectedValueOnce(new IpcError("permission", "허용되지 않은 경로"));
