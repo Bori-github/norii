@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // IPC는 모킹한다 — 대상은 실제 디렉터리 읽기가 아니라 lazy 로딩·실패 처리 규칙이다
 // (실제 read_dir 동작은 Rust 테스트가 검증 → testing.md#레이어별).
-const { readDir, showOpenFolderDialog } = vi.hoisted(() => ({
+const { readDir, showOpenFolderDialog, watchTree } = vi.hoisted(() => ({
   readDir: vi.fn(),
   showOpenFolderDialog: vi.fn(),
+  watchTree: vi.fn(async (_root: unknown) => {}),
 }));
 
 vi.mock("@shared/ipc", () => {
@@ -19,7 +20,7 @@ vi.mock("@shared/ipc", () => {
   return {
     IpcError,
     isIpcError: (value: unknown) => value instanceof IpcError,
-    ipc: { readDir, showOpenFolderDialog },
+    ipc: { readDir, showOpenFolderDialog, watchTree },
   };
 });
 vi.mock("@tauri-apps/plugin-log", () => ({
@@ -34,6 +35,7 @@ import { IpcError } from "@shared/ipc";
 import { useNoticeStore } from "@shared/ui";
 
 import { openFolderInteractive, toggleDir } from "./open-folder";
+import { resetTreeWatchForTest } from "./tree-refresh";
 
 const NOTES_DIR: TreeNode = {
   path: "/vault/notes",
@@ -51,8 +53,11 @@ const DOC_FILE: TreeNode = {
 beforeEach(() => {
   useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [] });
   useNoticeStore.setState({ notices: [] });
+  resetTreeWatchForTest();
   readDir.mockReset();
   showOpenFolderDialog.mockReset();
+  watchTree.mockReset();
+  watchTree.mockResolvedValue(undefined);
 });
 
 // 집행: document-model.md#파일-트리-사이드바 — "루트 폴더를 열면 read_dir가 루트 한 단계를
@@ -88,6 +93,34 @@ describe("openFolderInteractive", () => {
 
     expect(useWorkspaceStore.getState().rootDir).toBeNull();
     expect(useNoticeStore.getState().notices).toHaveLength(1);
+  });
+
+  // 왜: 읽기 스냅숏과 감시 확립 사이에 생긴 파일은 스냅숏에도 없고 이벤트도 없어
+  //     영구 누락된다 — 감시가 먼저 서야 스냅숏 이후의 모든 변경이 이벤트로 잡힌다.
+  // 보장: 감시 선언이 목록 읽기보다 먼저 나가고, 읽기 실패 시 감시를 이전 루트로 되돌린다.
+  // 경계: 선언 자체의 직렬화·latest-wins는 tree-refresh 테스트 소관.
+  it("감시를 먼저 세우고 목록을 읽는다", async () => {
+    showOpenFolderDialog.mockResolvedValueOnce("/vault");
+    readDir.mockResolvedValueOnce([NOTES_DIR]);
+
+    await openFolderInteractive();
+
+    const watchOrder = watchTree.mock.invocationCallOrder[0];
+    const readOrder = readDir.mock.invocationCallOrder[0];
+    expect(watchOrder).toBeDefined();
+    expect(watchOrder!).toBeLessThan(readOrder!);
+    expect(watchTree).toHaveBeenCalledExactlyOnceWith("/vault");
+  });
+
+  it("읽기가 실패하면 감시를 이전 루트로 되돌린다", async () => {
+    useWorkspaceStore.getState().openRoot("/old-vault", []);
+    showOpenFolderDialog.mockResolvedValueOnce("/vault");
+    readDir.mockRejectedValueOnce(new IpcError("io", "읽기 실패"));
+
+    await openFolderInteractive();
+
+    expect(watchTree.mock.calls.map(([root]) => root)).toEqual(["/vault", "/old-vault"]);
+    expect(useWorkspaceStore.getState().rootDir).toBe("/old-vault");
   });
 });
 
