@@ -18,6 +18,9 @@ interface DirChangedPayload {
 /** 마지막으로 선언한 감시 루트 — 같은 루트의 재선언 IPC를 막는다. */
 let declaredRoot: string | null | undefined;
 
+/** 디렉터리별 재읽기 세대 — 순서 역전된 낡은 readDir 응답을 반영 직전에 걸러낸다. */
+const refreshGeneration = new Map<string, number>();
+
 /**
  * 사이드바 루트의 폴더 감시를 재선언한다(→ rust-commands.md watch_tree — 선언적 교체).
  * 실패는 치명적이지 않다 — 트리가 낡을 뿐이고, 폴더 펼침이 최신을 읽는다.
@@ -53,17 +56,23 @@ export async function handleDirChanged(payload: DirChangedPayload): Promise<void
       return;
     }
   }
+  const generation = (refreshGeneration.get(payload.dir) ?? 0) + 1;
+  refreshGeneration.set(payload.dir, generation);
   try {
     const entries = await ipc.readDir(payload.dir);
+    if (refreshGeneration.get(payload.dir) !== generation) {
+      return;
+    }
     useWorkspaceStore.getState().refreshLevel(payload.dir, entries);
   } catch (error) {
     logger.warn(`트리 재읽기 실패(${payload.dir}): ${String(error)}`);
   }
 }
 
-/** 테스트 전용 — 감시 선언 캐시를 초기화한다. */
+/** 테스트 전용 — 감시 선언 캐시·재읽기 세대를 초기화한다. */
 export function resetTreeWatchForTest(): void {
   declaredRoot = undefined;
+  refreshGeneration.clear();
 }
 
 /** 폴더 감시 선언과 dir-changed 구독을 시작한다. 반환값은 정리 함수(React effect 계약). */

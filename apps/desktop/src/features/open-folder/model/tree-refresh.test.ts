@@ -93,6 +93,31 @@ describe("handleDirChanged", () => {
     expect(readDir).not.toHaveBeenCalled();
   });
 
+  // 왜: readDir 응답 순서는 요청 순서와 같다는 보장이 없다 — 늦게 도착한 낡은 응답이
+  //     최신 목록을 덮으면 다음 외부 변경까지 트리가 조용히 낡는다.
+  //     await 전에 확인한 전제는 완료 후 재검증한다는 규칙의 적용이다.
+  // 보장: 같은 폴더의 재읽기가 겹치면 마지막 요청의 응답만 트리에 반영된다(추월 무시).
+  // 경계: 서로 다른 폴더의 재읽기는 독립이다 — 서로를 무효화하지 않는다.
+  it("늦게 도착한 낡은 재읽기 응답은 최신 목록을 덮지 않는다", async () => {
+    useWorkspaceStore.getState().openRoot("/vault", [file("/vault/old.md")]);
+    let resolveFirst!: (entries: TreeNode[]) => void;
+    readDir
+      .mockReturnValueOnce(
+        new Promise<TreeNode[]>((resolve) => {
+          resolveFirst = resolve;
+        }),
+      )
+      .mockResolvedValueOnce([file("/vault/newest.md")]);
+
+    const first = handleDirChanged({ dir: "/vault" }); // 느린 요청(아직 미해결)
+    const second = handleDirChanged({ dir: "/vault" }); // 빠른 요청 — 최신
+    await second;
+    resolveFirst([file("/vault/stale.md")]); // 낡은 응답이 뒤늦게 도착
+    await first;
+
+    expect(useWorkspaceStore.getState().fileTree.map((node) => node.name)).toEqual(["newest.md"]);
+  });
+
   it("재읽기가 실패하면 트리를 그대로 둔다", async () => {
     useWorkspaceStore.getState().openRoot("/vault", [file("/vault/keep.md")]);
     readDir.mockRejectedValueOnce(new IpcError("io", "읽기 실패"));
