@@ -58,7 +58,7 @@ export async function handleFileChanged(payload: FileChangedPayload): Promise<vo
       try {
         const file = await ipc.openFile(payload.path);
         // 재읽기 왕복 중 타이핑이 시작됐을 수 있다 — 재확인 없이 본문을 교체하면
-        // 그 입력이 배너도 undo도 없이 사라진다(리뷰 P1-1). 편집이 생겼으면 충돌 분기로.
+        // 그 입력이 배너도 undo도 없이 사라진다. 편집이 생겼으면 충돌 분기로.
         const latest = findTab(tabId);
         if (!latest || latest.filePath !== payload.path) {
           return;
@@ -125,7 +125,7 @@ let drain: Promise<void> | null = null;
  * 열린 경로 전체를 감시 대상으로 재선언한다(→ rust-commands.md watch_paths — 선언적 교체).
  * 스토어의 모든 변화(키 입력마다의 dirty 등)에서 불리므로 경로 집합이 실제로 바뀔 때만
  * IPC를 보내고, 동시 제출은 최신본만 전송한다(latest-wins) — 순서가 뒤집히면 옛 목록이
- * 최종본이 되고, FIFO 체인은 IPC 정체 시 대기 클로저가 무한히 쌓인다(리뷰 P2·성능).
+ * 최종본이 되고, FIFO 체인은 IPC 정체 시 대기 클로저가 무한히 쌓인다.
  */
 export function syncWatchedPaths(tabs: Tab[]): Promise<void> {
   pendingTabs = tabs;

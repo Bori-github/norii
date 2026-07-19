@@ -73,7 +73,7 @@ async function autosaveFlush(tabId: string): Promise<void> {
   }
   // origin="auto" — 큐에서 실행되는 시점에 탭이 삭제 표시면 건너뛴다. 재확인(IPC) 대기 중
   // 발화한 자동 저장이 표시가 켜진 "뒤에" 실행되는 경합에서 파일을 되살리지 않기 위한
-  // 실행 시점 판정이다(위 가드는 예약 시점이라 이 경합을 못 막는다 — 리뷰 교차 확인 치명).
+  // 실행 시점 판정이다(위 가드는 예약 시점이라 이 경합을 못 막는다).
   await saveQueue.enqueue(tabId, () => performSave(tabId, { forceDialog: false, origin: "auto" }));
 }
 
@@ -108,7 +108,7 @@ async function performSave(
   }
   // 이 저장이 대기 중인 자동 저장을 대신한다 — 이중 저장을 막는다.
   // 정규화 승인은 여기서 미리 기록하지 않는다 — 취소·실패한 저장이 승인을 남기면 이후
-  // 자동 저장이 동의 없이 원본을 재작성한다(리뷰 P1-2). 승인은 저장 성공 후처리에서 한다.
+  // 자동 저장이 동의 없이 원본을 재작성한다. 승인은 저장 성공 후처리에서 한다.
   autosave.discard(tabId);
 
   let path = tab.filePath;
@@ -179,7 +179,7 @@ async function performSave(
 
 /**
  * 저장 성공의 공통 후처리 — 수동 저장(performSave)과 충돌 덮어쓰기가 같은 규칙을 따른다.
- * 갈라지면 한쪽만 승인·메타가 갱신되어 배너가 유령으로 남는다(리뷰 P2).
+ * 갈라지면 한쪽만 승인·메타가 갱신되어 배너가 유령으로 남는다.
  * `tab`은 저장 요청 시점의 스냅숏이다 — 정규화 대상 여부는 그 시점 기준으로 판정한다.
  */
 function commitSaveSuccess(tabId: string, tab: Tab, text: string, hash: string): void {
@@ -191,7 +191,7 @@ function commitSaveSuccess(tabId: string, tab: Tab, text: string, hash: string):
     autosave.resume(tabId);
   }
   // 성립한 저장(성공)만이 정규화 승인이다 — 취소·실패는 승인을 남기지 않는다
-  // (→ file-lifecycle.md#자동-저장 "첫 수동 저장을 하면 승인된다", 리뷰 P1-2).
+  // (→ file-lifecycle.md#자동-저장 "첫 수동 저장을 하면 승인된다").
   if (needsNormalizationApproval(tab)) {
     store.approveNormalization(tabId);
   }
@@ -290,7 +290,7 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     return;
   }
   // 저장 왕복 중 타이핑이 이어지면 dirty가 되살아난다 — "saved"만 믿고 닫으면 그 편집이
-  // 조용히 유실되므로, 깨끗해질 때까지 재저장한다(적대적 리뷰 P1). 상한 후에도 dirty면
+  // 조용히 유실되므로, 깨끗해질 때까지 재저장한다. 상한 후에도 dirty면
   // 닫지 않고 열어 둔다(사용자가 입력을 계속 중 — dirty ●가 상태를 알린다).
   for (let attempt = 0; attempt < 3; attempt++) {
     const outcome = await saveTabNow(tabId);
