@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { listen } from "@tauri-apps/api/event";
 
+import type { FileTreeNode } from "@entities/workspace";
 import { findTreeNode, useWorkspaceStore } from "@entities/workspace";
 import { ipc } from "@shared/ipc";
 import { logger } from "@shared/lib";
@@ -91,6 +92,31 @@ export async function handleDirChanged(payload: DirChangedPayload): Promise<void
   }
 }
 
+/**
+ * tree-desynced 처리 — 감시 백엔드가 이벤트를 놓쳤다(→ rust-commands.md). 무엇을 놓쳤는지
+ * 알 수 없고 읽어 둔 폴더의 펼침은 캐시를 쓰므로, 읽어 둔 모든 레벨을 다시 읽어 병합한다.
+ * 각 재읽기는 handleDirChanged를 경유해 세대 가드·병합 규칙을 그대로 따른다.
+ */
+export async function handleTreeDesynced(): Promise<void> {
+  const state = useWorkspaceStore.getState();
+  if (state.rootDir === null) {
+    return;
+  }
+  const dirs = [state.rootDir, ...collectLoadedDirs(state.fileTree)];
+  await Promise.all(dirs.map((dir) => handleDirChanged({ dir })));
+}
+
+function collectLoadedDirs(nodes: FileTreeNode[]): string[] {
+  const dirs: string[] = [];
+  for (const node of nodes) {
+    if (node.kind === "dir" && node.children !== undefined) {
+      dirs.push(node.path);
+      dirs.push(...collectLoadedDirs(node.children));
+    }
+  }
+  return dirs;
+}
+
 /** 테스트 전용 — 감시 선언 캐시·드레인·재읽기 세대를 초기화한다. */
 export function resetTreeWatchForTest(): void {
   declaredRoot = undefined;
@@ -108,9 +134,13 @@ export function initTreeWatch(): () => void {
   const unlistenDirChanged = listen<DirChangedPayload>("dir-changed", (event) => {
     void handleDirChanged(event.payload);
   });
+  const unlistenDesynced = listen("tree-desynced", () => {
+    void handleTreeDesynced();
+  });
   return () => {
     unsubscribeStore();
     void unlistenDirChanged.then((unlisten) => unlisten());
+    void unlistenDesynced.then((unlisten) => unlisten());
   };
 }
 

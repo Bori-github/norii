@@ -104,6 +104,9 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 // 코얼레싱: 같은 dir의 연속 이벤트는 짧은 창(200ms)으로 합쳐 1회만 알린다 — git
 //   checkout류 대량 변경이 이벤트 수만큼 read_dir 재읽기를 증폭시키지 않게 한다.
 // 새 감시가 준비된 뒤에만 이전 감시를 교체한다(watch_paths와 동일 — 무감시 창 없음).
+// 감시 백엔드 오류(이벤트 큐 넘침·rescan 요구 등)는 tree-desynced로 발신한다 — 어떤
+//   변경을 놓쳤는지 특정할 수 없으므로, 프론트는 읽어 둔 모든 레벨을 다시 읽어 병합한다
+//   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
 // 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
 //   열기가 새 감시를 세운다.
 
@@ -130,6 +133,7 @@ async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
 file-changed   { path, mtime, hash }   외부에서 파일이 수정됨 (hash는 이벤트 처리 시점의 디스크 내용 해시)
 file-removed   { path }                열려 있던 파일이 삭제/이동됨
 dir-changed    { dir }                 트리 감시(watch_tree) — dir 한 단계의 구성이 바뀌었을 수 있음
+tree-desynced  {}                      트리 감시 — 백엔드가 이벤트를 놓침. 읽어 둔 레벨 전체 재읽기 신호
 ```
 
 자기 저장도 `file-changed`를 발생시킨다 — 프론트는 이벤트의 hash가 탭의 `lastSavedHash`와 같으면 자기 에코로 무시한다. 이 규칙과 외부 변경 처리 정책(리로드·충돌 안내)의 단일 출처는 [파일 생명주기 정책](file-lifecycle.md).

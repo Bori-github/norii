@@ -32,7 +32,12 @@ import { useWorkspaceStore } from "@entities/workspace";
 import type { TreeNode } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 
-import { handleDirChanged, resetTreeWatchForTest, syncTreeWatch } from "./tree-refresh";
+import {
+  handleDirChanged,
+  handleTreeDesynced,
+  resetTreeWatchForTest,
+  syncTreeWatch,
+} from "./tree-refresh";
 
 function dir(path: string): TreeNode {
   return { path, name: path.split("/").at(-1) ?? path, kind: "dir", isSymlink: false };
@@ -125,6 +130,35 @@ describe("handleDirChanged", () => {
     await handleDirChanged({ dir: "/vault" });
 
     expect(useWorkspaceStore.getState().fileTree.map((node) => node.name)).toEqual(["keep.md"]);
+  });
+});
+
+// 집행: rust-commands.md tree-desynced — "프론트는 읽어 둔 모든 레벨을 다시 읽어 병합한다".
+// 왜: 감시가 이벤트를 놓치면 무엇이 낡았는지 알 수 없는데, 읽어 둔 폴더의 펼침은 캐시를
+//     쓰므로 이 신호가 유일한 보정 경로다. 안 읽은 폴더까지 읽으면 lazy 원칙이 무너진다.
+// 보장: 루트와 children을 보유한 폴더만(중첩 포함) 다시 읽고, 안 읽은 폴더는 제외한다.
+//       루트가 없으면 무시한다.
+// 경계: 재읽기 각각의 세대 가드·병합은 위 테스트들이 다룬다.
+describe("handleTreeDesynced", () => {
+  it("루트와 읽어 둔 폴더만 다시 읽는다 (안 읽은 폴더 제외)", async () => {
+    const store = useWorkspaceStore.getState();
+    store.openRoot("/vault", [dir("/vault/loaded"), dir("/vault/unread")]);
+    store.setChildren("/vault/loaded", [dir("/vault/loaded/inner")]);
+    store.setChildren("/vault/loaded/inner", [file("/vault/loaded/inner/doc.md")]);
+    readDir.mockResolvedValue([]);
+
+    await handleTreeDesynced();
+
+    expect(readDir.mock.calls.map(([target]) => target).toSorted()).toEqual([
+      "/vault",
+      "/vault/loaded",
+      "/vault/loaded/inner",
+    ]);
+  });
+
+  it("루트가 없으면 무시한다", async () => {
+    await handleTreeDesynced();
+    expect(readDir).not.toHaveBeenCalled();
   });
 });
 

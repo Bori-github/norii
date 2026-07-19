@@ -54,13 +54,22 @@ pub struct TreeWatcher {
     generation: Arc<AtomicU64>,
 }
 
+/// 감시가 프론트로 알리는 사건(→ rust-commands.md 이벤트 계약).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TreeEvent {
+    /// dir 한 단계의 구성이 바뀌었을 수 있다.
+    DirChanged(String),
+    /// 백엔드가 이벤트를 놓쳤다(큐 넘침 등) — 읽어 둔 레벨 전체 재읽기 신호.
+    Desynced,
+}
+
 impl TreeWatcher {
     /// 감시 루트를 교체한다(None = 해제). `root`는 canonicalize된 경로여야 한다 —
     /// 이벤트의 dir가 canonical 기준이 되어 프론트 트리 노드 경로와 그대로 대조된다.
     pub fn replace(
         &mut self,
         root: Option<PathBuf>,
-        on_dir_changed: impl Fn(String) + Send + Sync + 'static,
+        on_event: impl Fn(TreeEvent) + Send + Sync + 'static,
     ) -> Result<(), AppError> {
         // 새 세대 토큰 — 커밋(교체 성공) 시점에만 전역 반영한다(watch.rs와 동일 계약:
         // 준비 실패가 무감시 상태를 남기지 않는다).
@@ -71,25 +80,30 @@ impl TreeWatcher {
             return Ok(());
         };
 
-        let on_dir_changed: Arc<dyn Fn(String) + Send + Sync> = Arc::new(on_dir_changed);
+        let on_event: Arc<dyn Fn(TreeEvent) + Send + Sync> = Arc::new(on_event);
         let generation = Arc::clone(&self.generation);
         let gate = NotifyGate::default();
         let notify_queue = spawn_notify_worker(
-            Arc::clone(&on_dir_changed),
+            Arc::clone(&on_event),
             Arc::clone(&generation),
             token,
             gate.clone(),
         )?;
         let callback_root = root.clone();
+        let error_events = Arc::clone(&on_event);
         let mut watcher =
             notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
                 // 낡은 세대(교체 전 구독)의 늦은 이벤트는 버린다.
                 if generation.load(Ordering::SeqCst) != token {
                     return;
                 }
-                // 감시 백엔드 에러(큐 넘침 등)는 무시한다 — 놓친 변경은 다음 이벤트나
-                // 폴더 펼침(read_dir)이 보정한다.
-                let Ok(event) = result else { return };
+                // 백엔드 오류는 어떤 변경을 놓쳤는지 알 수 없다 — 읽어 둔 폴더의 펼침은
+                // 캐시를 쓰므로 보정 경로가 따로 없어, 전체 재동기화 신호를 올린다
+                // (→ rust-commands.md tree-desynced).
+                let Ok(event) = result else {
+                    error_events(TreeEvent::Desynced);
+                    return;
+                };
                 if !changes_listing(&event.kind) {
                     return;
                 }
@@ -136,7 +150,7 @@ impl TreeWatcher {
 /// 워커는 발신 직전에 게이트를 해제하고(창 밖 변경이 새 알림을 예약할 수 있게) 세대를
 /// 재검사한다(교체됐으면 발신하지 않음). 송신자가 모두 드롭되면(감시 교체) 스스로 끝난다.
 fn spawn_notify_worker(
-    on_dir_changed: Arc<dyn Fn(String) + Send + Sync>,
+    on_event: Arc<dyn Fn(TreeEvent) + Send + Sync>,
     generation: Arc<AtomicU64>,
     token: u64,
     gate: NotifyGate,
@@ -152,7 +166,7 @@ fn spawn_notify_worker(
                 }
                 gate.release(&dir);
                 if generation.load(Ordering::SeqCst) == token {
-                    on_dir_changed(dir.to_string_lossy().into_owned());
+                    on_event(TreeEvent::DirChanged(dir.to_string_lossy().into_owned()));
                 }
             }
         })
@@ -199,6 +213,10 @@ struct DirChangedPayload {
     dir: String,
 }
 
+/// tree-desynced 페이로드(→ rust-commands.md 이벤트 계약) — 필드 없음.
+#[derive(Debug, Clone, Serialize)]
+struct TreeDesyncedPayload {}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn watch_tree(
@@ -218,10 +236,14 @@ pub async fn watch_tree(
     watcher
         .lock()
         .expect("SharedTreeWatcher는 포이즌되지 않는다")
-        .replace(canonical, move |dir| {
-            if let Err(error) = app.emit("dir-changed", DirChangedPayload { dir }) {
+        .replace(canonical, move |event| {
+            let result = match event {
+                TreeEvent::DirChanged(dir) => app.emit("dir-changed", DirChangedPayload { dir }),
+                TreeEvent::Desynced => app.emit("tree-desynced", TreeDesyncedPayload {}),
+            };
+            if let Err(error) = result {
                 // 알림 유실은 치명적이지 않다 — 다음 이벤트나 폴더 펼침이 최신을 읽는다.
-                log::warn!("dir-changed emit 실패: {error}");
+                log::warn!("트리 감시 이벤트 emit 실패: {error}");
             }
         })
 }
@@ -238,8 +260,10 @@ mod tests {
     fn watch_root(watcher: &mut TreeWatcher, root: &Path) -> mpsc::Receiver<String> {
         let (sender, receiver) = mpsc::channel::<String>();
         watcher
-            .replace(Some(root.to_path_buf()), move |dir| {
-                let _ = sender.send(dir);
+            .replace(Some(root.to_path_buf()), move |event| {
+                if let TreeEvent::DirChanged(dir) = event {
+                    let _ = sender.send(dir);
+                }
             })
             .expect("트리 감시 시작");
         receiver
