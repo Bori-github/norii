@@ -20,6 +20,14 @@ export async function openFolderInteractive(): Promise<void> {
   if (root === null) {
     return; // 사용자가 다이얼로그를 취소했다.
   }
+  await openFolderAtPath(root);
+}
+
+/**
+ * 경로로 워크스페이스를 연다 — 다이얼로그 이후의 공통 경로이며, E2E 훅도 이 함수를 쓴다
+ * (WebDriver는 네이티브 다이얼로그를 열 수 없다 → testing.md). 경로는 허용 루트여야 한다.
+ */
+export async function openFolderAtPath(root: string): Promise<void> {
   const previousRoot = useWorkspaceStore.getState().rootDir;
   // 감시를 먼저 세운다 — 읽기 스냅숏과 감시 확립 사이에 생긴 변경은 스냅숏에도
   // 이벤트에도 없어 영구 누락된다. 감시가 먼저면 스냅숏 이후는 전부 이벤트로 잡힌다.
