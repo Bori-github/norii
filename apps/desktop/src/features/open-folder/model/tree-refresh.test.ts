@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // (감시·코얼레싱·숨김 필터는 Rust 테스트가 검증 → testing.md#레이어별).
 const { readDir, watchTree } = vi.hoisted(() => ({
   readDir: vi.fn(),
-  watchTree: vi.fn(async () => {}),
+  watchTree: vi.fn(async (_root: unknown) => {}),
 }));
 
 vi.mock("@shared/ipc", () => {
@@ -145,5 +145,30 @@ describe("syncTreeWatch", () => {
     await syncTreeWatch("/vault");
     await syncTreeWatch("/vault");
     expect(watchTree).toHaveBeenCalledTimes(2);
+  });
+
+  // 왜: 감시 선언 IPC가 동시에 두 개 떠 있으면 Rust 쪽 처리 순서가 호출 순서와 다를 수
+  //     있다 — 낡은 선언(A)이 최신 선언(B)을 덮으면 프론트는 B를 감시 중이라 믿는 채
+  //     트리가 조용히 낡는다. syncWatchedPaths의 latest-wins와 같은 규칙.
+  // 보장: 선언은 한 번에 하나만 나가고(직렬), 대기 중 루트가 여러 번 바뀌면 마지막
+  //       루트만 전달된다(중간 지시는 건너뜀).
+  // 경계: Rust 쪽 실제 교체 동작은 tree_watch 테스트 소관.
+  it("선언은 직렬로 나가고, 대기 중 바뀐 루트는 마지막 것만 전달된다", async () => {
+    let resolveFirst!: () => void;
+    watchTree.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      }),
+    );
+
+    const first = syncTreeWatch("/vault-a"); // 첫 선언 — IPC 진행 중
+    const second = syncTreeWatch("/vault-b"); // 대기열에 등록
+    const third = syncTreeWatch("/vault-c"); // 대기 중 최신으로 교체 — b는 건너뛴다
+
+    expect(watchTree).toHaveBeenCalledTimes(1); // a가 끝나기 전에는 추가 발신 없음
+    resolveFirst();
+    await Promise.all([first, second, third]);
+
+    expect(watchTree.mock.calls.map(([root]) => root)).toEqual(["/vault-a", "/vault-c"]);
   });
 });

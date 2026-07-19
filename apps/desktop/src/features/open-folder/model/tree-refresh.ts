@@ -15,24 +15,46 @@ interface DirChangedPayload {
   dir: string;
 }
 
-/** 마지막으로 선언한 감시 루트 — 같은 루트의 재선언 IPC를 막는다. */
+/** 마지막으로 선언한 감시 루트 — 같은 루트의 재선언 IPC를 막는다. undefined = 미선언/실패. */
 let declaredRoot: string | null | undefined;
+/** 대기 중인 최신 선언(latest-wins) — 드레인이 소비할 때까지 덮어쓴다. */
+let pendingRoot: { root: string | null } | null = null;
+/** 진행 중인 선언 드레인 — 하나만 돌며 선언 IPC를 직렬화한다(syncWatchedPaths와 동일 패턴). */
+let watchDrain: Promise<void> | null = null;
 
 /** 디렉터리별 재읽기 세대 — 순서 역전된 낡은 readDir 응답을 반영 직전에 걸러낸다. */
 const refreshGeneration = new Map<string, number>();
 
 /**
  * 사이드바 루트의 폴더 감시를 재선언한다(→ rust-commands.md watch_tree — 선언적 교체).
- * 실패는 치명적이지 않다 — 트리가 낡을 뿐이고, 폴더 펼침이 최신을 읽는다.
- * 실패 시 캐시를 무효화해 다음 루트 변화에서 재시도한다.
+ * 선언 IPC는 한 번에 하나만 나간다 — 동시에 두 개가 떠 있으면 Rust 쪽 처리 순서가
+ * 호출 순서와 달라 낡은 선언이 최신을 덮을 수 있다. 대기 중 루트가 바뀌면 마지막
+ * 것만 전달한다(latest-wins). 실패는 치명적이지 않다 — 캐시를 무효화해 다음 루트
+ * 변화에서 재시도한다.
  */
-export async function syncTreeWatch(rootDir: string | null): Promise<void> {
-  if (rootDir === declaredRoot) {
+export function syncTreeWatch(rootDir: string | null): Promise<void> {
+  pendingRoot = { root: rootDir };
+  watchDrain ??= (async () => {
+    try {
+      while (pendingRoot !== null) {
+        const next = pendingRoot;
+        pendingRoot = null;
+        await declareTreeWatch(next.root);
+      }
+    } finally {
+      watchDrain = null;
+    }
+  })();
+  return watchDrain;
+}
+
+async function declareTreeWatch(root: string | null): Promise<void> {
+  if (root === declaredRoot) {
     return;
   }
-  declaredRoot = rootDir;
+  declaredRoot = root;
   try {
-    await ipc.watchTree(rootDir);
+    await ipc.watchTree(root);
   } catch (error) {
     declaredRoot = undefined;
     logger.warn(`폴더 감시 선언 실패: ${String(error)}`);
@@ -69,9 +91,11 @@ export async function handleDirChanged(payload: DirChangedPayload): Promise<void
   }
 }
 
-/** 테스트 전용 — 감시 선언 캐시·재읽기 세대를 초기화한다. */
+/** 테스트 전용 — 감시 선언 캐시·드레인·재읽기 세대를 초기화한다. */
 export function resetTreeWatchForTest(): void {
   declaredRoot = undefined;
+  pendingRoot = null;
+  watchDrain = null;
   refreshGeneration.clear();
 }
 
