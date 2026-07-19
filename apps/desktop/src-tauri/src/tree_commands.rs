@@ -44,12 +44,16 @@ pub fn read_dir_impl(scope: &FileScope, dir: &str) -> Result<Vec<TreeNode>, AppE
 
     let mut nodes = Vec::new();
     for entry in fs::read_dir(&canonical)? {
-        let entry = entry?;
+        // 항목 단위 부분 실패 허용(→ rust-commands.md). 나열 중 삭제 경합은 FS 폴트 주입
+        // 없이는 단위 테스트로 재현할 수 없어 자동 검증이 없다 — 계약 문구가 사양이다.
+        let Ok(entry) = entry else { continue };
         let name = entry.file_name().to_string_lossy().into_owned();
         if name.starts_with('.') {
             continue;
         }
-        let file_type = entry.file_type()?;
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
         let is_symlink = file_type.is_symlink();
         // 링크는 대상 기준으로 dir/file을 판정한다. 깨진 링크는 대상이 없으므로 파일로
         // 분류해 표시한다 — 열면 open_file의 NotFound가 안내한다(→ rust-commands.md).
