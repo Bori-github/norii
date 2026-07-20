@@ -35,8 +35,7 @@ export async function handleFileChanged(payload: FileChangedPayload): Promise<vo
     return; // 이미 닫힌 경로의 늦은 이벤트 — 무시.
   }
   const tabId = tab.id;
-  // 저장 중 이벤트 지연 — 같은 탭의 저장 큐에 넣어, 진행 중인 저장이 끝나 lastSavedHash가
-  // 갱신된 뒤에 판정한다. 이 지연이 없으면 자기 저장을 충돌로 오판한다(→ file-lifecycle.md).
+  // 저장 중 이벤트 지연 — 같은 탭의 저장 큐에 넣어 판정한다(→ file-lifecycle.md#외부-변경-처리).
   await saveQueue.enqueue(tabId, async () => {
     const current = findTab(tabId);
     if (!current || current.filePath !== payload.path) {
@@ -57,8 +56,7 @@ export async function handleFileChanged(payload: FileChangedPayload): Promise<vo
       // 조용히 리로드 — 편집 중이 아니므로 잃을 것이 없다.
       try {
         const file = await ipc.openFile(payload.path);
-        // 재읽기 왕복 중 타이핑이 시작됐을 수 있다 — 재확인 없이 본문을 교체하면
-        // 그 입력이 배너도 undo도 없이 사라진다. 편집이 생겼으면 충돌 분기로.
+        // 재읽기 왕복 중 편집이 생겼으면 본문을 교체하지 않고 충돌 분기로.
         const latest = findTab(tabId);
         if (!latest || latest.filePath !== payload.path) {
           return;
@@ -87,9 +85,8 @@ export function handleFileRemoved(payload: FileRemovedPayload): Promise<void> {
     return Promise.resolve();
   }
   const tabId = tab.id;
-  // 저장 큐로 지연하고, 처리 시점에 디스크를 재확인한다 — 유예(100ms)를 거친 삭제 신호가
-  // 재생성 저장 뒤에 도착하는 순서 역전에서, 멀쩡한 파일에 삭제 표시 + 자동 저장 정지가
-  // 남는 것을 막는다(→ file-lifecycle.md#외부-변경-처리 저장 중 이벤트 지연).
+  // 삭제 신호도 저장 큐로 지연하고, 처리 시점에 디스크를 재확인한다
+  // (→ file-lifecycle.md#외부-변경-처리 저장 중 이벤트 지연).
   return saveQueue.enqueue(tabId, async () => {
     const current = findTab(tabId);
     if (!current || current.filePath !== payload.path) {
@@ -107,8 +104,7 @@ export function handleFileRemoved(payload: FileRemovedPayload): Promise<void> {
       }
     }
     useMissingFileStore.getState().markMissing(tabId);
-    // 사용자가 밖에서 지운 파일을 자동 저장이 조용히 되살리지 않는다 — 재생성은
-    // 명시적 저장(Cmd+S·배너 버튼)과 닫기/종료 플러시(데이터 보존 우선)만 한다.
+    // 재생성은 명시적 저장·플러시만 한다(→ file-lifecycle.md#외부-변경-처리 file-removed).
     autosave.pause(tabId);
   });
 }
@@ -124,8 +120,7 @@ let drain: Promise<void> | null = null;
 /**
  * 열린 경로 전체를 감시 대상으로 재선언한다(→ rust-commands.md watch_paths — 선언적 교체).
  * 스토어의 모든 변화(키 입력마다의 dirty 등)에서 불리므로 경로 집합이 실제로 바뀔 때만
- * IPC를 보내고, 동시 제출은 최신본만 전송한다(latest-wins) — 순서가 뒤집히면 옛 목록이
- * 최종본이 되고, FIFO 체인은 IPC 정체 시 대기 클로저가 무한히 쌓인다.
+ * IPC를 보내고, 동시 제출은 최신본만 전송한다(latest-wins).
  */
 export function syncWatchedPaths(tabs: Tab[]): Promise<void> {
   pendingTabs = tabs;
@@ -156,13 +151,12 @@ async function declareWatchedPaths(tabs: Tab[]): Promise<void> {
   try {
     const skipped = await ipc.watchPaths(paths);
     if (skipped > 0) {
-      // 일부가 감시되지 않았다 — 서명을 캐시하면 일시적 사유의 건너뜀이 영구 미감시로
-      // 고착된다. 무효화해 다음 탭 변화에서 재선언한다(→ rust-commands.md watch_paths).
+      // 일부가 감시되지 않았다 — 서명을 무효화해 다음 탭 변화에서 재선언한다
+      // (→ rust-commands.md watch_paths).
       watchedSignature = null;
       logger.warn(`파일 감시 부분 성립: ${skipped}개 경로 건너뜀 — 다음 변화에서 재시도`);
     }
   } catch (error) {
-    // 감시 실패는 치명적이지 않다 — 저장 직전 해시 검사가 마지막 방어선이다.
     // 서명을 되돌려 다음 탭 변화에서 재시도한다.
     watchedSignature = null;
     logger.warn(`파일 감시 선언 실패: ${String(error)}`);

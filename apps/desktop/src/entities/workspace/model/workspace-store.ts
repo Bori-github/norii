@@ -2,9 +2,8 @@ import { create } from "zustand";
 
 import type { TreeNode } from "@shared/ipc";
 
-// 파일 트리 상태 — 구조의 단일 출처: .claude/docs/document-model.md#파일-트리-사이드바.
-// read_dir는 한 단계 목록만 반환하므로(→ rust-commands.md) 트리 조립은 여기(프론트)가
-// 담당한다. children 부재 = 아직 안 읽음, [] = 빈 폴더 — 이 구분이 lazy 로딩의 기준이다.
+// 파일 트리 상태 — 구조: .claude/docs/document-model.md#파일-트리-사이드바,
+// read_dir 계약: rust-commands.md.
 
 /** 프론트 트리 노드 — IPC TreeNode(한 단계 항목)에 조립된 children이 얹힌다. */
 export interface FileTreeNode extends TreeNode {
@@ -26,18 +25,15 @@ interface WorkspaceActions {
   setChildren(dirPath: string, entries: TreeNode[]): void;
   setExpanded(dirPath: string, expanded: boolean): void;
   /**
-   * 외부 변경 반영 — 한 단계를 다시 읽은 결과로 그 목록을 교체하되, 살아남은 항목의
-   * 기존 children(하위 트리)은 경로 기준으로 보존한다(재읽기가 하위를 접지 않게 —
-   * → document-model.md#파일-트리-사이드바). dirPath가 rootDir이면 루트 레벨을 갱신한다.
+   * 외부 변경 반영 — 한 단계 재읽기 결과로 그 목록을 병합한다
+   * (→ document-model.md#파일-트리-사이드바). dirPath가 rootDir이면 루트 레벨을 갱신한다.
    */
   refreshLevel(dirPath: string, entries: TreeNode[]): void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
 
-// 병합·조립은 참조를 보존한다 — 자기 저장의 rename도 dir-changed를 만들어 자동 저장마다
-// 병합이 도는데, 구성이 그대로인데 새 객체를 만들면 사이드바 전체가 리렌더된다.
-// "안 바뀐 것은 같은 참조"가 TreeItem memo의 전제다.
+// 병합·조립은 참조를 보존한다 — "안 바뀐 것은 같은 참조"가 TreeItem memo의 전제다.
 
 /**
  * 재읽기 병합 — 새 목록을 채택하되, 경로·종류가 같은 기존 항목은 노드 참조를 재사용하고
@@ -138,8 +134,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
       if (fileTree === state.fileTree) {
         return state; // 구성 무변경 — 상태를 만들지 않아 구독자 리렌더가 없다.
       }
-      // 사라진 폴더의 펼침 상태는 함께 정리한다 — 같은 이름으로 재생성되면 접힌 채
-      // 시작한다(이름표만 남으면 "펼쳐졌는데 빈" 상태가 된다).
+      // 사라진 폴더의 펼침 상태는 함께 정리한다.
       const expandedDirs = state.expandedDirs.filter(
         (path) => findTreeNode(fileTree, path)?.kind === "dir",
       );

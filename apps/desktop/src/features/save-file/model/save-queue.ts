@@ -1,5 +1,4 @@
-// 키(탭)별 저장 직렬화 큐 — 같은 탭의 저장이 겹치지 않게 한다.
-// 뒤 저장이 앞 저장의 결과(lastSavedHash)를 본 뒤에 나가야 가짜 충돌이 없다
+// 키(탭)별 저장 직렬화 큐 — 같은 탭의 저장이 겹치지 않게 한다
 // (VS Code saveSequentializer와 같은 전략, → file-lifecycle.md#외부-변경-처리).
 
 export interface SaveQueue {
