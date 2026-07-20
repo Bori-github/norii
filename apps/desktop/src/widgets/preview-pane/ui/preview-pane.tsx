@@ -13,7 +13,7 @@ import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
 import { CopyCodeButton } from "./copy-code-button";
 
-// 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/0001).
+// 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/surface).
 // 유리(투명 창)가 켜져 있으므로 bg.canvas를 쓰면 본문 뒤로 바탕화면이 비친다.
 const paneClass = css({
   flex: 1,
@@ -31,7 +31,7 @@ const paneClass = css({
   // 차단한다(→ preview-strategy.md의 DOMPurify 정책).
   contain: "paint",
   // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
-  // → design/decisions/0005).
+  // → design/decisions/color-palette).
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
   // 프리뷰 타이포그래피 — 마크다운 블록의 최소 가독 스타일(시맨틱 토큰만 참조).
   // 헤딩은 6단계가 서로 구별돼야 한다 — h4~h6이 본문과 같으면 위계가 무너진다.
@@ -83,7 +83,7 @@ const paneClass = css({
     maxWidth: "100%",
   },
   "& th, & td": { borderWidth: "1px", borderColor: "border", paddingX: "3", paddingY: "1" },
-  // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/0005).
+  // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/color-palette).
   // 프리뷰의 유일한 상호작용 요소이므로 가리킴·포커스에 반응한다.
   "& a": {
     color: "text.mark",
@@ -139,7 +139,7 @@ const paneClass = css({
   // 긴 블록 수식은 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일한 처리).
   "& .katex-display": { overflowX: "auto", overflowY: "hidden", paddingY: "1" },
   // 조판 실패는 그 수식 자리에서만 드러난다 — 붉은 경고색 대신 흐린 글자로 조용히 알린다
-  // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/0005).
+  // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/color-palette).
   "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "sm" },
   // 다이어그램 — 넓은 그래프는 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일).
   // 렌더 전에는 빈 div라 자리를 차지하지 않는다 — 원문이 잠깐 비쳤다 사라지는 깜빡임이 없다.

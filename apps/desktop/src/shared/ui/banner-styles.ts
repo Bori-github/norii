@@ -19,7 +19,7 @@ export const bannerClass = css({
 });
 
 // 액센트는 글자로 쓰지 않는다 — 테마 공통 단일 값이라 어느 한 테마에서 AA를 통과하지 못한다
-// (→ decisions/0005). 강조는 테두리와 굵기로 낸다.
+// (→ decisions/color-palette). 강조는 테두리와 굵기로 낸다.
 export const bannerActionClass = css({
   flexShrink: 0,
   paddingX: "2",

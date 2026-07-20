@@ -49,7 +49,7 @@ function lookup(tree: TokenTree, path: readonly string[]): TokenLeaf {
 
 /**
  * `var(--이름, 기본값)`을 기본값으로 접는다 — 게이트가 검사하는 것은 **기본값뿐**이고,
- * 설정이 런타임에 덮어쓴 값은 검사 범위 밖이다. 그래도 되는 이유는 decisions/0007이 소유한다.
+ * 설정이 런타임에 덮어쓴 값은 검사 범위 밖이다. 그래도 되는 이유는 decisions/glass가 소유한다.
  */
 function foldCssVar(value: string): string {
   return value.replaceAll(/var\(--[\w-]+,\s*([^()]+)\)/g, "$1");

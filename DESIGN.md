@@ -21,7 +21,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ## 표면 표
 
-역할(무엇을 하는 면인가)과 재질(어떻게 보이는가)은 다른 축이다(→ [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)).
+역할(무엇을 하는 면인가)과 재질(어떻게 보이는가)은 다른 축이다(→ [표면](.claude/docs/design/decisions/surface.md)).
 
 | 표면                              | 역할    | 재질                                                 |
 | --------------------------------- | ------- | ---------------------------------------------------- |
@@ -39,9 +39,9 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 **앱 UI의 액센트는 세이지 하나**이고, **테마에 따라 갈리지 않는다** — 브랜드 색이 테마마다 달라 보이지 않게 하려는 결정이다.
 
-**액센트는 글자로 쓰지 않는다.** 하나의 색이 흰 종이와 어두운 종이 양쪽에서 글자 기준(4.5:1)을 넘는 것은 **수학적으로 불가능하다**(→ [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)). 그래서 액센트는 **살아 있는 것의 표시**에만 쓴다 — 커서 · 활성 탭의 dirty ● · 포커스 링 · 강조 테두리. 강조 버튼은 글자색이 아니라 테두리와 굵기로 강조한다.
+**액센트는 글자로 쓰지 않는다.** 하나의 색이 흰 종이와 어두운 종이 양쪽에서 글자 기준(4.5:1)을 넘는 것은 **수학적으로 불가능하다**(→ [컬러 팔레트](.claude/docs/design/decisions/color-palette.md)). 그래서 액센트는 **살아 있는 것의 표시**에만 쓴다 — 커서 · 활성 탭의 dirty ● · 포커스 링 · 강조 테두리. 강조 버튼은 글자색이 아니라 테두리와 굵기로 강조한다.
 
-**팔레트는 세이지 계열이다.** 다만 **종이는 물들이지 않는다** — 글이 놓이는 면은 육안으로 흰색·검정이되 세이지와 같은 색상각을 갖는 **편향 무채색**이다. 문서에 붙는 이미지(대개 흰 배경)와 부딪히지 않게 하려는 결정이다. 세이지는 **액센트·크롬·캔버스**에서 드러난다(→ [0006](.claude/docs/design/decisions/0006-sage-palette.md)).
+**팔레트는 세이지 계열이다.** 다만 **종이는 물들이지 않는다** — 글이 놓이는 면은 육안으로 흰색·검정이되 세이지와 같은 색상각을 갖는 **편향 무채색**이다. 문서에 붙는 이미지(대개 흰 배경)와 부딪히지 않게 하려는 결정이다. 세이지는 **액센트·크롬·캔버스**에서 드러난다(→ [컬러 팔레트](.claude/docs/design/decisions/color-palette.md)).
 
 상태색(성공·경고·위험)은 액센트와 별개이며 액센트를 대신하지 않는다. 실제 값은 `apps/desktop/panda.config.ts`가 소유한다 — 문서에 복제하지 않는다.
 
@@ -73,15 +73,13 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ## 결정 기록
 
-| #                                                                           | 결정                                                              |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [0001](.claude/docs/design/decisions/0001-surface-role-and-material.md)     | 표면은 역할과 재질, 두 축으로 정한다                              |
-| [0002](.claude/docs/design/decisions/0002-glass-is-made-by-os.md)           | 유리는 OS가 만든다 (App Store 포기)                               |
-| [0003](.claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md) | macOS 밖에서는 불투명으로 물러선다                                |
-| [0004](.claude/docs/design/decisions/0004-lime-is-the-only-accent.md)       | ~~액센트는 라임 하나, 보라는 브랜드 전용~~ (대체됨 → 0005 · 0006) |
-| [0005](.claude/docs/design/decisions/0005-accent-is-never-text.md)          | 액센트는 테마 공통 단일 값이고, 글자로 쓰지 않는다                |
-| [0006](.claude/docs/design/decisions/0006-sage-palette.md)                  | 팔레트를 세이지로 바꾸고, 무채색을 세이지 쪽으로 편향시킨다       |
-| [0007](.claude/docs/design/decisions/0007-glass-is-opacity-not-color.md)    | 유리는 색이 아니라 불투명도다                                     |
+주제 하나에 파일 하나다. 같은 주제가 다시 결정되면 그 파일이 고쳐 쓰이고, 무엇이 왜 바뀌었는지는 각 파일의 "바뀐 것"이 갖는다.
+
+| 주제                                                          | 지금의 결정                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [표면](.claude/docs/design/decisions/surface.md)              | 표면은 역할과 재질, 두 축으로 정한다                               |
+| [유리](.claude/docs/design/decisions/glass.md)                | 유리는 OS가 만들고, 틴트는 색이 아니라 불투명도다 (App Store 포기) |
+| [컬러 팔레트](.claude/docs/design/decisions/color-palette.md) | 팔레트는 세이지, 액센트는 테마 공통 한 색이고 글자로 쓰지 않는다   |
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.
 
@@ -89,7 +87,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 
 ```text
 /DESIGN.md                           지금의 규칙 (이 문서)
-.claude/docs/design/decisions/       왜 그렇게 정했는가 — 결정 1건 = 파일 1개
+.claude/docs/design/decisions/       왜 그렇게 정했는가 — 주제 1개 = 파일 1개
 .claude/docs/design/design-system.md Panda로 어떻게 구현하는가 (계약)
 .claude/docs/design/window-chrome.md 창 설정의 실제 값 (계약)
 apps/desktop/panda.config.ts         값 — 팔레트·스케일의 실제 숫자

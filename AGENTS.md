@@ -22,7 +22,7 @@ norii는 가볍고 빠른 로컬 우선(local-first) 마크다운 **소스 뷰**
 - [초기 아키텍처](.claude/docs/architecture.md)
 - [프론트엔드 아키텍처(FSD)](.claude/docs/frontend-architecture.md)
 - [디자인 규칙(불변식 · 표면 표 · 접근성)](DESIGN.md)
-- [디자인 결정 기록(ADR)](.claude/docs/design/decisions/README.md)
+- [디자인 결정 기록(주제별)](.claude/docs/design/decisions/README.md)
 - [디자인 시스템(Panda CSS)](.claude/docs/design/design-system.md)
 - [창 표면 계약(투명 창 · 창 뒤 흐림 · 폴백)](.claude/docs/design/window-chrome.md)
 - [문서 모델(다중 탭 + 파일 트리)](.claude/docs/document-model.md)

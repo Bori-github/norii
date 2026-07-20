@@ -10,7 +10,7 @@ import { STRINGS } from "@shared/config";
 import { createEditorController, type EditorController } from "../model/editor-controller";
 
 // 편집면은 종이다 — 불투명 배경을 **명시적으로** 칠한다. 유리가 켜져 있으므로(창이 투명하다)
-// 캔버스를 비쳐 쓰면 본문 뒤로 바탕화면이 그대로 지나간다(→ decisions/0001 · window-chrome.md).
+// 캔버스를 비쳐 쓰면 본문 뒤로 바탕화면이 그대로 지나간다(→ decisions/surface · window-chrome.md).
 // "편집면"은 CM6가 글자를 그린 픽셀이 아니라 이 패널이 차지하는 사각형 전체다.
 const hostClass = css({
   flex: 1,

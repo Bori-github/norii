@@ -17,7 +17,7 @@ export interface EditorColors {
   muted: string;
   /** 마크다운 구문 마크(#, -, **, 링크). 글자이므로 AA를 만족하는 색이어야 한다. */
   mark: string;
-  /** 액센트 — 커서에만 쓴다. 글자에는 쓰지 않는다(→ decisions/0005). */
+  /** 액센트 — 커서에만 쓴다. 글자에는 쓰지 않는다(→ decisions/color-palette). */
   accent: string;
   /** 상태 배경 — 활성 줄·호버. **선택에는 쓰지 않는다**(같은 색이면 겹칠 때 선택이 사라진다). */
   hover: string;
@@ -58,7 +58,7 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
       backgroundColor: colors.paper,
       color: colors.text,
     },
-    // 편집면은 종이다 — 배경을 명시적으로 칠한다(→ decisions/0001).
+    // 편집면은 종이다 — 배경을 명시적으로 칠한다(→ decisions/surface).
     ".cm-content": {
       caretColor: colors.accent,
     },
@@ -88,7 +88,7 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
       outline: `2px solid ${colors.accent}`,
     },
     // 검색 패널은 content 위에 놓인 크롬이다 — 뒤에 있는 것이 바탕화면이 아니라 글이므로
-    // **불투명**해야 한다(→ decisions/0001). CM6 기본값은 #f5f5f5 하드코딩이다.
+    // **불투명**해야 한다(→ decisions/surface). CM6 기본값은 #f5f5f5 하드코딩이다.
     ".cm-panels": {
       backgroundColor: colors.paper,
       color: colors.text,

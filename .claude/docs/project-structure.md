@@ -39,7 +39,7 @@ norii/
     upload-attachment.sh     영상·이미지를 GitHub CDN에 업로드, 커밋 없이 (→ development-commands.md)
   .claude/
     docs/                    설계 문서 (아키텍처·스택·전략 등, 이 폴더)
-      design/                디자인 상세 (결정 기록 ADR · Panda 토큰 · 창 표면 계약)
+      design/                디자인 상세 (주제별 결정 기록 · Panda 토큰 · 창 표면 계약)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
     commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
 

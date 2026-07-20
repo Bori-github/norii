@@ -33,7 +33,7 @@ export default defineConfig({
         colors: {
           // 세이지 — 브랜드이자 액센트의 색 계열. oklch(L C 134)로 생성해 명도 계단이 고르다.
           // 액센트로 쓸 수 있는 단계는 600 하나뿐이다 — 그보다 밝으면 라이트 종이에서 안 보이고,
-          // 어두우면 다크 종이에서 안 보인다(→ decisions/0006).
+          // 어두우면 다크 종이에서 안 보인다(→ decisions/color-palette).
           sage: {
             50: { value: "#f2fbed" },
             100: { value: "#e4f7d9" },
@@ -101,7 +101,7 @@ export default defineConfig({
             // 그 위에 순백/순흑을 얼마나 덮느냐뿐이다. 색을 섞으면 바탕화면이 물든다.
             //
             // 알파는 대비 게이트가 정한 하한이고, 설정 화면이 --norii-glass-opacity로 덮어쓴다
-            // (→ decisions/0007).
+            // (→ decisions/glass).
             chrome: {
               value: {
                 base: "rgba(255, 255, 255, var(--norii-glass-opacity, 0.55))",
@@ -111,7 +111,7 @@ export default defineConfig({
 
             // 글이 놓이는 면. 항상 불투명 — 편집면·프리뷰면·활성 탭이 공유한다.
             // 종이는 **세이지로 물들이지 않는다** — 육안으로는 흰색/검정이되 세이지와 같은 색상각을 갖는
-            // 편향 무채색이다. 문서에 붙는 이미지(대개 흰 배경)와 부딪히지 않게 하려는 결정이다(→ decisions/0006).
+            // 편향 무채색이다. 문서에 붙는 이미지(대개 흰 배경)와 부딪히지 않게 하려는 결정이다(→ decisions/color-palette).
             paper: { value: { base: "{colors.gray.50}", _dark: "{colors.gray.950}" } },
 
             // 상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 피드백이 사라진다.
@@ -123,7 +123,7 @@ export default defineConfig({
             // 사용자가 **고른** 것 — 텍스트 선택, 그리고 검색 결과 중 지금 보고 있는 하나.
             // 활성 줄(hover) 위에 겹쳐도 보여야 하므로 알파가 그보다 훨씬 높고, 세이지로 물들여
             // 무채색 상태 배경들과 성격이 갈린다. 액센트를 배경으로 쓰는 것은 허용된다 — 금지된 것은
-            // 액센트를 **글자**로 쓰는 것이다(→ decisions/0005).
+            // 액센트를 **글자**로 쓰는 것이다(→ decisions/color-palette).
             selection: {
               value: { base: "rgba(86, 131, 53, 0.28)", _dark: "rgba(174, 227, 141, 0.30)" },
             },
@@ -140,16 +140,17 @@ export default defineConfig({
           text: {
             // 종이 위에서도 유리 위에서도 이 색을 쓴다. 무채색이되 세이지 쪽으로 미세 편향돼 있다.
             DEFAULT: { value: { base: "{colors.gray.950}", _dark: "{colors.gray.100}" } },
-            // 흐린 글자 — 종이 위에서만. 크롬에 쓰면 유리 알파가 치솟는다(→ decisions/0004).
+            // 흐린 글자 — 종이 위에서만. 크롬에 쓰면 유리 알파가 치솟는다(→ decisions/color-palette).
             // 라이트는 700이 하한이다(600은 4.40:1로 AA 미달).
             muted: { value: { base: "{colors.gray.700}", _dark: "{colors.gray.300}" } },
             // 마크다운 구문 마크(#, -, **, 링크 등)의 색. 글자이므로 AA(4.5:1)를 만족해야 하고,
             // 액센트(sage-600)는 다크 종이에서 3.87:1이라 쓸 수 없다 — 그래서 테마별로 단계를 가른다.
-            // 액센트와 달리 **글자색 토큰은 갈라도 된다**(→ decisions/0005는 액센트에만 적용).
+            // 액센트와 달리 **글자색 토큰은 갈라도 된다** — 글자 금지는 액센트에만 적용된다
+            // (→ decisions/color-palette).
             mark: { value: { base: "{colors.sage.700}", _dark: "{colors.sage.300}" } },
           },
 
-          // 액센트 — 테마와 무관하게 한 색이고, 글자에는 쓰지 않는다(→ decisions/0005).
+          // 액센트 — 테마와 무관하게 한 색이고, 글자에는 쓰지 않는다(→ decisions/color-palette).
           // 세이지 스케일에서 두 종이를 모두 통과하는 단계는 600 하나뿐이다
           // (라이트 종이 4.22:1 · 다크 종이 3.85:1 — 비텍스트 3:1 기준).
           accent: { value: "{colors.sage.600}" },

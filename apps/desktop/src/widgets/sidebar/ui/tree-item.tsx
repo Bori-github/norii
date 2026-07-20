@@ -29,7 +29,7 @@ const rowClass = css({
   textAlign: "left",
   _hover: { background: "bg.hover" },
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
-  // 활성 탭의 파일 — 탭바의 활성 탭과 같은 규칙: 배경(종이)으로 가른다(→ decisions/0004).
+  // 활성 탭의 파일 — 탭바의 활성 탭과 같은 규칙: 배경(종이)으로 가른다(→ decisions/color-palette).
   '&[aria-current="true"]': { background: "bg.paper" },
 });
 
