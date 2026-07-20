@@ -2,7 +2,7 @@
 //!
 //! 판정 규칙: LF/CRLF 다수결(동률 LF), CR 단독은 집계에서 제외(CR-only 파일은 LF 판정).
 //! 원본 개행이 판정 결과와 완전히 일치하지 않으면 mixed — 저장이 재작성하게 되므로
-//! M1은 열기를 거부하고, M2부터 정규화 승인 대상이 된다.
+//! 정규화 승인 대상이 된다.
 
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,7 @@ pub fn apply_eol(text_lf: &str, eol: Eol) -> String {
 mod tests {
     use super::*;
 
-    // 집행: file-lifecycle.md#eol-정책 — 단일 EOL 파일의 판정과 유지(M1 범위).
+    // 집행: file-lifecycle.md#eol-정책 — 단일 EOL 파일의 판정과 유지.
     // 왜: EOL이 오판되면 저장이 사용자가 입력하지 않은 바이트 재작성을 일으킨다.
     // 보장: 순수 LF → lf, 순수 CRLF → crlf, 둘 다 mixed=false. 개행 없는 파일은 lf.
     // 경계: 혼합 파일의 다수결 세부는 아래 테스트가 다룬다.
@@ -100,8 +100,8 @@ mod tests {
     }
 
     // 집행: file-lifecycle.md#eol-정책 — 다수결(동률 LF)·CR 단독 제외·mixed 판정.
-    // 왜: M1은 mixed 파일을 거부하고 M2는 승인 후 이 판정 EOL로 통일한다 —
-    //     판정이 흔들리면 두 마일스톤의 동작이 모두 흔들린다.
+    // 왜: mixed 파일은 정규화 승인 후 이 판정 EOL로 통일된다 —
+    //     판정이 흔들리면 통일 결과도 흔들린다.
     // 보장: CRLF 다수면 crlf, 동률이면 lf. 혼합·CR-only는 mixed=true, CR-only는 lf 판정.
     // 경계: 거부/승인 흐름 자체는 open_file·프론트 테스트가 다룬다.
     #[test]
@@ -122,7 +122,7 @@ mod tests {
     // 집행: file-lifecycle.md#eol-정책 — "CM6 내부 문서는 LF로 정규화하고, 저장 시 탭의 eol로 되돌린다".
     // 왜: 정규화·복원이 정확히 역연산이 아니면 편집하지 않은 문서의 저장이 바이트를 바꾼다.
     // 보장: CRLF 문서의 LF 정규화 → crlf 재적용이 원본과 동일하다(무손실 왕복).
-    // 경계: mixed 문서의 왕복은 M1에서 열리지 않으므로 다루지 않는다(M2 정규화 승인).
+    // 경계: mixed 문서는 승인 후 판정 EOL로 통일되므로(원본 왕복이 아님) 여기서 다루지 않는다.
     #[test]
     fn lf_정규화와_eol_재적용은_무손실_왕복이다() {
         let original = "# 제목\r\n\r\n본문\r\n";

@@ -21,8 +21,7 @@ function tab(overrides: Partial<Tab>): Tab {
 }
 
 // 집행: file-lifecycle.md#종료-방어 — 플러시 후에도 dirty가 남으면(저장 중 추가 편집)
-//       종료하지 않는다. "saved" 반환값만 믿고 destroy하면 그 편집이 조용히 유실된다
-//       (적대적 리뷰 P1이 찾은 유실 창).
+//       종료하지 않는다. "saved" 반환값만 믿고 destroy하면 그 편집이 조용히 유실된다.
 // 왜: 종료는 마지막 관문이라 여기서 새는 편집은 복구 수단이 없다.
 // 보장: 재확인 루프의 4가지 결말 — 전부 저장되면 close, 실패·Untitled·상한 초과는 confirm.
 // 경계: 실제 창 파괴·확인 모달 표시는 use-close-guard·수동 검증 소관.

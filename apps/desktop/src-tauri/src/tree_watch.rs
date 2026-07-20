@@ -1,7 +1,5 @@
-//! 트리(폴더) 외부 변경 감시(watch_tree) — 계약의 단일 출처: .claude/docs/rust-commands.md.
-//! 프론트의 반영 정책(읽어 둔 폴더만 재읽기·병합)은 document-model.md#파일-트리-사이드바가
-//! 단일 출처다. 열린 파일의 감시(watch.rs)와 별개 감시다 — 저쪽은 파일 내용, 여기는
-//! 디렉터리 "목록 구성"의 변화만 다룬다.
+//! 트리(폴더) 외부 변경 감시(watch_tree) — 계약: .claude/docs/rust-commands.md,
+//! 프론트 반영 정책: document-model.md#파일-트리-사이드바. 파일 내용 감시는 watch.rs.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -17,9 +15,8 @@ use tauri::{AppHandle, Emitter, State};
 use crate::error::AppError;
 use crate::scope::FileScope;
 
-/// 코얼레싱 창 — 같은 디렉터리의 연속 이벤트를 이 시간 동안 하나로 합친다
-/// (→ rust-commands.md watch_tree). 알림당 프론트가 read_dir 재읽기를 하므로,
-/// git checkout류 대량 변경이 재읽기를 증폭시키지 않게 파일 감시(50ms)보다 넓게 잡는다.
+/// 코얼레싱 창(→ rust-commands.md watch_tree) — 알림당 재읽기 비용이 커서
+/// 파일 감시의 창(50ms)보다 넓게 잡는다.
 const COALESCE_WINDOW: Duration = Duration::from_millis(200);
 
 /// 디렉터리별 알림 예약 게이트 — 이미 예약된 디렉터리의 추가 이벤트를 합친다.
@@ -93,13 +90,10 @@ impl TreeWatcher {
         let error_events = Arc::clone(&on_event);
         let mut watcher =
             notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
-                // 낡은 세대(교체 전 구독)의 늦은 이벤트는 버린다.
                 if generation.load(Ordering::SeqCst) != token {
                     return;
                 }
-                // 백엔드 오류는 어떤 변경을 놓쳤는지 알 수 없다 — 읽어 둔 폴더의 펼침은
-                // 캐시를 쓰므로 보정 경로가 따로 없어, 전체 재동기화 신호를 올린다
-                // (→ rust-commands.md tree-desynced).
+                // 백엔드 오류 → 전체 재동기화 신호(→ rust-commands.md tree-desynced).
                 let Ok(event) = result else {
                     error_events(TreeEvent::Desynced);
                     return;
@@ -118,7 +112,6 @@ impl TreeWatcher {
                     if !parent.starts_with(&callback_root) {
                         continue;
                     }
-                    // 코얼레싱 — 알림이 이미 예약된 디렉터리의 연속 이벤트는 합친다.
                     if !gate.try_schedule(parent) {
                         continue;
                     }
@@ -135,7 +128,6 @@ impl TreeWatcher {
             .watch(&root, RecursiveMode::Recursive)
             .map_err(watch_error)?;
 
-        // 커밋 — 새 감시가 준비된 뒤에만 세대를 올리고 이전 감시를 교체한다.
         self.generation.store(token, Ordering::SeqCst);
         self.inner = Some(watcher);
         Ok(())
@@ -178,8 +170,7 @@ fn watch_error(err: notify::Error) -> AppError {
     AppError::Io(format!("폴더 감시를 시작할 수 없습니다: {err}"))
 }
 
-/// 목록 구성이 바뀔 수 있는 사건만 남긴다 — 파일 내용 수정·접근은 목록과 무관하다
-/// (→ rust-commands.md watch_tree). 분류 불명(Any/Other)은 보수적으로 알린다.
+/// 목록 구성이 바뀔 수 있는 사건만 남긴다(→ rust-commands.md watch_tree).
 fn changes_listing(kind: &EventKind) -> bool {
     match kind {
         EventKind::Create(_) | EventKind::Remove(_) => true,

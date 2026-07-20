@@ -19,10 +19,8 @@ use crate::error::AppError;
 use crate::scope::FileScope;
 use crate::text_encoding::{decode_document, UTF8_BOM};
 
-/// 저장 직렬화 잠금 — 충돌 검사(해시)와 교체(rename) 사이에 다른 저장이 끼어들면 둘 다
-/// 검사를 통과해 낡은 내용이 이길 수 있다. 단독 사용자 앱에서 저장은 ms 단위라 전역
-/// 직렬화로 충분하다. 외부 프로세스와의 경쟁은 이 잠금 밖의 잔여 위험으로, 저장 직전
-/// 해시 검사가 그 창을 최소화한다(→ file-lifecycle.md#저장-원자성과-충돌-검사).
+/// 저장 직렬화 잠금(→ file-lifecycle.md#저장-원자성과-충돌-검사) — 단독 사용자 앱에서
+/// 저장은 ms 단위라 전역 직렬화로 충분하다.
 static SAVE_LOCK: Mutex<()> = Mutex::new(());
 
 /// open_file 반환값(→ rust-commands.md). text는 CM6용으로 LF 정규화되어 있고,
@@ -90,8 +88,6 @@ pub fn open_file_impl(
     let bytes = fs::read(&canonical)?;
     let hash = content_hash(&bytes);
     let decoded = decode_document(&bytes, encoding_override)?;
-    // 혼합·CR-only는 eol_mixed=true로 열린다 — 저장의 개행 통일 재작성은 프론트의
-    // 정규화 승인을 거친다(→ file-lifecycle.md#eol-정책).
     let eol_info = detect_eol(&decoded.text);
 
     let mtime = mtime_millis(&fs::metadata(&canonical)?);
@@ -117,14 +113,10 @@ pub fn save_file_impl(
 ) -> Result<SaveResult, AppError> {
     let _save_guard = SAVE_LOCK.lock().expect("SAVE_LOCK은 포이즌되지 않는다");
 
-    // canonicalize로 심볼릭 링크의 "실제 대상"을 찾는다 — 링크를 일반 파일로 교체하지 않기
-    // 위해서다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일은 부모를 canonicalize한다.
     let target = resolve_save_target(Path::new(path))?;
     scope.ensure_allowed(&target)?;
 
-    // 읽기 전용 거부(M2 확정) — rename은 디렉터리 권한만 검사해 파일 잠금을 우회하므로
-    // 명시적으로 검사한다. 사용자가 잠근 파일을 자동 저장이 조용히 고치지 않게 하는
-    // 규칙이다(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일(메타 없음)은 통과.
+    // 읽기 전용 거부(→ file-lifecycle.md#저장-원자성과-충돌-검사). 새 파일(메타 없음)은 통과.
     if let Ok(metadata) = fs::metadata(&target) {
         if metadata.permissions().readonly() {
             return Err(AppError::Permission(
@@ -133,8 +125,7 @@ pub fn save_file_impl(
         }
     }
 
-    // 충돌 검사 — 디스크 내용 해시가 탭이 마지막으로 알던 값과 다르면 쓰지 않는다.
-    // 새 파일·강제 덮어쓰기는 expected_hash=None으로 검사를 건너뛴다(→ rust-commands.md).
+    // 충돌 검사(→ rust-commands.md save_file).
     if let Some(expected) = expected_hash {
         let disk_bytes = fs::read(&target).map_err(|err| match err.kind() {
             std::io::ErrorKind::NotFound => AppError::Conflict(
@@ -149,9 +140,8 @@ pub fn save_file_impl(
         }
     }
 
-    // 항상 UTF-8로 쓰고, BOM은 원본에 있던 그대로 유지한다(→ file-lifecycle.md#인코딩-정책).
-    // 입력은 LF 정규화 계약(CM6)을 따르지만 여기서 한 번 더 정규화한다 — 디스크에 닿기 전
-    // 마지막 관문이라, 상류 버그가 깨진 개행(\r\r\n)으로 굳는 것을 막는다(→ eol-정책).
+    // 항상 UTF-8로 쓰고 BOM은 원본대로 유지하며, 개행은 디스크에 닿기 전 마지막 관문인
+    // 여기서 한 번 더 정규화한다(→ file-lifecycle.md#인코딩-정책·#eol-정책).
     let body = apply_eol(&normalize_to_lf(text), eol);
     let mut bytes = Vec::with_capacity(body.len() + UTF8_BOM.len());
     if has_bom {
@@ -180,8 +170,7 @@ pub(crate) fn resolve_save_target(path: &Path) -> Result<PathBuf, AppError> {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
         Err(err) => return Err(err.into()),
     }
-    // 경로 자체가 남아 있는(깨진) 심볼릭 링크면 거부한다 — 새 파일로 취급해 그 자리에
-    // rename하면 링크가 일반 파일로 교체된다. 깨진 링크 열기(NotFound)와 대칭인 동작이다.
+    // 경로 자체가 남아 있는(깨진) 심볼릭 링크면 거부한다 — 깨진 링크 열기(NotFound)와 대칭.
     if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
         return Err(AppError::NotFound(
             "심볼릭 링크의 대상이 없습니다 — 링크를 일반 파일로 교체하지 않습니다".into(),
@@ -196,8 +185,7 @@ pub(crate) fn resolve_save_target(path: &Path) -> Result<PathBuf, AppError> {
     Ok(fs::canonicalize(parent)?.join(name))
 }
 
-/// 원자적 쓰기 — 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename으로 교체한다.
-/// 저장 중 크래시가 나도 디스크에는 온전한 옛 파일 아니면 온전한 새 파일만 남는다
+/// 원자적 쓰기 — 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename으로 교체한다
 /// (→ file-lifecycle.md#저장-원자성과-충돌-검사).
 fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     let dir = target
@@ -210,8 +198,7 @@ fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     if let Ok(metadata) = fs::metadata(target) {
         fs::set_permissions(temp.path(), metadata.permissions())?;
     } else {
-        // 새 파일 — tempfile 기본값(0600)은 임시 파일용 보안 기본값이라, 그대로 남기면
-        // 다른 도구·계정이 문서를 읽지 못한다. 일반 문서 관례(0644)로 맞춘다.
+        // 새 파일 — tempfile 기본값(0600) 대신 일반 문서 관례(0644)로 맞춘다.
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -282,7 +269,7 @@ mod tests {
     //     바이트 재작성이 일어난다(git diff 오염·정규화 승인 우회).
     // 보장: CRLF 파일은 LF로 정규화되어 열리고(eol="crlf"), 편집 없이 저장하면
     //       디스크 바이트가 원본과 동일하다(무손실 왕복).
-    // 경계: 혼합 EOL은 M1에서 열리지 않는다(아래 거부 테스트).
+    // 경계: 혼합 EOL의 열기·통일은 아래 eol_mixed 테스트가 다룬다.
     #[test]
     fn crlf_문서는_lf로_열리고_저장_시_crlf로_복원된다() {
         let (dir, scope) = scoped_tempdir();
@@ -310,7 +297,7 @@ mod tests {
     // 집행: file-lifecycle.md#인코딩-정책 — "BOM 유무가 저장만으로 바뀌지 않는다".
     // 왜: BOM이 사라지거나 생기면 다른 도구(빌드 스크립트 등)와의 호환이 조용히 깨진다.
     // 보장: BOM 파일은 본문에서 BOM 없이 열리고, 저장하면 BOM이 되살아난다.
-    // 경계: UTF-16 BOM은 M1 거부 대상이라 다루지 않는다(text_encoding 테스트).
+    // 경계: UTF-16 BOM 파일의 열기·변환은 text_encoding 테스트가 다룬다.
     #[test]
     fn utf8_bom_은_저장_시_원본대로_복원된다() {
         let (dir, scope) = scoped_tempdir();
@@ -337,7 +324,7 @@ mod tests {
     }
 
     // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 해시 불일치면 쓰지 않고 Conflict.
-    // 왜: watch 이벤트가 없는 M1에서 이 검사가 외부 변경 데이터 유실의 유일한 방어선이다.
+    // 왜: watch 알림은 비동기라 놓칠 수 있다 — 이 검사가 외부 변경 데이터 유실의 마지막 방어선이다.
     // 보장: 외부 수정 후 낡은 expected_hash로 저장하면 Conflict가 반환되고
     //       디스크의 외부 수정본이 그대로 남는다(덮어쓰지 않음).
     // 경계: 충돌 해소 UI(디스크/편집 선택)는 프론트 소관이다.
@@ -366,7 +353,7 @@ mod tests {
     // 집행: rust-commands.md save_file — 열려 있던 파일이 삭제된 채 낡은 해시로 저장하면 Conflict.
     // 왜: 삭제를 조용히 재생성으로 덮으면 사용자가 밖에서 지운 파일이 되살아난다.
     // 보장: expected_hash가 있는데 파일이 없으면 Conflict다(새로 생성은 None으로 명시).
-    // 경계: file-removed 이벤트 흐름은 M2(watch)에서 다룬다.
+    // 경계: file-removed 이벤트 흐름은 watch 테스트가 다룬다.
     #[test]
     fn 삭제된_파일에_낡은_해시로_저장하면_conflict_다() {
         let (dir, scope) = scoped_tempdir();
@@ -428,9 +415,9 @@ mod tests {
         assert!(!escape.exists());
     }
 
-    // 집행: file-lifecycle.md#eol-정책 — 혼합 EOL은 eol_mixed로 표시해 열고(M2), 저장 시
+    // 집행: file-lifecycle.md#eol-정책 — 혼합 EOL은 eol_mixed로 표시해 열고, 저장 시
     //       판정 EOL(다수결)로 통일한다. 통일 재작성은 프론트의 정규화 승인을 거친다.
-    // 왜: 혼합 EOL 문서를 여는 것이 M2 파일 강건성의 목표이고, eol_mixed 플래그가
+    // 왜: 혼합 EOL 문서를 여는 것이 파일 강건성의 목표이고, eol_mixed 플래그가
     //     프론트 승인 게이트(자동 저장 차단·배너)의 유일한 근거다.
     // 보장: 혼합 파일이 LF 정규화 본문 + eol_mixed=true + 다수결 판정으로 열리고,
     //       저장하면 디스크 개행이 판정 EOL로 통일된다(승인 후 첫 저장 = 변환 1회).
@@ -465,7 +452,7 @@ mod tests {
 
     // 집행: file-lifecycle.md#인코딩-정책 — "비UTF-8은 감지 후 변환해 열기…저장하기 전까지
     //       파일은 바뀌지 않는다", 저장은 항상 UTF-8.
-    // 왜: EUC-KR 레거시 한글 문서의 열기→승인→저장이 M2의 대표 사용자 시나리오다.
+    // 왜: EUC-KR 레거시 한글 문서의 열기→승인→저장이 파일 강건성의 대표 사용자 시나리오다.
     // 보장: EUC-KR 파일이 변환되어 열리고(원본 불변), 저장하면 UTF-8 바이트로 통일되며,
     //       다시 열면 utf-8로 판정된다.
     // 경계: 승인 UI 흐름은 프론트·E2E 소관 — 여기는 커맨드 왕복만.
@@ -500,7 +487,7 @@ mod tests {
         );
     }
 
-    // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 읽기 전용 거부(M2 확정 열린 결정)
+    // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 읽기 전용 거부
     //       + rust-commands.md save_file.
     // 왜: 원자적 쓰기(rename)는 디렉터리 권한만 검사해 파일 잠금을 우회한다(E2E 실측) —
     //     사용자가 일부러 잠근 파일을 자동 저장이 조용히 고치면 잠금의 의도가 깨진다.
@@ -595,7 +582,7 @@ mod tests {
     // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 프로세스 안 동시 저장은 전역 잠금으로
     //       직렬화한다.
     // 왜: 자동 저장 디바운스와 Cmd+S가 겹치면 둘 다 같은 해시 검사를 통과해, rename 순서에
-    //     따라 낡은 내용이 최종본이 될 수 있다(적대적 리뷰 OV1).
+    //     따라 낡은 내용이 최종본이 될 수 있다.
     // 보장: 같은 expected_hash로 동시에 저장하면 정확히 한쪽만 성공하고 다른 쪽은 Conflict,
     //       디스크에는 성공한 쪽 내용이 남는다.
     // 경계: 외부 프로세스와의 경쟁(TOCTOU)은 프로세스 내 잠금 밖 — 문서화된 잔여 위험이다.
@@ -635,7 +622,7 @@ mod tests {
 
     // 집행: rust-commands.md save_file — "링크를 일반 파일로 교체하지 않음".
     // 왜: 깨진 링크를 "새 파일"로 오인해 그 자리에 rename하면 링크가 일반 파일로 교체된다
-    //     (적대적 리뷰 OV2 — canonicalize 실패 사유를 삼키던 문제).
+    //     — canonicalize 실패 사유를 삼키면 생기는 오인이다.
     // 보장: 대상이 사라진 심볼릭 링크에 저장하면 NotFound로 거부되고 링크는 링크로 남는다.
     // 경계: EACCES·ELOOP 등 다른 실패 사유는 이식성 있는 재현이 어려워 전파 로직으로만 다룬다.
     #[test]
@@ -655,7 +642,7 @@ mod tests {
     }
 
     // 집행: file-lifecycle.md#저장-원자성과-충돌-검사 — 새 파일의 권한 관례.
-    // 왜: tempfile 기본 권한(0600)이 남으면 다른 도구·계정이 문서를 읽지 못한다(적대적 리뷰 이슈 1).
+    // 왜: tempfile 기본 권한(0600)이 남으면 다른 도구·계정이 문서를 읽지 못한다.
     // 보장: 새 파일은 일반 문서 관례인 0644로 생성된다.
     // 경계: umask가 더 엄격한 환경의 정책 반영은 하지 않는다(단독 데스크탑 앱 전제).
     #[test]
@@ -677,7 +664,7 @@ mod tests {
 
     // 집행: file-lifecycle.md#eol-정책 — 저장은 디스크에 닿기 전 마지막 관문에서 개행을 정규화한다.
     // 왜: 상류(CM6 LF 계약)가 깨져 CRLF가 섞인 텍스트가 오면, 무방비 치환은 \r\r\n을
-    //     디스크에 굳힌다(적대적 리뷰 이슈 2).
+    //     디스크에 굳힌다.
     // 보장: 어떤 개행이 섞여 와도 디스크에는 판정 EOL의 올바른 개행만 기록된다.
     // 경계: 상류 계약 자체(CM6 정규화)는 프론트·E2E가 검증한다.
     #[test]
@@ -699,7 +686,7 @@ mod tests {
     // 집행: rust-commands.md#권한-capabilities — "canonicalize로 심볼릭 링크를 통한 스코프
     //       탈출도 차단".
     // 왜: 허용 루트 안에 밖을 가리키는 링크를 두면 보호 구역 밖 파일을 읽고 쓸 수 있는지가
-    //     경로 보안의 핵심 속성인데, 주석으로만 보장되어 있었다(적대적 리뷰 T3).
+    //     경로 보안의 핵심 속성이다 — 주석이 아니라 테스트가 보장해야 한다.
     // 보장: 루트 밖을 가리키는 링크는 열기·저장 모두 Permission으로 거부되고 밖 파일은 불변이다.
     // 경계: 루트 안을 가리키는 링크의 정상 동작은 별도 테스트가 다룬다.
     #[test]
@@ -726,7 +713,7 @@ mod tests {
     // 집행: rust-commands.md open_file — 파일 없음은 AppError::NotFound로 명시 반환한다.
     // 왜: 프론트가 "파일 없음"을 구분된 메시지로 안내해야 한다(→ error-handling.md).
     // 보장: 존재하지 않는 경로의 open이 NotFound다.
-    // 경계: 깨진 심볼릭 링크의 NotFound는 read_dir(M4) 시나리오에서 다룬다.
+    // 경계: 깨진 심볼릭 링크의 NotFound는 read_dir 시나리오에서 다룬다.
     #[test]
     fn 없는_파일의_열기는_notfound_다() {
         let (dir, scope) = scoped_tempdir();
@@ -739,7 +726,8 @@ mod tests {
 
     // 집행: rust-commands.md open_file — "path는 canonicalize된 정식 경로다".
     // 왜: 탭 신원이 요청 문자열이면 같은 파일이 별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)
-    //     으로 두 번 열려, 두 탭의 저장이 서로를 외부 변경으로 오인한다(M5 트리 = 새 입구).
+    //     으로 두 번 열려, 두 탭의 저장이 서로를 외부 변경으로 오인한다 — 다이얼로그 외에
+    //     파일 트리라는 두 번째 열기 입구가 있어 별칭 유입이 실제로 일어난다.
     // 보장: 어떤 표기로 요청해도 반환 path가 디스크의 정식 경로 한 값으로 수렴한다.
     // 경계: 프론트가 이 값을 실제 신원으로 쓰는지는 프론트 테스트가 검증한다.
     #[test]

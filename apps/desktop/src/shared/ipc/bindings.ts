@@ -52,7 +52,7 @@ export type SaveResult = {
 	hash: string,
 };
 
-/**  read_dir 항목(→ rust-commands.md). 응답에 children이 없다 — 중첩은 프론트가 조립한다. */
+/**  read_dir 항목(→ rust-commands.md). */
 export type TreeNode = {
 	path: string,
 	name: string,

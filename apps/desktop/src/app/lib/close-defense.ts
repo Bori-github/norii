@@ -35,7 +35,7 @@ export type CloseFlushOutcome = "close" | "confirm";
  * 플러시 대상이 없어질 때까지(최대 maxAttempts회) 저장하고 종료 가부를 판정한다.
  * 저장 왕복 중 타이핑이 이어지면 dirty가 되살아나므로, 저장 결과("saved")만 믿지 않고
  * 최신 탭 상태를 다시 분류하는 재확인 루프가 필수다 — 없으면 그 편집이 조용히 유실된다
- * (적대적 리뷰 P1 → file-lifecycle.md#종료-방어).
+ * (→ file-lifecycle.md#종료-방어).
  */
 export async function flushUntilClean(
   getTabs: () => Tab[],

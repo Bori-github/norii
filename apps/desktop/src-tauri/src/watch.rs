@@ -1,9 +1,5 @@
-//! 파일 외부 변경 감시(watch_paths) — 계약의 단일 출처: .claude/docs/rust-commands.md.
-//! 이벤트를 받은 프론트의 처리 정책(에코 억제·리로드·충돌)은
-//! .claude/docs/file-lifecycle.md#외부-변경-처리가 단일 출처다.
-//!
-//! 구현 계약: 파일이 아니라 부모 디렉터리를 감시하고 경로로 필터한다 — 외부 에디터의
-//! 원자적 저장(rename 교체)에도 감시가 끊기지 않는다(VS Code와 동일 전략).
+//! 파일 외부 변경 감시(watch_paths) — 계약: .claude/docs/rust-commands.md,
+//! 프론트 처리 정책(에코 억제·리로드·충돌): .claude/docs/file-lifecycle.md#외부-변경-처리.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -20,13 +16,11 @@ use crate::error::AppError;
 use crate::fs_commands::{mtime_millis, resolve_save_target};
 use crate::scope::FileScope;
 
-/// 삭제 유예 — rename 교체의 순간 삭제를 삭제로 오판하지 않도록 재확인 전에 기다리는 시간
-/// (→ rust-commands.md watch_paths).
+/// 삭제 유예 — 삭제 재확인 전에 기다리는 시간(→ rust-commands.md watch_paths).
 const REMOVAL_GRACE: Duration = Duration::from_millis(100);
 
 /// 코얼레싱 창 — 같은 경로의 연속 이벤트를 이 시간 동안 하나의 확인으로 합친다
-/// (→ rust-commands.md watch_paths 이벤트 코얼레싱). 확인은 파일 전체 읽기+해시라,
-/// 외부 도구의 연속 쓰기가 읽기를 증폭시키지 않게 한다.
+/// (→ rust-commands.md watch_paths 이벤트 코얼레싱).
 const COALESCE_WINDOW: Duration = Duration::from_millis(50);
 
 /// 경로별 확인(probe) 예약 게이트 — 확인이 이미 예약된 경로의 추가 이벤트를 합친다.
@@ -99,7 +93,7 @@ impl FileWatcher {
             return Ok(0);
         }
 
-        // 부모 디렉터리를 감시하고 경로로 필터한다(계약). 같은 폴더의 파일들은 구독 하나를 공유한다.
+        // 같은 폴더의 파일들은 구독 하나를 공유한다.
         let dirs: HashSet<PathBuf> = targets
             .keys()
             .filter_map(|path| path.parent().map(Path::to_path_buf))
@@ -113,7 +107,6 @@ impl FileWatcher {
         let gate = ProbeGate::default();
         let mut watcher =
             notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
-                // 낡은 세대(교체 전 구독)의 늦은 이벤트는 버린다.
                 if generation.load(Ordering::SeqCst) != token {
                     return;
                 }
@@ -122,7 +115,6 @@ impl FileWatcher {
                 let Ok(event) = result else { return };
                 for event_path in &event.paths {
                     if let Some(original) = targets.get(event_path.as_path()) {
-                        // 코얼레싱 — 확인이 이미 예약된 경로의 연속 이벤트는 합친다.
                         if !gate.try_schedule(event_path) {
                             continue;
                         }
@@ -139,8 +131,7 @@ impl FileWatcher {
             })
             .map_err(watch_error)?;
 
-        // 구독 — 실패한 디렉터리는 건너뛴다(부분 실패 허용, → rust-commands.md). 탭 하나의
-        // 사정(부모 삭제 등)이 나머지 탭의 감시까지 죽이면 안 된다.
+        // 구독 실패 디렉터리는 건너뛴다(부분 실패 허용 → rust-commands.md watch_paths).
         let mut failed_dirs: HashSet<PathBuf> = HashSet::new();
         for dir in &dirs {
             if let Err(error) = watcher.watch(dir, RecursiveMode::NonRecursive) {
@@ -148,7 +139,6 @@ impl FileWatcher {
                 failed_dirs.insert(dir.clone());
             }
         }
-        // 구독 실패로 감시되지 않은 대상 수 — 프론트가 재시도 여부를 정하는 근거다.
         let skipped = targets_for_count
             .keys()
             .filter(|path| {
@@ -157,16 +147,13 @@ impl FileWatcher {
             })
             .count() as u32;
 
-        // 커밋 — 새 감시가 준비된 뒤에만 세대를 올리고 이전 감시를 교체한다.
         self.generation.store(token, Ordering::SeqCst);
         self.inner = Some(watcher);
         Ok(skipped)
     }
 }
 
-/// 이벤트 시점의 디스크 상태를 확인해 알린다. 파일이 있으면 즉시 Changed(그 시점 해시),
-/// 없으면 유예(100ms) 후 재확인 — 다시 있으면 Changed, 정말 없으면 Removed
-/// (rename 교체의 순간 삭제를 삭제로 오판하지 않는 계약 동작).
+/// 이벤트 시점의 디스크 상태를 확인해 알린다(유예·재확인 규칙 → rust-commands.md watch_paths).
 /// notify 콜백 스레드에서 자면 후속 이벤트가 밀리므로 스레드를 분리하고,
 /// 발신 직전에 세대를 재검사한다 — 유예 중에 감시가 교체됐으면 발신하지 않는다.
 fn probe_and_notify(
@@ -178,8 +165,6 @@ fn probe_and_notify(
     gate: ProbeGate,
 ) {
     std::thread::spawn(move || {
-        // 코얼레싱 창 — 이 사이 도착한 같은 경로의 이벤트는 게이트가 합친다. 창이 끝나면
-        // 게이트를 해제하고 읽는다 — 읽기와 겹친 새 이벤트는 새 확인을 예약하므로 안전하다.
         std::thread::sleep(COALESCE_WINDOW);
         gate.release(&path);
         let emit = |event: WatchEvent| {
@@ -221,8 +206,7 @@ fn watch_error(err: notify::Error) -> AppError {
 /// Tauri가 관리하는 감시 상태 — watch_paths 호출마다 전체 교체된다.
 pub type SharedWatcher = Mutex<FileWatcher>;
 
-/// file-changed 페이로드(→ rust-commands.md 이벤트 계약). hash는 이벤트 처리 시점의
-/// 디스크 내용 해시 — 프론트 에코 억제의 기준값이다.
+/// file-changed 페이로드(→ rust-commands.md 이벤트 계약).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct FileChangedPayload {
@@ -252,14 +236,12 @@ fn resolve_watch_targets(
         let canonical = match resolve_save_target(Path::new(&original)) {
             Ok(canonical) => canonical,
             Err(error) => {
-                // 부분 실패 허용 — 탭 하나의 사정(부모 삭제 등)이 전체 감시를 죽이면 안 된다
-                // (→ rust-commands.md watch_paths).
+                // 해석 실패는 건너뜀(부분 실패 허용 → rust-commands.md watch_paths).
                 log::warn!("감시 경로 건너뜀({original}): {error}");
                 skipped += 1;
                 continue;
             }
         };
-        // 해석이 성공한 경로의 스코프 위반은 전체를 거부한다 — 보안 신호다(→ rust-commands.md).
         scope.ensure_allowed(&canonical)?;
         targets.insert(canonical, original);
     }
@@ -290,8 +272,6 @@ fn emit_watch_event(app: &AppHandle, event: WatchEvent) {
         WatchEvent::Removed { path } => app.emit("file-removed", FileRemovedPayload { path }),
     };
     if let Err(error) = result {
-        // 이벤트 유실은 치명적이지 않다 — 저장 직전 해시 검사가 마지막 방어선이다
-        // (→ file-lifecycle.md#저장-원자성과-충돌-검사).
         log::warn!("watch 이벤트 emit 실패: {error}");
     }
 }
@@ -344,7 +324,7 @@ mod tests {
     // 집행: rust-commands.md watch_paths — "부분 실패 허용: 해석·구독에 실패한 경로는
     //       건너뛰고 나머지를 감시한다…단, 스코프 위반은 전체를 거부".
     // 왜: 탭 하나의 부모 폴더가 밖에서 지워지면 전체 재선언이 실패해 모든 탭의 외부 변경
-    //     감지가 조용히 죽는다(리뷰 P2 — 전부 아니면 전무).
+    //     감지가 조용히 죽는다(전부 아니면 전무).
     // 보장: 해석 불가 경로(부모 없음)는 건너뛰고 나머지가 감시 대상에 남는다.
     //       스코프 위반은 여전히 전체 Permission 거부다(기존 테스트가 고정).
     // 경계: 건너뛴 경로의 로그 내용은 검증하지 않는다.
@@ -399,7 +379,7 @@ mod tests {
     // 집행: rust-commands.md watch_paths — 부분 실패 허용은 구독(디렉터리 watch) 실패에도
     //       적용된다 + "새 감시를 만든 뒤에만 이전 감시를 교체한다".
     // 왜: 구독 하나의 실패가 replace 전체를 중단시키면, 이미 버린 이전 감시 탓에 무감시
-    //     상태가 남는다(리뷰 P2 — 교체 순서).
+    //     상태가 남는다(교체 순서가 곧 안전이다).
     // 보장: 존재하지 않는 디렉터리의 대상이 섞여 있어도 replace가 성공하고,
     //       정상 대상의 외부 수정은 계속 감지된다.
     // 경계: watcher 생성 자체(OS 자원)의 실패는 이식성 있는 재현이 없어 코드 순서로만 보장한다.
@@ -441,7 +421,7 @@ mod tests {
     // 집행: rust-commands.md watch_paths — 코얼레싱의 정합성 반쪽: 이벤트를 합치되 마지막
     //       변경은 반드시 반영돼야 한다(게이트를 읽기 직전에 해제하는 순서가 그 보장이다).
     // 왜: 게이트 단위 테스트는 release/read 순서가 뒤집혀도(마지막 쓰기 유실) 통과한다 —
-    //     수렴 속성은 실제 파일시스템으로만 관찰된다(리뷰 지적).
+    //     수렴 속성은 실제 파일시스템으로만 관찰된다.
     // 보장: 연속 쓰기 후 최종 내용의 해시를 담은 Changed가 결국 도착한다.
     // 경계: 몇 회로 합쳐지는지는 OS 배칭에 좌우돼 단언하지 않는다.
     #[test]
@@ -466,7 +446,7 @@ mod tests {
     // 집행: rust-commands.md watch_paths — 선언적 교체의 빈 선언: 모든 탭이 닫히면 이전
     //       감시 해제가 곧 목표 상태다(세대 무효화 + 구독 해제).
     // 왜: 이 분기에서 세대 올림이 빠지면 낡은 유예 스레드의 늦은 이벤트가 해제 후에도
-    //     새어 나온다 — 프론트가 실제로 타는 경로(모든 탭 닫기)인데 미검증이었다(리뷰).
+    //     새어 나온다 — 프론트가 실제로 타는 경로(모든 탭 닫기)다.
     // 보장: 빈 replace 후 이전 대상의 수정은 그 수정 내용의 이벤트를 만들지 않는다.
     // 경계: 교체 전에 배달된 정당한 이벤트(생성 등)는 유출이 아니다 — 기존 테스트와 동일 기준.
     #[test]
@@ -505,7 +485,7 @@ mod tests {
     // 집행: rust-commands.md watch_paths — "같은 경로의 연속 이벤트는 짧은 창(50ms)으로 합쳐
     //       1회만 확인한다"(이벤트 코얼레싱).
     // 왜: 확인은 파일 전체 읽기+해시라, 외부 도구의 연속 쓰기가 이벤트 수 × 파일 크기만큼
-    //     읽기를 증폭시킨다(리뷰 P2 — 성능 규칙 위반).
+    //     읽기를 증폭시킨다(성능 규칙 위반).
     // 보장: 확인이 예약된 경로의 추가 이벤트는 새 확인을 만들지 않고, 확인이 소비된 뒤에야
     //       다시 예약된다(경로별 게이트의 결정론적 단위 검증).
     // 경계: 실제 이벤트 폭주의 종단 동작은 OS 배칭과 겹쳐 비결정적이라 여기서 다루지 않는다.
@@ -609,8 +589,8 @@ mod tests {
     // 집행: rust-commands.md#권한-capabilities — 감시도 open/save와 같은 커맨드 내부 스코프
     //       검증을 거친다.
     // 왜: 감시는 파일 내용 해시를 이벤트로 내보낸다 — 허용 루트 밖 경로가 통과하면 웹뷰가
-    //     보호 구역 밖 파일의 변경·존재를 관찰할 수 있다. 기존 테스트는 코어(replace)만 타서
-    //     이 검증의 회귀를 잡지 못했다(리뷰 지적).
+    //     보호 구역 밖 파일의 변경·존재를 관찰할 수 있다. 코어(replace)만 타는 테스트는
+    //     이 검증을 지나치므로 커맨드 경계에서 고정한다.
     // 보장: 허용 루트 밖 경로의 감시 선언은 Permission으로 거부된다.
     // 경계: 이벤트 발생 시점의 심볼릭 링크 재검증은 후속 단위에서 다룬다(해시 노출 수준).
     #[test]
