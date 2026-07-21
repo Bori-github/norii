@@ -139,6 +139,14 @@ export default defineConfig({
           // 액센트 — 쓰는 자리와 금지되는 자리는 decisions/color-palette가 소유한다.
           accent: { value: "{colors.glacier.600}" },
 
+          // 상태색 — 테마 공통 단일 값이라 원시 층에 두지 않는다. 갈라질 것이 없으면 매핑도 없다.
+          status: {
+            info: { value: "#7b68f3" },
+            success: { value: "#00a72c" },
+            warning: { value: "#d17d00" },
+            danger: { value: "#e44339" },
+          },
+
           border: { value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" } },
         },
       },

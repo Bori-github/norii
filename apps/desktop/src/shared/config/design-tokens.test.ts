@@ -78,6 +78,35 @@ function worstOnGlass(text: string, tint: string): number {
   return Math.min(onWhite, onBlack);
 }
 
+// 넷을 한꺼번에 검사하는 이유는 하나만 통과해서는 쓸 수 없기 때문이다: 콜아웃은 네 종류가
+// 나란히 뜨므로 한 색이라도 종이에서 사라지면 "색으로 종류를 가른다"는 규칙 자체가 깨진다.
+// 경계: 색이 서로 구별되는지(같은 파랑 둘이 아닌지)는 계산으로 판정할 수 없어 눈으로 본다.
+describe("상태색 — 네 색 모두 두 종이에서 표시 기준(3:1)을 넘는다", () => {
+  const STATUS = ["statusInfo", "statusSuccess", "statusWarning", "statusDanger"] as const;
+
+  it.each(THEMES)("%s 테마", (theme) => {
+    const colors = resolveSemanticColors(theme);
+    for (const key of STATUS) {
+      expect(contrastOnSolid(colors[key], colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    }
+  });
+
+  it("테마와 무관하게 같은 값이다", () => {
+    const light = resolveSemanticColors("light");
+    const dark = resolveSemanticColors("dark");
+    for (const key of STATUS) {
+      expect(light[key]).toBe(dark[key]);
+    }
+  });
+
+  // 3:1은 넘되 4.5는 못 넘는다 — 아이콘은 되고 글자는 안 된다는 뜻이다(→ decisions/color-palette).
+  it("위험색 칩 위의 흰 아이콘이 표시 기준을 넘는다 — 글자는 넣지 않는다", () => {
+    const { statusDanger, bgPaper } = resolveSemanticColors("light");
+    expect(contrastOnSolid(bgPaper, statusDanger)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    expect(contrastOnSolid(bgPaper, statusDanger)).toBeLessThan(AA_TEXT);
+  });
+});
+
 describe("크롬 위 액센트 금지 (→ decisions/color-palette)", () => {
   // 다크 테마만 보면 액센트는 유리 위에서도 통과한다. 금지의 근거는 라이트 테마다 —
   // 흰 유리 위 액센트가 어두운 바탕화면에서 1.31:1까지 떨어진다.

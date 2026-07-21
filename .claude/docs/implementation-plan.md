@@ -66,7 +66,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **테마 커스터마이징** — 프리셋 토큰 vs 사용자 커스텀 깊이 (→ [디자인 시스템](design/design-system.md))
 - **유리 설정 노출** — 불투명도(`--norii-glass-opacity`)·흐림 반경(`DEFAULT_BLUR_RADIUS`)의 설정 화면 노출 방식 — 슬라이더 최솟값은 대비 게이트 하한과 같아야 한다. M6 설정 영속화와 함께 (→ [유리](design/decisions/glass.md) · [창 표면 계약](design/window-chrome.md))
 - **타이포 스케일** — 글자 크기·행간이 아직 CM6 기본값 — 토큰 스케일 확정, M6 (→ [디자인 시스템](design/design-system.md))
-- **상태색 도입** — 팔레트에 상태색(정보·성공·경고·위험)이 없다. 이해관계자 셋(탭 ⚠ 배지 · 에러 배너 · 콜아웃)을 한 팔레트로 함께 정하고, 라이트/다크 × 종이/유리 네 조합에서 대비 게이트를 통과해야 한다. 확정 시 컬러 팔레트 결정 기록에 반영한다 (→ [대비 게이트](design/design-system.md#대비-게이트) · [컬러 팔레트](design/decisions/color-palette.md) · [콜아웃](preview-strategy.md#콜아웃-gfm-alerts))
 - **떠 있는 면 흐림** — 투명 창에서 `backdrop-filter` 미동작 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ [유리](design/decisions/glass.md))
 - **한글 고정폭 폰트** — 표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB)이 필요하다 — 15MB 예산과 함께 판단 (→ [디자인 시스템](design/design-system.md#글자액센트-토큰))
 - **프리뷰 코드면 토큰** — 코드 블록 배경이 상태 배경(bg.hover)을 빌려 쓴다(bg.canvas는 유리에서 투명해져 못 씀) — 종이 위 "옅게 눌린 면"(bg.inset류) 토큰 추가 여부, M6 (→ [디자인 시스템](design/design-system.md) · [표면](design/decisions/surface.md))

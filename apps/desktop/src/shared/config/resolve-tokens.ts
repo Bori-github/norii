@@ -14,6 +14,10 @@ export interface SemanticColors {
   textMuted: string;
   textMark: string;
   accent: string;
+  statusInfo: string;
+  statusSuccess: string;
+  statusWarning: string;
+  statusDanger: string;
 }
 
 /** Panda의 조건부 토큰 값. 다크 조건 키는 Panda가 정한 이름이라 그대로 받는다. */
@@ -92,5 +96,9 @@ export function resolveSemanticColors(theme: Theme): SemanticColors {
     textMuted: pick("text.muted"),
     textMark: pick("text.mark"),
     accent: pick("accent"),
+    statusInfo: pick("status.info"),
+    statusSuccess: pick("status.success"),
+    statusWarning: pick("status.warning"),
+    statusDanger: pick("status.danger"),
   };
 }
