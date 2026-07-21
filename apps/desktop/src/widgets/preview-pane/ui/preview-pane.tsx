@@ -94,10 +94,8 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
-  // 콜아웃 — 인용문에 얹는 강조 상자(→ preview-strategy.md#콜아웃-gfm-alerts).
-  // **색으로 구별하지 않는다** — 이 디자인 시스템에는 아직 상태색이 없다(열린 결정).
-  // 구별은 아이콘·라벨·굵은 경계선이 맡고, 아이콘과 라벨은 **마크업이 아니라 CSS**로 그린다
-  // (마크업으로 넣으면 sanitize 허용 표면이 늘고 문서가 위조한 콜아웃도 아이콘을 갖는다).
+  // 콜아웃 — 인용문에 얹는 강조 상자. 아이콘·라벨·색의 규칙은
+  // preview-strategy.md#콜아웃-gfm-alerts가 소유한다.
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
     borderColor: "accent",
@@ -118,10 +116,15 @@ const paneClass = css({
   },
   // 아이콘 + 라벨은 한 문자열이다. 라벨은 GitHub과 같은 이름을 쓴다 — 사용자가 GitHub에서
   // 쓰던 문서를 그대로 열었을 때 같은 것을 본다.
+  "& blockquote.norii-callout-note": { borderColor: "status.info" },
   "& blockquote.norii-callout-note::before": { content: '"ℹ︎ NOTE"' },
+  "& blockquote.norii-callout-tip": { borderColor: "status.success" },
   "& blockquote.norii-callout-tip::before": { content: '"✓ TIP"' },
+  // IMPORTANT만 borderColor를 덮지 않는다 — 위 기본값(액센트)을 그대로 쓴다.
   "& blockquote.norii-callout-important::before": { content: '"★ IMPORTANT"' },
+  "& blockquote.norii-callout-warning": { borderColor: "status.warning" },
   "& blockquote.norii-callout-warning::before": { content: '"⚠︎ WARNING"' },
+  "& blockquote.norii-callout-caution": { borderColor: "status.danger" },
   "& blockquote.norii-callout-caution::before": { content: '"⛔︎ CAUTION"' },
   // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.
   "& blockquote.norii-callout p": { color: "text" },
