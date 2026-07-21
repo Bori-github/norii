@@ -1,7 +1,16 @@
 // Public API — 외부는 이 배럴만 import한다.
 export { bannerActionClass, bannerBodyClass, bannerClass } from "./banner-styles";
 export { ConfirmDialog } from "./confirm-dialog";
-export { CheckIcon, ChevronRightIcon, CopyRightIcon } from "./icons";
+export {
+  AlertTriangleIcon,
+  AnnotationAlertIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  CopyRightIcon,
+  InformationCircleContainedIcon,
+  LightbulbIcon,
+  MinusCircleContainedIcon,
+} from "./icons";
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";
 export { NoticeBanner } from "./notice-banner";
