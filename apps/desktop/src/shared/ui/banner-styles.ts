@@ -35,3 +35,10 @@ export const bannerActionClass = css({
 });
 
 export const bannerBodyClass = css({ flex: 1 });
+
+// 사용자 개입이 필요한 배너(충돌·삭제됨)만 쓴다. 안내 배너는 기본 모습을 그대로 둔다 —
+// 전부 빨갛게 하면 "빨강 = 지금 손대야 함"이 흐려진다.
+export const bannerDangerClass = css({
+  borderLeftWidth: "3px",
+  borderLeftColor: "status.danger",
+});

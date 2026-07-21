@@ -1,6 +1,8 @@
+import { cx } from "styled-system/css";
+
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { bannerActionClass, bannerBodyClass, bannerClass } from "@shared/ui";
+import { bannerActionClass, bannerBodyClass, bannerClass, bannerDangerClass } from "@shared/ui";
 
 import { useConflictStore } from "../model/conflict-store";
 import { resolveConflictKeepDisk, resolveConflictKeepMine } from "../model/save-tab";
@@ -15,7 +17,7 @@ export function ConflictBanner() {
     return null;
   }
   return (
-    <div className={bannerClass} role="alert" data-testid="conflict-banner">
+    <div className={cx(bannerClass, bannerDangerClass)} role="alert" data-testid="conflict-banner">
       <span className={bannerBodyClass}>
         {STRINGS.conflictTitle} — {STRINGS.conflictBody}
       </span>
