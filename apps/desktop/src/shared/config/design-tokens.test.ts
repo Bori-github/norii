@@ -80,7 +80,7 @@ function worstOnGlass(text: string, tint: string): number {
 
 describe("크롬 위 액센트 금지 (→ decisions/color-palette)", () => {
   // 다크 테마만 보면 액센트는 유리 위에서도 통과한다. 금지의 근거는 라이트 테마다 —
-  // 흰 유리 위 세이지 액센트가 어두운 바탕화면에서 무너진다.
+  // 흰 유리 위 액센트가 어두운 바탕화면에서 1.31:1까지 떨어진다.
   // 컴포넌트 코드는 한 갈래이므로 규칙도 하나여야 한다: 한 테마에서 못 쓰면 두 테마 모두에서 금지다.
   it("액센트는 적어도 한 테마의 유리 위에서 기준을 통과하지 못한다", () => {
     const failing = THEMES.filter((theme) => {

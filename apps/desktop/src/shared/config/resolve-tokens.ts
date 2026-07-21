@@ -2,7 +2,7 @@ import config from "../../../panda.config";
 
 // panda.config.ts의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
 // 대비 게이트가 "문서에 적힌 값"이 아니라 "코드가 실제로 쓰는 값"을 검사하게 하려면
-// 토큰 참조({colors.lime.50})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
+// 토큰 참조({colors.glacier.600})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
 
 type Theme = "light" | "dark";
 
@@ -55,7 +55,7 @@ function foldCssVar(value: string): string {
   return value.replaceAll(/var\(--[\w-]+,\s*([^()]+)\)/g, "$1");
 }
 
-/** `{colors.lime.50}` 참조를 원시 토큰 값으로 바꾼다. 참조가 아니면 그대로 돌려준다. */
+/** `{colors.glacier.600}` 참조를 원시 토큰 값으로 바꾼다. 참조가 아니면 그대로 돌려준다. */
 function deref(value: string, primitives: TokenTree): string {
   const [, reference] = /^\{colors\.([\w.]+)\}$/.exec(value) ?? [];
   if (reference === undefined) {
