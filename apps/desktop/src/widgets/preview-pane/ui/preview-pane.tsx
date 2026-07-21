@@ -7,10 +7,12 @@ import { openExternalLink } from "@features/open-link";
 import { STRINGS } from "@shared/config";
 
 import { isAnchorHref, scrollToAnchor } from "../model/anchor";
+import { useCallouts } from "../model/use-callouts";
 import { useCodeBlocks } from "../model/use-code-copy";
 import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
+import { CalloutLabel } from "./callout-label";
 import { CopyCodeButton } from "./copy-code-button";
 
 // 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/surface).
@@ -105,27 +107,15 @@ const paneClass = css({
     paddingY: "3",
     borderRadius: "md",
     marginY: "3",
-    // 라벨 자리 — 첫 줄 위에 종류를 적는다.
-    _before: {
-      display: "block",
-      marginBottom: "1",
-      fontSize: "sm",
-      fontWeight: "bold",
-      color: "text.muted",
-    },
+    // 라벨을 order로 맨 앞에 보내려면 상자가 flex여야 한다(→ callout-label.tsx).
+    display: "flex",
+    flexDirection: "column",
   },
-  // 아이콘 + 라벨은 한 문자열이다. 라벨은 GitHub과 같은 이름을 쓴다 — 사용자가 GitHub에서
-  // 쓰던 문서를 그대로 열었을 때 같은 것을 본다.
   "& blockquote.norii-callout-note": { borderColor: "status.info" },
-  "& blockquote.norii-callout-note::before": { content: '"ℹ︎ NOTE"' },
   "& blockquote.norii-callout-tip": { borderColor: "status.success" },
-  "& blockquote.norii-callout-tip::before": { content: '"✓ TIP"' },
   // IMPORTANT만 borderColor를 덮지 않는다 — 위 기본값(액센트)을 그대로 쓴다.
-  "& blockquote.norii-callout-important::before": { content: '"★ IMPORTANT"' },
   "& blockquote.norii-callout-warning": { borderColor: "status.warning" },
-  "& blockquote.norii-callout-warning::before": { content: '"⚠︎ WARNING"' },
   "& blockquote.norii-callout-caution": { borderColor: "status.danger" },
-  "& blockquote.norii-callout-caution::before": { content: '"⛔︎ CAUTION"' },
   // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.
   "& blockquote.norii-callout p": { color: "text" },
   // 각주 — 문서 끝에 얇은 경계선으로 본문과 갈라 두고, 참조 번호는 본문보다 작게 뜬다.
@@ -182,6 +172,8 @@ export function PreviewPane() {
 
   // 복사 버튼(포털)의 대상 수집 — 내용 교체가 버튼을 지우므로 이 효과도 위 삽입 뒤에 돈다.
   const codeBlocks = useCodeBlocks(contentRef, html);
+  // 콜아웃 라벨도 같은 경로다.
+  const callouts = useCallouts(contentRef, html);
   // 다이어그램은 비동기로 도착해 블록 높이를 바꾼다 — 리비전이 오르면 스크롤 동기화가
   // 낡은 측정을 버리고 다시 잰다(→ use-mermaid.ts). 이 효과는 위 삽입 뒤에 돈다.
   const mermaidRevision = useMermaid(paneRef, html);
@@ -226,9 +218,12 @@ export function PreviewPane() {
     >
       {/* 내용은 위 이펙트가 채운다 — React는 이 요소의 자식을 소유하지 않는다. */}
       <div ref={contentRef} className={contentClass} />
-      {/* 복사 버튼만 예외로 React가 소유한다 — 내용(비 React DOM) 속 각 코드 블록에
-          포털로 꽂는다. 내용 교체가 버튼을 지우면 대상 재수집이 포털을 다시 그린다. */}
+      {/* 복사 버튼과 콜아웃 라벨은 React가 소유한다 — 내용(비 React DOM) 속 대상에 포털로
+          꽂는다. 내용 교체가 이들을 지우면 대상 재수집이 포털을 다시 그린다. */}
       {codeBlocks.map(({ key, element }) => createPortal(<CopyCodeButton />, element, key))}
+      {callouts.map(({ key, kind, element }) =>
+        createPortal(<CalloutLabel kind={kind} />, element, key),
+      )}
     </div>
   );
 }
