@@ -22,19 +22,37 @@ const splitClass = css({
   display: "flex",
 });
 
+const documentClass = css({
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  display: "flex",
+  flexDirection: "column",
+});
+
+const panesClass = css({
+  flex: 1,
+  minHeight: 0,
+  display: "flex",
+});
+
 // 에디터 화면 — 탭바 + 알림/충돌 배너 + 사이드바·에디터·프리뷰 패널 + 상태바.
 export function EditorPage() {
   return (
     <div className={pageClass}>
       <TabBar />
       <NoticeBanner />
-      <NormalizationBanner />
-      <ConflictBanner />
-      <MissingFileBanner />
       <div className={splitClass}>
         <Sidebar />
-        <EditorPane />
-        <PreviewPane />
+        <div className={documentClass}>
+          <NormalizationBanner />
+          <ConflictBanner />
+          <MissingFileBanner />
+          <div className={panesClass}>
+            <EditorPane />
+            <PreviewPane />
+          </div>
+        </div>
       </div>
       <StatusBar />
       <ConfirmDialog />
