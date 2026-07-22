@@ -39,7 +39,7 @@ export function useCallouts(
     setTargets(
       CALLOUT_KINDS.flatMap((kind) =>
         [...content.querySelectorAll<HTMLElement>(`blockquote.norii-callout-${kind}`)].map(
-          (element) => ({ key: `${swap}-${kind}-${element.offsetTop}`, kind, element }),
+          (element, index) => ({ key: `${swap}-${kind}-${index}`, kind, element }),
         ),
       ),
     );

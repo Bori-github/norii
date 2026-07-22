@@ -4,6 +4,7 @@ import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { openExternalLink } from "@features/open-link";
+import { useViewModeStore } from "@features/switch-view-mode";
 import { STRINGS } from "@shared/config";
 
 import { isAnchorHref, scrollToAnchor } from "../model/anchor";
@@ -157,7 +158,8 @@ const contentClass = css({
 // DOM 삽입과 갱신 타이밍(디바운스)뿐이다.
 export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
-  const html = usePreviewHtml(activeTabId);
+  const viewMode = useViewModeStore((state) => state.mode);
+  const html = usePreviewHtml(activeTabId, viewMode === "editor");
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 

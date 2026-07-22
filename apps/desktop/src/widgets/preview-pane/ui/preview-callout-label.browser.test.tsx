@@ -36,13 +36,9 @@ beforeEach(() => {
 afterEach(cleanup);
 
 function openTabWith(text: string): string {
-  const tabId = "tab-1";
-  useDocumentStore.setState({
-    tabs: [{ id: tabId, path: "/문서.md", name: "문서.md", isDirty: false }],
-    activeTabId: tabId,
-  } as never);
-  setTabText(tabId, text);
-  return tabId;
+  const id = useDocumentStore.getState().addUntitledTab();
+  setTabText(id, text);
+  return id;
 }
 
 async function findIcons(container: HTMLElement, count: number): Promise<Element[]> {
@@ -69,6 +65,13 @@ describe("콜아웃 라벨", () => {
     openTabWith(FIVE_CALLOUTS);
     const { container } = render(<PreviewPane />);
     await findIcons(container, 5);
+  });
+
+  // 포털 key가 종류 안에서 갈리는지를 지킨다 — 같은 종류 둘이 한 라벨로 합쳐지면 안 된다.
+  it("같은 종류 콜아웃 둘도 각각 라벨을 갖는다", async () => {
+    openTabWith("> [!NOTE]\n> 첫째\n\n> [!NOTE]\n> 둘째");
+    const { container } = render(<PreviewPane />);
+    await findIcons(container, 2);
   });
 
   // 같은 그림이 둘에 쓰이면 색만으로 갈리게 되고, 색을 구별하지 못하는 사용자에게는

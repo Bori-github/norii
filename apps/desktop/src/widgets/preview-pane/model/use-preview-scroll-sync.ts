@@ -89,6 +89,11 @@ export function usePreviewScrollSync(
     const echoGuard = echoGuardRef.current;
 
     const measured = (): BlockPositionCache => {
+      // 숨은 패널(display: none)의 rect는 전부 0이다 — 캐시에 넣으면 복귀 후 첫 스크롤이
+      // 0값으로 계산돼 엉뚱한 라인을 발행한다. 측정하지 않고 캐시도 남기지 않는다.
+      if (pane.clientWidth === 0) {
+        return { blocks: [], tops: [] };
+      }
       let cache = cacheRef.current;
       if (!cache) {
         const blocks = collectLineBlocks(pane);
@@ -142,11 +147,12 @@ export function usePreviewScrollSync(
     };
     pane.addEventListener("scroll", handleScroll);
 
-    // 창 크기가 바뀌면 블록 위치가 이동한다 — 캐시만 버리면 다음 이벤트가 재측정한다.
-    const handleResize = () => {
+    // 패널 크기가 바뀌면 블록 위치가 이동한다 — 캐시만 버리면 다음 이벤트가 재측정한다.
+    // 뷰 모드 전환도 패널 크기를 바꾸므로 창이 아니라 패널을 관찰한다.
+    const resizeObserver = new ResizeObserver(() => {
       cacheRef.current = null;
-    };
-    window.addEventListener("resize", handleResize);
+    });
+    resizeObserver.observe(pane);
 
     const unsubscribe = subscribeScroll("preview", ({ line, fraction, edge }) => {
       // 가장자리 스냅: 상대가 바닥이면 블록 계산 대신 우리 바닥으로(헬퍼가 max로 클램프).
@@ -169,7 +175,7 @@ export function usePreviewScrollSync(
 
     return () => {
       pane.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       unsubscribe();
     };
   }, [paneRef, activeTabId]);
