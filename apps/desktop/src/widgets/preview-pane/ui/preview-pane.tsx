@@ -36,6 +36,7 @@ const paneClass = css({
   // → design/decisions/color-palette).
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
   // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
+  fontFamily: "prose",
   lineHeight: "prose",
   "& h1, & h2, & h3, & h4, & h5, & h6": { lineHeight: "heading" },
   "& h1": { fontSize: "prose.h1", fontWeight: "bold", marginY: "3" },
@@ -55,7 +56,8 @@ const paneClass = css({
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
   "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
   "& pre code": { display: "block", overflowX: "auto" },
-  "& code": { fontFamily: "editor", fontSize: "prose.code" },
+  // 리거처를 끄는 이유는 decisions/typography가 소유한다.
+  "& code": { fontFamily: "editor", fontSize: "prose.code", fontVariantLigatures: "none" },
   // 코드 복사 버튼의 노출 조건 — 코드 블록을 가리킬 때만 보인다(→ preview-strategy.md).
   // 파서 DOM인 pre에 거는 규칙이라 여기 있다 — 버튼 생김새는 copy-code-button.tsx에 있다.
   // 클래스는 그 컴포넌트의 COPY_BUTTON_CLASS다(Panda 정적 추출 때문에 리터럴).

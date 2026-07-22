@@ -66,7 +66,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **테마 커스터마이징** — 프리셋 토큰 vs 사용자 커스텀 깊이 (→ [디자인 시스템](design/design-system.md))
 - **유리 설정 노출** — 불투명도(`--norii-glass-opacity`)·흐림 반경(`DEFAULT_BLUR_RADIUS`)의 설정 화면 노출 방식 — 슬라이더 최솟값은 대비 게이트 하한과 같아야 한다. M6 설정 영속화와 함께 (→ [유리](design/decisions/glass.md) · [창 표면 계약](design/window-chrome.md))
 - **떠 있는 면 흐림** — 투명 창에서 `backdrop-filter` 미동작 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ [유리](design/decisions/glass.md))
-- **한글 고정폭 폰트** — 표 정렬까지 지키려면 듀오스페이스 한글 폰트 번들(수 MB)이 필요하다 — 15MB 예산과 함께 판단 (→ [디자인 시스템](design/design-system.md#글자액센트-토큰))
 - **프리뷰 코드면 토큰** — 코드 블록 배경이 상태 배경(bg.hover)을 빌려 쓴다(bg.canvas는 유리에서 투명해져 못 씀) — 종이 위 "옅게 눌린 면"(bg.inset류) 토큰 추가 여부, M6 (→ [디자인 시스템](design/design-system.md) · [표면](design/decisions/surface.md))
 
 ### 테스트 · 도구

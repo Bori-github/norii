@@ -83,10 +83,15 @@ export default defineConfig({
             value:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
           },
-          // 열 정렬이 의미를 갖는 구간(코드블록·표·들여쓰기)을 위한 고정폭.
-          // 한글은 이 스택에 글리프가 없어 비례폭으로 폴백되며, 그건 의도된 것이다(→ DESIGN.md 타이포).
+          // 열 정렬이 의미를 갖는 구간(코드블록·표·들여쓰기)을 위한 고정폭(→ decisions/typography).
           editor: {
-            value: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+            value:
+              '"Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+          },
+          // 프리뷰 산문(→ decisions/typography).
+          prose: {
+            value:
+              '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
           },
         },
 
