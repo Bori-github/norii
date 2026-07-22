@@ -55,10 +55,10 @@ export function EditorPage() {
   return (
     <div className={pageClass}>
       <TabBar />
-      <NoticeBanner />
       <div className={splitClass}>
         <Sidebar />
         <div className={documentClass}>
+          <NoticeBanner />
           <NormalizationBanner />
           <ConflictBanner />
           <MissingFileBanner />
