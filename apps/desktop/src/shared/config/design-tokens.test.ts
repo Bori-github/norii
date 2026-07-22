@@ -27,7 +27,7 @@ describe.each(THEMES)("%s 테마 — 종이 위 글자", (theme) => {
   });
 });
 
-// 액센트는 테마와 무관하게 한 색이다(브랜드가 테마마다 달라 보이지 않게 — decisions/0005).
+// 액센트는 테마와 무관하게 한 색이다(브랜드가 테마마다 달라 보이지 않게 — decisions/color-palette).
 // 그 대가로 **글자에는 쓰지 않는다**: 흰 종이 위에서 AA를 넘으려면 휘도가 0.183 이하여야 하고
 // 어두운 종이 위에서 넘으려면 0.201 이상이어야 하는데, 두 조건은 동시에 만족될 수 없다.
 // 따라서 액센트는 표시(커서·dirty ●·포커스 링·강조 테두리)에만 쓰고, 비텍스트 기준(3:1)을 적용한다.
@@ -78,9 +78,39 @@ function worstOnGlass(text: string, tint: string): number {
   return Math.min(onWhite, onBlack);
 }
 
-describe("크롬 위 액센트 금지 (→ decisions/0004)", () => {
+// 넷을 한꺼번에 검사하는 이유는 하나만 통과해서는 쓸 수 없기 때문이다: 콜아웃은 네 종류가
+// 나란히 뜨므로 한 색이라도 종이에서 사라지면 "색으로 종류를 가른다"는 규칙 자체가 깨진다.
+// 경계: 색이 서로 구별되는지(같은 파랑 둘이 아닌지)는 계산으로 판정할 수 없어 눈으로 본다.
+const STATUS = ["statusInfo", "statusSuccess", "statusWarning", "statusDanger"] as const;
+
+describe("상태색 — 네 색 모두 두 종이에서 표시 기준(3:1)을 넘는다", () => {
+  it.each(THEMES)("%s 테마", (theme) => {
+    const colors = resolveSemanticColors(theme);
+    for (const key of STATUS) {
+      expect(contrastOnSolid(colors[key], colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    }
+  });
+
+  it("테마와 무관하게 같은 값이다", () => {
+    const light = resolveSemanticColors("light");
+    const dark = resolveSemanticColors("dark");
+    for (const key of STATUS) {
+      expect(light[key]).toBe(dark[key]);
+    }
+  });
+
+  // 충돌 표시는 유리 위 탭에서 위험색을 그대로 쓴다 — 이 값이 기준에 못 미친다는 것을
+  // 기록으로 남긴다(→ decisions/color-palette 트레이드오프). 통과하기 시작하면 예외의
+  // 근거가 사라졌다는 뜻이므로 규칙을 되돌릴 수 있다.
+  it.each(THEMES)("%s 유리 위 위험색은 기준을 통과하지 못한다 — 감수한 예외다", (theme) => {
+    const colors = resolveSemanticColors(theme);
+    expect(worstOnGlass(colors.statusDanger, colors.bgChrome)).toBeLessThan(AA_NON_TEXT);
+  });
+});
+
+describe("크롬 위 액센트 금지 (→ decisions/color-palette)", () => {
   // 다크 테마만 보면 액센트는 유리 위에서도 통과한다. 금지의 근거는 라이트 테마다 —
-  // 흰 유리 위 세이지 액센트가 어두운 바탕화면에서 무너진다.
+  // 흰 유리 위 액센트가 어두운 바탕화면에서 1.31:1까지 떨어진다.
   // 컴포넌트 코드는 한 갈래이므로 규칙도 하나여야 한다: 한 테마에서 못 쓰면 두 테마 모두에서 금지다.
   it("액센트는 적어도 한 테마의 유리 위에서 기준을 통과하지 못한다", () => {
     const failing = THEMES.filter((theme) => {

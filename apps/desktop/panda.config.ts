@@ -26,43 +26,54 @@ export default defineConfig({
     },
   },
 
+  // 프리셋의 안 쓰는 크기·행간 단계를 지운다(→ decisions/typography).
+  hooks: {
+    "config:resolved": ({ config, utils }) =>
+      // omit의 반환 타입(Omit<UserConfig, string>)이 훅 시그니처와 안 맞아 원형으로 되돌린다.
+      utils.omit(config, [
+        ...["2xs", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"].map(
+          (step) => `theme.tokens.fontSizes.${step}`,
+        ),
+        ...["none", "tight", "snug", "normal", "relaxed", "loose"].map(
+          (step) => `theme.tokens.lineHeights.${step}`,
+        ),
+      ]) as typeof config,
+  },
+
   theme: {
     extend: {
       // 원시 토큰 — 팔레트의 실제 값. 시맨틱 토큰이 이걸 참조한다.
       tokens: {
         colors: {
-          // 세이지 — 브랜드이자 액센트의 색 계열. oklch(L C 134)로 생성해 명도 계단이 고르다.
-          // 액센트로 쓸 수 있는 단계는 600 하나뿐이다 — 그보다 밝으면 라이트 종이에서 안 보이고,
-          // 어두우면 다크 종이에서 안 보인다(→ decisions/0006).
-          sage: {
-            50: { value: "#f2fbed" },
-            100: { value: "#e4f7d9" },
-            200: { value: "#cbf3b3" },
-            300: { value: "#aee38d" },
-            400: { value: "#91cb6b" },
-            500: { value: "#74aa4d" },
-            600: { value: "#568335" },
-            700: { value: "#48702a" },
-            800: { value: "#32521b" },
-            900: { value: "#223b0f" },
-            950: { value: "#101f06" },
+          // 글레이셔 — 브랜드이자 액센트의 색 계열. oklch(L C 223)로 생성해 명도 계단이 고르다.
+          // 팔레트를 왜 이렇게 정했는지는 decisions/color-palette가 소유한다.
+          glacier: {
+            50: { value: "#eafbff" },
+            100: { value: "#d1f7ff" },
+            200: { value: "#9cf3ff" },
+            300: { value: "#63e2ff" },
+            400: { value: "#3dc9f4" },
+            500: { value: "#00a8d2" },
+            600: { value: "#0082a7" },
+            700: { value: "#006f90" },
+            800: { value: "#00516b" },
+            900: { value: "#003a4f" },
+            950: { value: "#001f2b" },
           },
 
-          // 무채색 — 순수 회색이 아니라 **세이지 쪽으로 미세하게 편향**된 중립이다
-          // (같은 색상각 134°, 채도만 0.008). 세이지 종이 위에서 순수 회색은 톤이 어긋나 보인다.
-          // 명도 계단은 세이지와 같아 두 스케일을 섞어 써도 층이 맞는다.
+          // 무채색 — 글레이셔와 색상각이 다른 것은 의도된 것이다(→ decisions/color-palette).
           gray: {
-            50: { value: "#f5f9f3" },
-            100: { value: "#eef1ec" },
-            200: { value: "#e2e6e0" },
-            300: { value: "#cfd2cd" },
-            400: { value: "#b5b8b3" },
-            500: { value: "#969994" },
-            600: { value: "#727571" },
-            700: { value: "#616460" },
-            800: { value: "#464944" },
-            900: { value: "#313430" },
-            950: { value: "#191b18" },
+            50: { value: "#fcfdfe" },
+            100: { value: "#f3f7fa" },
+            200: { value: "#dce7ee" },
+            300: { value: "#bbcad3" },
+            400: { value: "#9badb9" },
+            500: { value: "#80919d" },
+            600: { value: "#677781" },
+            700: { value: "#4e5d67" },
+            800: { value: "#313e47" },
+            900: { value: "#16212a" },
+            950: { value: "#101820" },
           },
         },
 
@@ -72,11 +83,40 @@ export default defineConfig({
             value:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
           },
-          // 열 정렬이 의미를 갖는 구간(코드블록·표·들여쓰기)을 위한 고정폭.
-          // 한글은 이 스택에 글리프가 없어 비례폭으로 폴백되며, 그건 의도된 것이다(→ DESIGN.md 타이포).
+          // 열 정렬이 의미를 갖는 구간(코드블록·표·들여쓰기)을 위한 고정폭(→ decisions/typography).
           editor: {
-            value: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+            value:
+              '"Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
           },
+          // 프리뷰 산문(→ decisions/typography).
+          prose: {
+            value:
+              '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
+          },
+        },
+
+        // prose — 본문(md)에 대한 배수. 고정/배수의 경계는 decisions/typography가 소유한다.
+        fontSizes: {
+          prose: {
+            h1: { value: "2em" },
+            h2: { value: "1.5em" },
+            h3: { value: "1.25em" },
+            h4: { value: "1em" },
+            // h5≈h6은 의도다(→ decisions/typography).
+            h5: { value: "0.875em" },
+            h6: { value: "0.85em" },
+            code: { value: "0.875em" },
+            footnotes: { value: "0.875em" },
+            sup: { value: "0.75em" },
+            label: { value: "0.875em" },
+          },
+        },
+
+        lineHeights: {
+          ui: { value: "1.4" },
+          heading: { value: "1.3" },
+          editor: { value: "1.6" },
+          prose: { value: "1.8" },
         },
       },
 
@@ -85,9 +125,8 @@ export default defineConfig({
       semanticTokens: {
         colors: {
           bg: {
-            // 창 바닥 — **플랫폼에 따라 갈라지는 유일한 토큰**이다.
-            // 유리가 켜지면 투명해져 OS가 흐린 창 뒤 바탕화면이 그대로 비친다.
-            // 유리가 없으면(비-macOS·유리 미지원) 앱이 자기 배경을 깔아 인앱 글라스로 자연 후퇴한다.
+            // 창 바닥 — `_glass` 조건을 갖는 **유일한 토큰**이다. 유리 유무로 갈리는 CSS를
+            // 여기 하나로 묶어 컴포넌트가 플랫폼을 모르게 한다(→ decisions/glass).
             canvas: {
               value: {
                 base: "{colors.gray.100}",
@@ -96,12 +135,8 @@ export default defineConfig({
               },
             },
 
-            // 유리 위에 얹는 틴트 — **색이 아니라 불투명도만 얹는다.**
-            // 창 뒤 배경은 OS가 흐려 주므로(→ src-tauri/src/window_glass.rs) 우리가 할 일은
-            // 그 위에 순백/순흑을 얼마나 덮느냐뿐이다. 색을 섞으면 바탕화면이 물든다.
-            //
-            // 알파는 대비 게이트가 정한 하한이고, 설정 화면이 --norii-glass-opacity로 덮어쓴다
-            // (→ decisions/0007).
+            // 유리 위에 얹는 틴트 — 순백/순흑에 알파만 얹는다. 창 뒤를 흐리는 것은 OS의 일이다
+            // (→ src-tauri/src/window_glass.rs). 알파 기본값의 하한과 설정 노출은 decisions/glass가 소유한다.
             chrome: {
               value: {
                 base: "rgba(255, 255, 255, var(--norii-glass-opacity, 0.55))",
@@ -110,27 +145,25 @@ export default defineConfig({
             },
 
             // 글이 놓이는 면. 항상 불투명 — 편집면·프리뷰면·활성 탭이 공유한다.
-            // 종이는 **세이지로 물들이지 않는다** — 육안으로는 흰색/검정이되 세이지와 같은 색상각을 갖는
-            // 편향 무채색이다. 문서에 붙는 이미지(대개 흰 배경)와 부딪히지 않게 하려는 결정이다(→ decisions/0006).
-            paper: { value: { base: "{colors.gray.50}", _dark: "{colors.gray.950}" } },
+            // 캔버스보다 한 단계 밝아 종이가 위로 떠 보인다.
+            paper: { value: { base: "{colors.gray.50}", _dark: "{colors.gray.900}" } },
 
             // 상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 피드백이 사라진다.
             // **선택 영역에는 쓰지 않는다** — 활성 줄과 같은 색이면 커서가 있는 줄에서 선택이 사라진다.
             hover: {
-              value: { base: "rgba(25, 27, 24, 0.06)", _dark: "rgba(238, 241, 236, 0.08)" },
+              value: { base: "rgba(22, 33, 42, 0.06)", _dark: "rgba(252, 253, 254, 0.08)" },
             },
 
             // 사용자가 **고른** 것 — 텍스트 선택, 그리고 검색 결과 중 지금 보고 있는 하나.
-            // 활성 줄(hover) 위에 겹쳐도 보여야 하므로 알파가 그보다 훨씬 높고, 세이지로 물들여
-            // 무채색 상태 배경들과 성격이 갈린다. 액센트를 배경으로 쓰는 것은 허용된다 — 금지된 것은
-            // 액센트를 **글자**로 쓰는 것이다(→ decisions/0005).
+            // 활성 줄(hover) 위에 겹쳐도 보여야 하므로 알파가 그보다 훨씬 높고, 액센트 색을 써서
+            // 무채색 상태 배경들과 성격이 갈린다.
             selection: {
-              value: { base: "rgba(86, 131, 53, 0.28)", _dark: "rgba(174, 227, 141, 0.30)" },
+              value: { base: "rgba(0, 130, 167, 0.28)", _dark: "rgba(99, 226, 255, 0.30)" },
             },
 
             // 시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 물러난다.
             match: {
-              value: { base: "rgba(86, 131, 53, 0.14)", _dark: "rgba(174, 227, 141, 0.16)" },
+              value: { base: "rgba(0, 130, 167, 0.14)", _dark: "rgba(99, 226, 255, 0.16)" },
             },
 
             // 오버레이 뒤를 가리는 딤. 다크에서는 표면 대비가 낮아 더 짙게 깐다.
@@ -138,23 +171,26 @@ export default defineConfig({
           },
 
           text: {
-            // 종이 위에서도 유리 위에서도 이 색을 쓴다. 무채색이되 세이지 쪽으로 미세 편향돼 있다.
-            DEFAULT: { value: { base: "{colors.gray.950}", _dark: "{colors.gray.100}" } },
-            // 흐린 글자 — 종이 위에서만. 크롬에 쓰면 유리 알파가 치솟는다(→ decisions/0004).
-            // 라이트는 700이 하한이다(600은 4.40:1로 AA 미달).
-            muted: { value: { base: "{colors.gray.700}", _dark: "{colors.gray.300}" } },
-            // 마크다운 구문 마크(#, -, **, 링크 등)의 색. 글자이므로 AA(4.5:1)를 만족해야 하고,
-            // 액센트(sage-600)는 다크 종이에서 3.87:1이라 쓸 수 없다 — 그래서 테마별로 단계를 가른다.
-            // 액센트와 달리 **글자색 토큰은 갈라도 된다**(→ decisions/0005는 액센트에만 적용).
-            mark: { value: { base: "{colors.sage.700}", _dark: "{colors.sage.300}" } },
+            // 종이 위에서도 유리 위에서도 이 색을 쓴다.
+            DEFAULT: { value: { base: "{colors.gray.900}", _dark: "{colors.gray.200}" } },
+            // 흐린 글자 — 종이 위에서만 쓴다(→ decisions/color-palette).
+            muted: { value: { base: "{colors.gray.700}", _dark: "{colors.gray.400}" } },
+            // 마크다운 구문 마크(#, -, **, 링크 등)의 색. 액센트와 달리 테마별로 값이 갈린다.
+            mark: { value: { base: "{colors.glacier.700}", _dark: "{colors.glacier.300}" } },
           },
 
-          // 액센트 — 테마와 무관하게 한 색이고, 글자에는 쓰지 않는다(→ decisions/0005).
-          // 세이지 스케일에서 두 종이를 모두 통과하는 단계는 600 하나뿐이다
-          // (라이트 종이 4.22:1 · 다크 종이 3.85:1 — 비텍스트 3:1 기준).
-          accent: { value: "{colors.sage.600}" },
+          // 액센트 — 쓰는 자리와 금지되는 자리는 decisions/color-palette가 소유한다.
+          accent: { value: "{colors.glacier.600}" },
 
-          border: { value: { base: "rgba(25, 27, 24, 0.14)", _dark: "rgba(238, 241, 236, 0.14)" } },
+          // 상태색 — 테마 공통 단일 값이라 원시 층에 두지 않는다. 갈라질 것이 없으면 매핑도 없다.
+          status: {
+            info: { value: "#7b68f3" },
+            success: { value: "#00a72c" },
+            warning: { value: "#d17d00" },
+            danger: { value: "#e44339" },
+          },
+
+          border: { value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" } },
         },
       },
     },
@@ -168,6 +204,7 @@ export default defineConfig({
       background: "bg.canvas",
       color: "text",
       fontFamily: "ui",
+      lineHeight: "ui",
     },
   },
 

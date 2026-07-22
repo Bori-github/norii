@@ -89,7 +89,7 @@ mod platform {
 
 /// 창에 유리(뒤 배경 흐림)를 건다. macOS 밖에서는 아무 일도 하지 않는다 —
 /// 그 경우 웹 쪽 캔버스가 불투명으로 남아 인앱 글라스로 자연 후퇴한다
-/// (→ .claude/docs/design/decisions/0003-opaque-fallback-outside-macos.md).
+/// (→ .claude/docs/design/decisions/glass.md).
 ///
 /// **메인 스레드에서만 부른다** — AppKit 제약이다.
 pub fn apply_window_glass(window: &tauri::WebviewWindow, radius: u32) {

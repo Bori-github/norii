@@ -6,8 +6,8 @@ import type MarkdownIt from "markdown-it";
 // 문법이 이미 마크다운이라는 것이 채택 근거다: `>`는 인용문이고 `[!NOTE]`는 그 안의 텍스트다.
 // norii가 렌더하지 않는 에디터에서도 평범한 인용문으로 읽히므로 호환이 깨지지 않는다.
 //
-// 파서는 **클래스만** 붙인다. 아이콘·색·제목은 CSS의 몫이다 — 마크업으로 아이콘을 넣으면
-// sanitize 허용 표면이 그만큼 늘고, 문서가 위조한 콜아웃도 아이콘을 갖게 된다.
+// 파서는 **클래스만** 붙인다. 아이콘·색·라벨은 소비 측의 몫이다 — 마크업으로 넣으면
+// sanitize 허용 표면이 그만큼 는다(→ preview-strategy.md#콜아웃-gfm-alerts).
 
 /** GitHub 표준 5종. Obsidian의 독자 확장(추가 종류·접기)은 채택하지 않는다. */
 export const CALLOUT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"] as const;

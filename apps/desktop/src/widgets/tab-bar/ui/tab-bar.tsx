@@ -4,6 +4,7 @@ import { css } from "styled-system/css";
 import { useDocumentStore } from "@entities/document";
 import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
+import { AlertTriangleIcon } from "@shared/ui";
 
 // 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
 //
@@ -46,7 +47,7 @@ const appNameClass = css({
 });
 
 // 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
-// 활성/비활성은 글자 밝기가 아니라 배경으로 가른다: 활성 탭만 종이를 깐다(→ decisions/0004).
+// 활성/비활성은 글자 밝기가 아니라 배경으로 가른다: 활성 탭만 종이를 깐다(→ decisions/color-palette).
 const tabClass = css({
   display: "flex",
   alignItems: "center",
@@ -71,7 +72,15 @@ const tabClass = css({
 // 비활성 탭의 ●는 유리 위에 있으므로 본문색이다.
 const dirtyClass = css({ color: "text", fontSize: "xs" });
 
-const warningClass = css({ fontSize: "xs" });
+const warningClass = css({
+  display: "inline-flex",
+  flexShrink: 0,
+  color: "status.danger",
+  "& svg": { width: "3.5", height: "3.5" },
+});
+
+// 유리 위에서 흐려지는 것을 감수한 자리다 — DESIGN.md 접근성 기준의 유일한 예외다.
+const alertTitleClass = css({ color: "status.danger" });
 
 const closeClass = css({
   border: "none",
@@ -161,50 +170,53 @@ export function TabBar() {
       <span className={appNameClass} aria-hidden="true" data-testid="app-name">
         {STRINGS.appName}
       </span>
-      {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          role="tab"
-          aria-selected={tab.id === activeTabId}
-          tabIndex={tab.id === activeTabId ? 0 : -1}
-          className={tabClass}
-          data-testid="tab"
-          onClick={() => activateTab(tab.id)}
-          onKeyDown={(event) => onTabKeyDown(event, tab.id)}
-        >
-          <span>{tab.title}</span>
-          {(conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id)) && (
-            <span
-              className={warningClass}
-              data-testid="tab-warning"
-              aria-label={
-                conflictTabIds.includes(tab.id)
-                  ? STRINGS.conflictBadgeLabel
-                  : STRINGS.missingBadgeLabel
-              }
-            >
-              ⚠
-            </span>
-          )}
-          {tab.isDirty && (
-            <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
-              ●
-            </span>
-          )}
-          <button
-            type="button"
-            className={closeClass}
-            aria-label={STRINGS.closeTabLabel}
-            tabIndex={-1}
-            onClick={(event) => {
-              event.stopPropagation();
-              void requestCloseTab(tab.id);
-            }}
+      {tabs.map((tab) => {
+        const alerted = conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id);
+        return (
+          <div
+            key={tab.id}
+            role="tab"
+            aria-selected={tab.id === activeTabId}
+            tabIndex={tab.id === activeTabId ? 0 : -1}
+            className={tabClass}
+            data-testid="tab"
+            onClick={() => activateTab(tab.id)}
+            onKeyDown={(event) => onTabKeyDown(event, tab.id)}
           >
-            ×
-          </button>
-        </div>
-      ))}
+            <span className={alerted ? alertTitleClass : undefined}>{tab.title}</span>
+            {alerted && (
+              <span
+                className={warningClass}
+                data-testid="tab-warning"
+                aria-label={
+                  conflictTabIds.includes(tab.id)
+                    ? STRINGS.conflictBadgeLabel
+                    : STRINGS.missingBadgeLabel
+                }
+              >
+                <AlertTriangleIcon />
+              </span>
+            )}
+            {tab.isDirty && (
+              <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
+                ●
+              </span>
+            )}
+            <button
+              type="button"
+              className={closeClass}
+              aria-label={STRINGS.closeTabLabel}
+              tabIndex={-1}
+              onClick={(event) => {
+                event.stopPropagation();
+                void requestCloseTab(tab.id);
+              }}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

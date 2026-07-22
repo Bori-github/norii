@@ -4,16 +4,19 @@ import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { openExternalLink } from "@features/open-link";
+import { useViewModeStore } from "@features/switch-view-mode";
 import { STRINGS } from "@shared/config";
 
 import { isAnchorHref, scrollToAnchor } from "../model/anchor";
+import { useCallouts } from "../model/use-callouts";
 import { useCodeBlocks } from "../model/use-code-copy";
 import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
+import { CalloutLabel } from "./callout-label";
 import { CopyCodeButton } from "./copy-code-button";
 
-// 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/0001).
+// 프리뷰면은 종이다 — 편집면과 같은 불투명 표면을 공유한다(→ design/decisions/surface).
 // 유리(투명 창)가 켜져 있으므로 bg.canvas를 쓰면 본문 뒤로 바탕화면이 비친다.
 const paneClass = css({
   flex: 1,
@@ -31,17 +34,19 @@ const paneClass = css({
   // 차단한다(→ preview-strategy.md의 DOMPurify 정책).
   contain: "paint",
   // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
-  // → design/decisions/0005).
+  // → design/decisions/color-palette).
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
-  // 프리뷰 타이포그래피 — 마크다운 블록의 최소 가독 스타일(시맨틱 토큰만 참조).
-  // 헤딩은 6단계가 서로 구별돼야 한다 — h4~h6이 본문과 같으면 위계가 무너진다.
-  "& h1": { fontSize: "2xl", fontWeight: "bold", marginY: "3" },
-  "& h2": { fontSize: "xl", fontWeight: "bold", marginY: "3" },
-  "& h3": { fontSize: "lg", fontWeight: "bold", marginY: "2" },
-  "& h4": { fontSize: "md", fontWeight: "bold", marginY: "2" },
-  "& h5": { fontSize: "sm", fontWeight: "bold", marginY: "2" },
-  "& h6": { fontSize: "sm", fontWeight: "semibold", color: "text.muted", marginY: "2" },
-  "& p": { marginY: "2", lineHeight: "relaxed" },
+  // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
+  fontFamily: "prose",
+  lineHeight: "prose",
+  "& h1, & h2, & h3, & h4, & h5, & h6": { lineHeight: "heading" },
+  "& h1": { fontSize: "prose.h1", fontWeight: "bold", marginY: "3" },
+  "& h2": { fontSize: "prose.h2", fontWeight: "bold", marginY: "3" },
+  "& h3": { fontSize: "prose.h3", fontWeight: "bold", marginY: "2" },
+  "& h4": { fontSize: "prose.h4", fontWeight: "bold", marginY: "2" },
+  "& h5": { fontSize: "prose.h5", fontWeight: "bold", marginY: "2" },
+  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted", marginY: "2" },
+  "& p": { marginY: "2" },
   "& ul, & ol": { paddingLeft: "6", marginY: "2" },
   "& ul": { listStyleType: "disc" },
   "& ol": { listStyleType: "decimal" },
@@ -52,7 +57,8 @@ const paneClass = css({
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
   "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
   "& pre code": { display: "block", overflowX: "auto" },
-  "& code": { fontFamily: "editor", fontSize: "sm" },
+  // 리거처를 끄는 이유는 decisions/typography가 소유한다.
+  "& code": { fontFamily: "editor", fontSize: "prose.code", fontVariantLigatures: "none" },
   // 코드 복사 버튼의 노출 조건 — 코드 블록을 가리킬 때만 보인다(→ preview-strategy.md).
   // 파서 DOM인 pre에 거는 규칙이라 여기 있다 — 버튼 생김새는 copy-code-button.tsx에 있다.
   // 클래스는 그 컴포넌트의 COPY_BUTTON_CLASS다(Panda 정적 추출 때문에 리터럴).
@@ -83,7 +89,7 @@ const paneClass = css({
     maxWidth: "100%",
   },
   "& th, & td": { borderWidth: "1px", borderColor: "border", paddingX: "3", paddingY: "1" },
-  // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/0005).
+  // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/color-palette).
   // 프리뷰의 유일한 상호작용 요소이므로 가리킴·포커스에 반응한다.
   "& a": {
     color: "text.mark",
@@ -94,10 +100,8 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
-  // 콜아웃 — 인용문에 얹는 강조 상자(→ preview-strategy.md#콜아웃-gfm-alerts).
-  // **색으로 구별하지 않는다** — 이 디자인 시스템에는 아직 상태색이 없다(열린 결정).
-  // 구별은 아이콘·라벨·굵은 경계선이 맡고, 아이콘과 라벨은 **마크업이 아니라 CSS**로 그린다
-  // (마크업으로 넣으면 sanitize 허용 표면이 늘고 문서가 위조한 콜아웃도 아이콘을 갖는다).
+  // 콜아웃 — 인용문에 얹는 강조 상자. 아이콘·라벨·색의 규칙은
+  // preview-strategy.md#콜아웃-gfm-alerts가 소유한다.
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
     borderColor: "accent",
@@ -107,22 +111,15 @@ const paneClass = css({
     paddingY: "3",
     borderRadius: "md",
     marginY: "3",
-    // 라벨 자리 — 첫 줄 위에 종류를 적는다.
-    _before: {
-      display: "block",
-      marginBottom: "1",
-      fontSize: "sm",
-      fontWeight: "bold",
-      color: "text.muted",
-    },
+    // 라벨을 order로 맨 앞에 보내려면 상자가 flex여야 한다(→ callout-label.tsx).
+    display: "flex",
+    flexDirection: "column",
   },
-  // 아이콘 + 라벨은 한 문자열이다. 라벨은 GitHub과 같은 이름을 쓴다 — 사용자가 GitHub에서
-  // 쓰던 문서를 그대로 열었을 때 같은 것을 본다.
-  "& blockquote.norii-callout-note::before": { content: '"ℹ︎ NOTE"' },
-  "& blockquote.norii-callout-tip::before": { content: '"✓ TIP"' },
-  "& blockquote.norii-callout-important::before": { content: '"★ IMPORTANT"' },
-  "& blockquote.norii-callout-warning::before": { content: '"⚠︎ WARNING"' },
-  "& blockquote.norii-callout-caution::before": { content: '"⛔︎ CAUTION"' },
+  "& blockquote.norii-callout-note": { borderColor: "status.info" },
+  "& blockquote.norii-callout-tip": { borderColor: "status.success" },
+  // IMPORTANT만 borderColor를 덮지 않는다 — 위 기본값(액센트)을 그대로 쓴다.
+  "& blockquote.norii-callout-warning": { borderColor: "status.warning" },
+  "& blockquote.norii-callout-caution": { borderColor: "status.danger" },
   // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.
   "& blockquote.norii-callout p": { color: "text" },
   // 각주 — 문서 끝에 얇은 경계선으로 본문과 갈라 두고, 참조 번호는 본문보다 작게 뜬다.
@@ -132,15 +129,15 @@ const paneClass = css({
     paddingTop: "3",
     borderTopWidth: "1px",
     borderColor: "border",
-    fontSize: "sm",
+    fontSize: "prose.footnotes",
     color: "text.muted",
   },
-  "& sup.footnote-ref": { fontSize: "xs" },
+  "& sup.footnote-ref": { fontSize: "prose.sup" },
   // 긴 블록 수식은 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일한 처리).
   "& .katex-display": { overflowX: "auto", overflowY: "hidden", paddingY: "1" },
   // 조판 실패는 그 수식 자리에서만 드러난다 — 붉은 경고색 대신 흐린 글자로 조용히 알린다
-  // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/0005).
-  "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "sm" },
+  // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/color-palette).
+  "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "prose.code" },
   // 다이어그램 — 넓은 그래프는 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일).
   // 렌더 전에는 빈 div라 자리를 차지하지 않는다 — 원문이 잠깐 비쳤다 사라지는 깜빡임이 없다.
   "& .norii-mermaid": { marginY: "3", overflowX: "auto", textAlign: "center" },
@@ -161,7 +158,8 @@ const contentClass = css({
 // DOM 삽입과 갱신 타이밍(디바운스)뿐이다.
 export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
-  const html = usePreviewHtml(activeTabId);
+  const viewMode = useViewModeStore((state) => state.mode);
+  const html = usePreviewHtml(activeTabId, viewMode === "editor");
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -179,6 +177,8 @@ export function PreviewPane() {
 
   // 복사 버튼(포털)의 대상 수집 — 내용 교체가 버튼을 지우므로 이 효과도 위 삽입 뒤에 돈다.
   const codeBlocks = useCodeBlocks(contentRef, html);
+  // 콜아웃 라벨도 같은 경로다.
+  const callouts = useCallouts(contentRef, html);
   // 다이어그램은 비동기로 도착해 블록 높이를 바꾼다 — 리비전이 오르면 스크롤 동기화가
   // 낡은 측정을 버리고 다시 잰다(→ use-mermaid.ts). 이 효과는 위 삽입 뒤에 돈다.
   const mermaidRevision = useMermaid(paneRef, html);
@@ -223,9 +223,12 @@ export function PreviewPane() {
     >
       {/* 내용은 위 이펙트가 채운다 — React는 이 요소의 자식을 소유하지 않는다. */}
       <div ref={contentRef} className={contentClass} />
-      {/* 복사 버튼만 예외로 React가 소유한다 — 내용(비 React DOM) 속 각 코드 블록에
-          포털로 꽂는다. 내용 교체가 버튼을 지우면 대상 재수집이 포털을 다시 그린다. */}
+      {/* 복사 버튼과 콜아웃 라벨은 React가 소유한다 — 내용(비 React DOM) 속 대상에 포털로
+          꽂는다. 내용 교체가 이들을 지우면 대상 재수집이 포털을 다시 그린다. */}
       {codeBlocks.map(({ key, element }) => createPortal(<CopyCodeButton />, element, key))}
+      {callouts.map(({ key, kind, element }) =>
+        createPortal(<CalloutLabel kind={kind} />, element, key),
+      )}
     </div>
   );
 }

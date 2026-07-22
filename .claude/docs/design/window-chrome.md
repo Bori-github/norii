@@ -2,7 +2,7 @@
 
 norii의 창은 macOS에서 **투명하게 뚫리고, 그 뒤의 바탕화면을 OS가 흐린다.** 이 문서는 그 설정값과 폴백 규칙의 단일 출처이며, `apps/desktop/src-tauri/tauri.conf.json` · `src/window_glass.rs` · `src/titlebar_drag.rs`와 **1:1로 대응해야 하는 계약 문서**다(→ [작업 규칙](../../rules/project-rules.md#문서-규칙)).
 
-**왜** 이 방식인지는 [결정 0002](decisions/0002-glass-is-made-by-os.md)가, App Store를 포기하는 배포 판단은 [플랫폼 전략](../platform-strategy.md#배포-경로--app-store는-비목표)이 소유한다. 표면의 역할·재질 규칙은 [결정 0001](decisions/0001-surface-role-and-material.md)이 소유한다. 이 문서는 **무엇을 어떤 값으로** 만 다룬다.
+**왜** 이 방식인지는 [유리](decisions/glass.md)가, App Store를 포기하는 배포 판단은 [플랫폼 전략](../platform-strategy.md#배포-경로--app-store는-비목표)이 소유한다. 표면의 역할·재질 규칙은 [표면](decisions/surface.md)이 소유한다. 이 문서는 **무엇을 어떤 값으로** 만 다룬다.
 
 ## 의존 사슬 (왜 이 셋이 한 묶음인가)
 
@@ -83,7 +83,7 @@ OS 타이틀바와 신호등은 **창의 NSAppearance**를 따르지, 웹 콘텐
 
 ## 폴백 — macOS 밖
 
-`window_glass::apply_window_glass`는 macOS 밖에서 아무 일도 하지 않고, 창은 불투명하게 뜬다. 웹 쪽은 캔버스를 불투명으로 칠해 **인앱 글라스로 자연 후퇴**한다(→ [결정 0003](decisions/0003-opaque-fallback-outside-macos.md)).
+`window_glass::apply_window_glass`는 macOS 밖에서 아무 일도 하지 않고, 창은 불투명하게 뜬다. 웹 쪽은 캔버스를 불투명으로 칠해 **인앱 글라스로 자연 후퇴**한다(→ [유리](decisions/glass.md)).
 
 ## 웹 쪽 계약 — 캔버스만 갈라진다
 
@@ -96,7 +96,7 @@ CSS는 한 갈래로 유지한다. **플랫폼에 따라 달라지는 것은 캔
 
 표식은 "macOS인가"가 아니라 **"이 빌드에서 창 유리가 켜져 있는가"** 를 뜻한다 — 두 명제는 다르고, 유리를 끄면 macOS에서도 불투명 캔버스여야 한다. 판정은 `shared/lib/platform.ts`가 소유하고 `app` 레이어가 루트 요소에 심으며, 컴포넌트는 이 표식을 알지 못한다(시맨틱 토큰이 값을 갈라 준다 → [디자인 시스템](design-system.md#표면-토큰)).
 
-**선행 조건**: 캔버스를 투명으로 바꾸는 변경은 **편집면과 CM6 테마에 불투명 배경을 명시적으로 칠한 뒤에만** 들어간다. 편집면이 배경을 칠하지 않고 캔버스를 비쳐 쓰면 본문이 바탕화면 위에 뜬다(→ [결정 0001](decisions/0001-surface-role-and-material.md)).
+**선행 조건**: 캔버스를 투명으로 바꾸는 변경은 **편집면과 CM6 테마에 불투명 배경을 명시적으로 칠한 뒤에만** 들어간다. 편집면이 배경을 칠하지 않고 캔버스를 비쳐 쓰면 본문이 바탕화면 위에 뜬다(→ [표면](decisions/surface.md)).
 
 ### 표식은 첫 렌더 전에 심는다
 

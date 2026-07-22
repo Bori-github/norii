@@ -10,7 +10,7 @@ import { STRINGS } from "@shared/config";
 import { createEditorController, type EditorController } from "../model/editor-controller";
 
 // 편집면은 종이다 — 불투명 배경을 **명시적으로** 칠한다. 유리가 켜져 있으므로(창이 투명하다)
-// 캔버스를 비쳐 쓰면 본문 뒤로 바탕화면이 그대로 지나간다(→ decisions/0001 · window-chrome.md).
+// 캔버스를 비쳐 쓰면 본문 뒤로 바탕화면이 그대로 지나간다(→ decisions/surface · window-chrome.md).
 // "편집면"은 CM6가 글자를 그린 픽셀이 아니라 이 패널이 차지하는 사각형 전체다.
 const hostClass = css({
   flex: 1,
@@ -20,7 +20,13 @@ const hostClass = css({
   "& .cm-editor": { height: "100%" },
   // CM6 baseTheme가 .cm-content에 직접 font-family를 걸어 .cm-editor의 값을 덮는다.
   // 토큰이 실제로 적용되려면 같은 요소를 겨냥해야 한다(실앱에서 monospace로 나오는 것을 확인).
-  "& .cm-content": { fontFamily: "editor" },
+  // 리거처를 끄는 이유는 decisions/typography가 소유한다.
+  "& .cm-content": {
+    fontFamily: "editor",
+    fontSize: "sm",
+    lineHeight: "editor",
+    fontVariantLigatures: "none",
+  },
 });
 
 // 빈 상태(탭 0개)도 종이다 — 여기가 뚫리면 바탕화면 위에 글자가 뜬다.

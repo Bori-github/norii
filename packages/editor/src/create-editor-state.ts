@@ -15,23 +15,43 @@ export interface CreateEditorStateOptions {
    * 매 키 입력마다 전체 문서를 문자열화하지 않고, 소비 측이 필요할 때 view에서 읽는다.
    */
   onDocChanged?: () => void;
+  /** 커서가 움직일 때(선택 변경·편집) 호출된다. */
+  onSelectionChanged?: (position: CursorPosition) => void;
+  /** 초기 커서 오프셋 — 생략하면 문서 첫머리. */
+  selectionHead?: number;
+}
+
+export interface CursorPosition {
+  line: number;
+  column: number;
+}
+
+/** 커서(주 선택의 head)의 1-기반 줄·칸. 계산 근거는 create-editor-state.test.ts가 소유한다. */
+export function cursorPosition(state: EditorState): CursorPosition {
+  const head = state.selection.main.head;
+  const line = state.doc.lineAt(head);
+  return { line: line.number, column: head - line.from + 1 };
 }
 
 // 에디터 상태의 단일 생성 지점 — 확장 구성을 한곳에 모아 앱·위젯이 일관되게 소비한다.
 export function createEditorState(options: CreateEditorStateOptions): EditorState {
-  const { onDocChanged } = options;
+  const { onDocChanged, onSelectionChanged } = options;
   const extensions = [...noriiEditorExtensions(options.colors)];
-  if (onDocChanged) {
+  if (onDocChanged || onSelectionChanged) {
     extensions.push(
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          onDocChanged();
+          onDocChanged?.();
+        }
+        if (update.selectionSet || update.docChanged) {
+          onSelectionChanged?.(cursorPosition(update.state));
         }
       }),
     );
   }
   return EditorState.create({
     doc: options.doc ?? "",
+    selection: options.selectionHead === undefined ? undefined : { anchor: options.selectionHead },
     extensions,
   });
 }

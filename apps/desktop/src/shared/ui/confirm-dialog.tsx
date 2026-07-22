@@ -4,7 +4,7 @@ import { css } from "styled-system/css";
 import { useConfirmStore } from "./confirm-store";
 
 // 다이얼로그는 앱 위에 뜨지만 불투명하다 — 투명 창에서 backdrop-filter가 동작하지 않는다는 보고가
-// 있고, 캔버스가 투명하면 흐릴 픽셀 자체가 없다. 흐림 채택은 실측 후 결정한다(→ decisions/0002).
+// 있고, 캔버스가 투명하면 흐릴 픽셀 자체가 없다. 흐림 채택은 실측 후 결정한다(→ decisions/glass).
 const dialogClass = css({
   margin: "auto",
   maxWidth: "sm",
@@ -45,7 +45,7 @@ const buttonClass = css({
 });
 
 // 확정 동작 버튼 — 강조는 글자색이 아니라 **테두리와 굵기**로 낸다. 액센트는 테마 공통 단일 값이라
-// 글자로 쓰면 어느 한 테마에서 AA를 통과하지 못한다(→ decisions/0005). 테두리는 비텍스트라 안전하다.
+// 글자로 쓰면 어느 한 테마에서 AA를 통과하지 못한다(→ decisions/color-palette). 테두리는 비텍스트라 안전하다.
 const confirmButtonClass = css({
   borderColor: "accent",
   fontWeight: "semibold",

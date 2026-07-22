@@ -2,7 +2,7 @@ import { undo } from "@codemirror/commands";
 import { language } from "@codemirror/language";
 import { describe, expect, it } from "vitest";
 
-import { createEditorState } from "./create-editor-state";
+import { createEditorState, cursorPosition } from "./create-editor-state";
 import type { EditorColors } from "./theme";
 
 // 왜: 에디터 상태 팩토리는 앱·위젯이 의존하는 계약이다.
@@ -50,5 +50,23 @@ describe("createEditorState", () => {
       },
     });
     expect(state.doc.toString()).toBe("");
+  });
+});
+
+// 왜: 상태바의 Ln/Col 표시는 이 계산 하나에 의존한다.
+//     "무엇을 보장하나" — 1-기반 줄·칸, 칸은 줄 시작부터의 **UTF-16 오프셋**이다. 이모지가
+//     끼면 칸이 2 이상 뛴다 — 자 수(자소 단위)와 단위가 다르지만 의도다(VS Code와 같은 기준).
+//     "경계" — 선택 변경이 언제 통지되는지(뷰의 updateListener)는 여기서 검증하지 않는다
+//     — 뷰가 필요해 실앱 검증 대상이다.
+describe("cursorPosition", () => {
+  it("문서 첫머리는 1줄 1칸이다", () => {
+    const state = createEditorState({ colors: COLORS, doc: "가나\n다라" });
+    expect(cursorPosition(state)).toEqual({ line: 1, column: 1 });
+  });
+
+  it("둘째 줄 중간의 커서는 줄·칸으로 환산된다", () => {
+    // "가나\n" = 오프셋 3까지, 오프셋 4 = 2줄의 "라" 앞 = 2칸
+    const state = createEditorState({ colors: COLORS, doc: "가나\n다라", selectionHead: 4 });
+    expect(cursorPosition(state)).toEqual({ line: 2, column: 2 });
   });
 });

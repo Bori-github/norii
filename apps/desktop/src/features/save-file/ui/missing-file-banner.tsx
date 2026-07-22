@@ -1,6 +1,8 @@
+import { cx } from "styled-system/css";
+
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { bannerActionClass, bannerBodyClass, bannerClass } from "@shared/ui";
+import { bannerActionClass, bannerBodyClass, bannerClass, bannerDangerClass } from "@shared/ui";
 
 import { useMissingFileStore } from "../model/missing-file-store";
 import { saveTabNow } from "../model/save-tab";
@@ -15,7 +17,11 @@ export function MissingFileBanner() {
     return null;
   }
   return (
-    <div className={bannerClass} role="alert" data-testid="missing-file-banner">
+    <div
+      className={cx(bannerClass, bannerDangerClass)}
+      role="alert"
+      data-testid="missing-file-banner"
+    >
       <span className={bannerBodyClass}>{STRINGS.missingFileBody}</span>
       <button
         type="button"
