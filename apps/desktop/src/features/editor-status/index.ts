@@ -1,4 +1,5 @@
 export {
+  clearChars,
   clearEditorStatus,
   reportChars,
   reportCursor,

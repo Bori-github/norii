@@ -25,6 +25,11 @@ const fileClass = css({
   alignItems: "center",
   gap: "1",
   minWidth: 0,
+});
+
+// 말줄임은 flex 컨테이너가 아니라 글자를 직접 담은 요소에 걸어야 동작한다.
+const fileTitleClass = css({
+  minWidth: 0,
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis",
@@ -51,8 +56,12 @@ export function StatusBar() {
     <div className={barClass} data-testid="status-bar">
       {activeTab && (
         <span className={fileClass}>
-          {activeTab.isDirty && <span aria-label={STRINGS.dirtyIndicatorLabel}>●</span>}
-          {activeTab.title}
+          {activeTab.isDirty && (
+            <span role="img" aria-label={STRINGS.dirtyIndicatorLabel}>
+              ●
+            </span>
+          )}
+          <span className={fileTitleClass}>{activeTab.title}</span>
         </span>
       )}
       <span className={metricsClass}>

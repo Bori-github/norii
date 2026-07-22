@@ -26,6 +26,7 @@ export const STRINGS = {
   statusCharsSuffix: "자",
   statusLinePrefix: "Ln",
   statusColumnPrefix: "Col",
+
   closeTabLabel: "탭 닫기",
   dismissNoticeLabel: "알림 닫기",
   tabListLabel: "열린 문서",

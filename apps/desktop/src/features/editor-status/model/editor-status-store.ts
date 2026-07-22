@@ -22,6 +22,10 @@ export function reportChars(chars: number): void {
   useEditorStatusStore.setState({ chars });
 }
 
+export function clearChars(): void {
+  useEditorStatusStore.setState({ chars: null });
+}
+
 export function clearEditorStatus(): void {
   useEditorStatusStore.setState({ cursor: null, chars: null });
 }
