@@ -16,6 +16,12 @@ export const STRINGS = {
 
   dirtyIndicatorLabel: "저장 대기",
 
+  // 뷰 모드 전환 바(→ preview-strategy.md#뷰-모드).
+  viewModeGroupLabel: "뷰 모드",
+  viewModeEditorLabel: "에디터만",
+  viewModeSplitLabel: "분할",
+  viewModePreviewLabel: "프리뷰만",
+
   // 상태바(계산 규칙 → shared/lib/char-count.test.ts).
   statusCharsSuffix: "자",
   statusLinePrefix: "Ln",

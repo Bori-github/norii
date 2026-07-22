@@ -29,6 +29,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 | 활성 탭                           | chrome  | **opaque** — 아래 편집면과 이어진 한 장의 종이       |
 | 편집면 · 프리뷰면                 | content | **opaque**                                           |
 | 검색 패널 · 프리뷰 구분선 · 거터  | chrome  | **opaque** — 뒤에 있는 것이 바탕화면이 아니라 글이다 |
+| 뷰 모드 전환 바                   | chrome  | **opaque** — 문서 칸 안의 띠라 위와 같다             |
 | 다이얼로그 · (향후) 커맨드 팔레트 | overlay | **opaque** (흐림은 열린 결정)                        |
 | 딤 스크림                         | overlay | **scrim**                                            |
 | 배너(알림·충돌)                   | chrome  | **opaque** — 레이아웃을 미는 in-flow 띠다            |
