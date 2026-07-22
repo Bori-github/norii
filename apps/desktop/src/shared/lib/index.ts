@@ -1,5 +1,5 @@
-// Public API — 외부는 이 배럴만 import한다.
 export { hasWindowGlass, isMac, isPrimaryModifier } from "./platform";
+export { countChars } from "./char-count";
 export { logger } from "./logger";
 export {
   AA_NON_TEXT,

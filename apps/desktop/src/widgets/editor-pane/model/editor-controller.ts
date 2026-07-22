@@ -1,12 +1,20 @@
-import { createEditorState, createEditorView, lineScrollTop, topVisibleLine } from "@norii/editor";
+import {
+  createEditorState,
+  createEditorView,
+  cursorPosition,
+  lineScrollTop,
+  topVisibleLine,
+} from "@norii/editor";
 
 import { getInitialText, registerTabTextHandle, unregisterTabTextHandle } from "@entities/document";
+import { clearEditorStatus, reportChars, reportCursor } from "@features/editor-status";
 import {
   applyGuardedScrollTop,
   createEchoGuard,
   isAtBottom,
   type ScrollPosition,
 } from "@features/scroll-sync";
+import { countChars } from "@shared/lib";
 import { EDITOR_COLORS } from "@shared/config";
 
 // 탭별 편집 상태 관리 — CM6 EditorState는 스토어 밖에서 관리한다(→ document-model.md#상태-구조).
@@ -40,6 +48,20 @@ export function createEditorController(options: Options): EditorController {
   // 동기화가 만든 프로그램적 스크롤의 에코를 걸러낸다(→ features/scroll-sync).
   const echoGuard = createEchoGuard();
 
+  // 자 수는 문서 전체를 훑으므로 키 입력마다 계산하지 않는다.
+  let statsTimer: ReturnType<typeof setTimeout> | null = null;
+  function scheduleStats(): void {
+    if (statsTimer !== null) {
+      clearTimeout(statsTimer);
+    }
+    statsTimer = setTimeout(() => {
+      statsTimer = null;
+      if (view) {
+        reportChars(countChars(view.state.doc.toString()));
+      }
+    }, 300);
+  }
+
   function attachScrollListener(target: EditorViewValue): void {
     target.scrollDOM.addEventListener("scroll", () => {
       if (echoGuard.shouldIgnore() || !view) {
@@ -63,7 +85,11 @@ export function createEditorController(options: Options): EditorController {
     return createEditorState({
       colors: EDITOR_COLORS,
       doc,
-      onDocChanged: () => options.onDocChanged(tabId),
+      onDocChanged: () => {
+        options.onDocChanged(tabId);
+        scheduleStats();
+      },
+      onSelectionChanged: reportCursor,
     });
   }
 
@@ -107,6 +133,9 @@ export function createEditorController(options: Options): EditorController {
       view.setState(next);
       activeTabId = tabId;
       view.focus();
+      // 이전 탭의 값이 남지 않게 즉시 갱신한다 — 디바운스를 기다리면 그동안 틀린 값이 보인다.
+      reportCursor(cursorPosition(next));
+      reportChars(countChars(next.doc.toString()));
     },
     syncTabs(openTabIds) {
       const open = new Set(openTabIds);
@@ -134,6 +163,11 @@ export function createEditorController(options: Options): EditorController {
       );
     },
     destroy() {
+      if (statsTimer !== null) {
+        clearTimeout(statsTimer);
+        statsTimer = null;
+      }
+      clearEditorStatus();
       for (const tabId of states.keys()) {
         unregisterTabTextHandle(tabId);
       }

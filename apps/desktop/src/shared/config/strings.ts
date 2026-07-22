@@ -15,6 +15,11 @@ export const STRINGS = {
   emptyStateHint: "⌘N 새 문서 · ⌘O 파일 열기",
 
   dirtyIndicatorLabel: "저장 대기",
+
+  // 상태바(계산 규칙 → shared/lib/char-count.test.ts).
+  statusCharsSuffix: "자",
+  statusLinePrefix: "Ln",
+  statusColumnPrefix: "Col",
   closeTabLabel: "탭 닫기",
   dismissNoticeLabel: "알림 닫기",
   tabListLabel: "열린 문서",
