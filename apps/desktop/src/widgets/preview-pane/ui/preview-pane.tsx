@@ -35,15 +35,16 @@ const paneClass = css({
   // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
   // → design/decisions/color-palette).
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
-  // 프리뷰 타이포그래피 — 마크다운 블록의 최소 가독 스타일(시맨틱 토큰만 참조).
-  // 헤딩은 6단계가 서로 구별돼야 한다 — h4~h6이 본문과 같으면 위계가 무너진다.
-  "& h1": { fontSize: "2xl", fontWeight: "bold", marginY: "3" },
-  "& h2": { fontSize: "xl", fontWeight: "bold", marginY: "3" },
-  "& h3": { fontSize: "lg", fontWeight: "bold", marginY: "2" },
-  "& h4": { fontSize: "md", fontWeight: "bold", marginY: "2" },
-  "& h5": { fontSize: "sm", fontWeight: "bold", marginY: "2" },
-  "& h6": { fontSize: "sm", fontWeight: "semibold", color: "text.muted", marginY: "2" },
-  "& p": { marginY: "2", lineHeight: "relaxed" },
+  // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
+  lineHeight: "prose",
+  "& h1, & h2, & h3, & h4, & h5, & h6": { lineHeight: "heading" },
+  "& h1": { fontSize: "prose.h1", fontWeight: "bold", marginY: "3" },
+  "& h2": { fontSize: "prose.h2", fontWeight: "bold", marginY: "3" },
+  "& h3": { fontSize: "prose.h3", fontWeight: "bold", marginY: "2" },
+  "& h4": { fontSize: "prose.h4", fontWeight: "bold", marginY: "2" },
+  "& h5": { fontSize: "prose.h5", fontWeight: "bold", marginY: "2" },
+  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted", marginY: "2" },
+  "& p": { marginY: "2" },
   "& ul, & ol": { paddingLeft: "6", marginY: "2" },
   "& ul": { listStyleType: "disc" },
   "& ol": { listStyleType: "decimal" },
@@ -54,7 +55,7 @@ const paneClass = css({
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
   "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
   "& pre code": { display: "block", overflowX: "auto" },
-  "& code": { fontFamily: "editor", fontSize: "sm" },
+  "& code": { fontFamily: "editor", fontSize: "prose.code" },
   // 코드 복사 버튼의 노출 조건 — 코드 블록을 가리킬 때만 보인다(→ preview-strategy.md).
   // 파서 DOM인 pre에 거는 규칙이라 여기 있다 — 버튼 생김새는 copy-code-button.tsx에 있다.
   // 클래스는 그 컴포넌트의 COPY_BUTTON_CLASS다(Panda 정적 추출 때문에 리터럴).
@@ -125,15 +126,15 @@ const paneClass = css({
     paddingTop: "3",
     borderTopWidth: "1px",
     borderColor: "border",
-    fontSize: "sm",
+    fontSize: "prose.footnotes",
     color: "text.muted",
   },
-  "& sup.footnote-ref": { fontSize: "xs" },
+  "& sup.footnote-ref": { fontSize: "prose.sup" },
   // 긴 블록 수식은 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일한 처리).
   "& .katex-display": { overflowX: "auto", overflowY: "hidden", paddingY: "1" },
   // 조판 실패는 그 수식 자리에서만 드러난다 — 붉은 경고색 대신 흐린 글자로 조용히 알린다
   // (액센트·상태색을 글자에 쓰지 않는다, → design/decisions/color-palette).
-  "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "sm" },
+  "& .katex-error": { color: "text.muted", fontFamily: "editor", fontSize: "prose.code" },
   // 다이어그램 — 넓은 그래프는 패널을 밀지 않고 자기 안에서 가로 스크롤한다(표·코드와 동일).
   // 렌더 전에는 빈 div라 자리를 차지하지 않는다 — 원문이 잠깐 비쳤다 사라지는 깜빡임이 없다.
   "& .norii-mermaid": { marginY: "3", overflowX: "auto", textAlign: "center" },

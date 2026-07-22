@@ -26,6 +26,20 @@ export default defineConfig({
     },
   },
 
+  // 프리셋의 안 쓰는 크기·행간 단계를 지운다(→ decisions/typography).
+  hooks: {
+    "config:resolved": ({ config, utils }) =>
+      // omit의 반환 타입(Omit<UserConfig, string>)이 훅 시그니처와 안 맞아 원형으로 되돌린다.
+      utils.omit(config, [
+        ...["2xs", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"].map(
+          (step) => `theme.tokens.fontSizes.${step}`,
+        ),
+        ...["none", "tight", "snug", "normal", "relaxed", "loose"].map(
+          (step) => `theme.tokens.lineHeights.${step}`,
+        ),
+      ]) as typeof config,
+  },
+
   theme: {
     extend: {
       // 원시 토큰 — 팔레트의 실제 값. 시맨틱 토큰이 이걸 참조한다.
@@ -74,6 +88,30 @@ export default defineConfig({
           editor: {
             value: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
           },
+        },
+
+        // prose — 본문(md)에 대한 배수. 고정/배수의 경계는 decisions/typography가 소유한다.
+        fontSizes: {
+          prose: {
+            h1: { value: "2em" },
+            h2: { value: "1.5em" },
+            h3: { value: "1.25em" },
+            h4: { value: "1em" },
+            // h5≈h6은 의도다(→ decisions/typography).
+            h5: { value: "0.875em" },
+            h6: { value: "0.85em" },
+            code: { value: "0.875em" },
+            footnotes: { value: "0.875em" },
+            sup: { value: "0.75em" },
+            label: { value: "0.875em" },
+          },
+        },
+
+        lineHeights: {
+          ui: { value: "1.4" },
+          heading: { value: "1.3" },
+          editor: { value: "1.6" },
+          prose: { value: "1.8" },
         },
       },
 
@@ -161,6 +199,7 @@ export default defineConfig({
       background: "bg.canvas",
       color: "text",
       fontFamily: "ui",
+      lineHeight: "ui",
     },
   },
 

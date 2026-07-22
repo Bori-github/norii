@@ -29,7 +29,7 @@ const labelClass = css({
   alignItems: "center",
   gap: "1.5",
   marginBottom: "1",
-  fontSize: "sm",
+  fontSize: "prose.label",
   fontWeight: "bold",
   color: "text.muted",
 });
