@@ -12,6 +12,9 @@ import type { Tab } from "./types";
 interface DocumentState {
   tabs: Tab[];
   activeTabId: string | null;
+  // 활성 탭이 바뀔 때 에디터가 포커스를 가져갈지 — 기본 true, 트리 클릭만 false다. 활성화마다
+  // 새로 정해져 false가 다음 동작으로 새지 않는다(→ document-model.md#파일-트리-사이드바).
+  focusEditorOnActivate: boolean;
 }
 
 interface DocumentActions {
@@ -19,12 +22,13 @@ interface DocumentActions {
    * 파일을 탭으로 연다. 탭 신원은 file.path(canonical 경로)다 — 같은 파일이면
    * 그 탭을 활성화한다(중복 탭 금지 → document-model.md#다중-탭-규칙).
    */
-  openFileTab(file: FileContent): string;
+  openFileTab(file: FileContent, focusEditor?: boolean): string;
   /** 새 문서 탭 — filePath=null, title="Untitled". */
   addUntitledTab(): string;
   /** 탭 제거(저장 확인은 호출 측 책임). 활성 탭이 닫히면 이웃을 활성화한다. */
   removeTab(tabId: string): void;
-  activateTab(tabId: string): void;
+  /** focusEditor=false면 활성화 후 에디터가 포커스를 가져가지 않는다(→ focusEditorOnActivate). */
+  activateTab(tabId: string, focusEditor?: boolean): void;
   /** 다음/이전 탭 순환(Ctrl+Tab / Ctrl+Shift+Tab). */
   cycleActiveTab(delta: 1 | -1): void;
   setDirty(tabId: string, isDirty: boolean): void;
@@ -55,11 +59,12 @@ function updateTab(tabs: Tab[], tabId: string, patch: Partial<Tab>): Tab[] {
 export const useDocumentStore = create<DocumentStore>()((set, get) => ({
   tabs: [],
   activeTabId: null,
+  focusEditorOnActivate: true,
 
-  openFileTab(file) {
+  openFileTab(file, focusEditor = true) {
     const existing = get().tabs.find((tab) => tab.filePath === file.path);
     if (existing) {
-      set({ activeTabId: existing.id });
+      set({ activeTabId: existing.id, focusEditorOnActivate: focusEditor });
       return existing.id;
     }
     const id = crypto.randomUUID();
@@ -77,7 +82,11 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
       normalizationApproved: false,
       lastSavedHash: file.hash,
     };
-    set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }));
+    set((state) => ({
+      tabs: [...state.tabs, tab],
+      activeTabId: id,
+      focusEditorOnActivate: focusEditor,
+    }));
     return id;
   },
 
@@ -97,7 +106,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
       normalizationApproved: false,
       lastSavedHash: null,
     };
-    set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }));
+    set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id, focusEditorOnActivate: true }));
     return id;
   },
 
@@ -115,13 +124,13 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
         const neighbor = tabs[Math.min(index, tabs.length - 1)];
         activeTabId = neighbor ? neighbor.id : null;
       }
-      return { tabs, activeTabId };
+      return { tabs, activeTabId, focusEditorOnActivate: true };
     });
   },
 
-  activateTab(tabId) {
+  activateTab(tabId, focusEditor = true) {
     if (get().tabs.some((tab) => tab.id === tabId)) {
-      set({ activeTabId: tabId });
+      set({ activeTabId: tabId, focusEditorOnActivate: focusEditor });
     }
   },
 
@@ -133,7 +142,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
     const index = tabs.findIndex((tab) => tab.id === activeTabId);
     const next = tabs[(index + delta + tabs.length) % tabs.length];
     if (next) {
-      set({ activeTabId: next.id });
+      set({ activeTabId: next.id, focusEditorOnActivate: true });
     }
   },
 

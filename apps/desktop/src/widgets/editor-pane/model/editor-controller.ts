@@ -24,8 +24,9 @@ type EditorStateValue = ReturnType<typeof createEditorState>;
 type EditorViewValue = ReturnType<typeof createEditorView>;
 
 export interface EditorController {
-  /** 탭을 화면에 표시한다. 이전 탭의 편집 상태는 보존된다. */
-  showTab(tabId: string): void;
+  /** 탭을 화면에 표시한다. 이전 탭의 편집 상태는 보존된다. focus=false면 view.focus()를
+   *  건너뛴다(호출 의도는 → document-store). */
+  showTab(tabId: string, focus?: boolean): void;
   /** 열린 탭 목록과 동기화 — 닫힌 탭의 상태·핸들을 정리한다. */
   syncTabs(openTabIds: string[]): void;
   /** 동기화 신호를 받아 뷰포트를 옮긴다 — 이때 생기는 scroll 이벤트는 에코로 걸러진다. */
@@ -133,7 +134,7 @@ export function createEditorController(options: Options): EditorController {
   }
 
   return {
-    showTab(tabId) {
+    showTab(tabId, focus = true) {
       if (tabId === activeTabId && view) {
         return;
       }
@@ -148,7 +149,9 @@ export function createEditorController(options: Options): EditorController {
       }
       view.setState(next);
       activeTabId = tabId;
-      view.focus();
+      if (focus) {
+        view.focus();
+      }
       // 이전 탭의 값이 남지 않게 즉시 갱신한다 — 디바운스를 기다리면 그동안 틀린 값이 보인다.
       reportStatusFor(next);
     },

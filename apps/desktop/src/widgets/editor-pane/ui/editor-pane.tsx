@@ -75,7 +75,7 @@ export function EditorPane() {
       // 스크롤 동기화 — 사용자 스크롤을 중계소로 발행한다(→ features/scroll-sync).
       onScroll: (position) => publishScroll("editor", position),
     });
-    controllerRef.current.showTab(activeTabId);
+    controllerRef.current.showTab(activeTabId, useDocumentStore.getState().focusEditorOnActivate);
   }, [activeTabId]);
 
   // 프리뷰발 동기화 신호를 받아 뷰포트를 따라 옮긴다.
