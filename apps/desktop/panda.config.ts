@@ -198,7 +198,9 @@ export default defineConfig({
 
   // 앱 전역 표면 — 시맨틱 토큰으로 배경·글자·높이를 잡는다.
   globalCss: {
-    "html, body, #root": { height: "100%" },
+    // overscroll-behavior 없이는 스크롤할 콘텐츠가 없어도 WKWebView가 페이지 전체를
+    // 탄성 오버스크롤(러버밴드)로 튕겨, 창이 흔들리는 것처럼 보인다.
+    "html, body, #root": { height: "100%", overscrollBehavior: "none" },
     body: {
       margin: "0",
       background: "bg.canvas",
