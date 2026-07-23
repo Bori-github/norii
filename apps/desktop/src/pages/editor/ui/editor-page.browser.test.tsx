@@ -1,8 +1,9 @@
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import { resetScrollSync, SWAP_SUPPRESS_WINDOW_MS } from "@features/scroll-sync";
+import { useSidebarStore } from "@features/toggle-sidebar";
 
 import { EditorPage } from "../index";
 
@@ -228,5 +229,30 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(editorScroller.scrollTop).toBe(lastEditor);
     expect(previewPane.scrollTop).toBe(lastPreview);
+  });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — 접으면 화면에서 사라진다.
+//
+// 왜: 폭 0이나 숨김 속성으로 구현하면 빈 띠·잔여 테두리가 남는다. 사라짐을 DOM 부재로 못박는다.
+// 보장: 상태바 토글로 접으면 사이드바가 트리에서 사라지고, 다시 누르면 돌아온다.
+// 경계: 단축키(Cmd+B)는 앱 루트의 전역 리스너가 등록하므로 여기 범위가 아니다 —
+//       리스너는 toggleSidebar를 부를 뿐이고 그 전이는 sidebar-store 테스트가 고정한다.
+describe("사이드바 접기 (EditorPage 배선)", () => {
+  it("상태바 토글이 사이드바를 없앴다 되돌린다", async () => {
+    useSidebarStore.setState({ visible: true });
+    const { getByTestId, queryByTestId } = render(<EditorPage />);
+
+    expect(queryByTestId("sidebar")).not.toBeNull();
+
+    fireEvent.click(getByTestId("sidebar-toggle"));
+    await waitFor(() => {
+      expect(queryByTestId("sidebar")).toBeNull();
+    });
+
+    fireEvent.click(getByTestId("sidebar-toggle"));
+    await waitFor(() => {
+      expect(queryByTestId("sidebar")).not.toBeNull();
+    });
   });
 });

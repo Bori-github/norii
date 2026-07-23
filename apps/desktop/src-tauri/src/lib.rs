@@ -6,7 +6,9 @@ mod dialog_commands;
 mod eol;
 mod error;
 mod fs_commands;
+mod mac_geometry;
 mod scope;
+mod standard_window_buttons;
 mod text_encoding;
 mod titlebar_drag;
 mod tree_commands;
@@ -71,6 +73,8 @@ pub fn run() {
                         &window,
                         titlebar_drag::TITLEBAR_STRIP_HEIGHT,
                     );
+                    // 표준 창 버튼을 띠 세로 중앙으로 — 리사이즈·전체화면마다 다시 적용된다.
+                    standard_window_buttons::center_standard_window_buttons(&window);
                 }
             }
 

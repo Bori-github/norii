@@ -3,6 +3,7 @@ import { css } from "styled-system/css";
 import { useDocumentStore } from "@entities/document";
 import { ConflictBanner, MissingFileBanner } from "@features/save-file";
 import { useViewModeStore } from "@features/switch-view-mode";
+import { useSidebarStore } from "@features/toggle-sidebar";
 import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
 import { NormalizationBanner } from "@widgets/normalization-banner";
@@ -52,11 +53,12 @@ export function EditorPage() {
   const mode = useViewModeStore((state) => state.mode);
   // 탭이 없으면 모드를 무시하고 빈 상태만 보인다(→ preview-strategy.md#뷰-모드).
   const hasTab = useDocumentStore((state) => state.activeTabId !== null);
+  const sidebarVisible = useSidebarStore((state) => state.visible);
   return (
     <div className={pageClass}>
       <TabBar />
       <div className={splitClass}>
-        <Sidebar />
+        {sidebarVisible && <Sidebar />}
         <div className={documentClass}>
           <NoticeBanner />
           <NormalizationBanner />

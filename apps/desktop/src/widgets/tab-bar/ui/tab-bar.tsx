@@ -3,24 +3,22 @@ import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
+import { SidebarToggle } from "@features/toggle-sidebar";
 import { STRINGS } from "@shared/config";
 import { AlertTriangleIcon } from "@shared/ui";
 
-// 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
-//
-// 유리가 켜지면 웹뷰가 창 맨 위까지 올라와 상단이 한 장이 된다(titleBarStyle: Overlay).
-// 그 위 28px는 네이티브 드래그 띠가 덮으므로(→ src-tauri/src/titlebar_drag.rs) 탭을 그 아래로
-// 내린다 — 침범하면 탭을 눌러도 클릭이 띠에 먹혀 창이 끌린다.
+// 탭바는 유리(크롬)다 — 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
+// 유리에서 상단 36px는 네이티브 드래그 띠라, paddingTop으로 탭을 그 아래로 내린다.
+// 계약(값·단일 출처·침범 시 동작)은 window-chrome.md#계약--드래그-띠가 소유하고,
+// docs-drift가 TITLEBAR_STRIP_HEIGHT와 대조한다.
 const barClass = css({
   display: "flex",
   alignItems: "stretch",
-  overflowX: "auto",
   background: "bg.chrome",
   borderBottom: "1px solid",
   borderColor: "border",
   minHeight: "9",
-  // 띠 높이(28px)와 같아야 한다 — titlebar_drag.rs의 TITLEBAR_STRIP_HEIGHT가 단일 출처다.
-  _glass: { position: "relative", paddingTop: "28px" },
+  _glass: { position: "relative", paddingTop: "36px" },
 });
 
 // 앱 이름 — **우리가 그린다.** OS 타이틀 텍스트를 켜 두면 그 글자가 놓인 자리는 OS 뷰의 것이라
@@ -34,7 +32,7 @@ const appNameClass = css({
     position: "absolute",
     insetInline: 0,
     top: 0,
-    height: "28px",
+    height: "36px",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "sm",
@@ -67,6 +65,37 @@ const tabClass = css({
     // 액센트는 종이 위에서만 빛난다 — 활성 탭이 종이이므로 여기서만 dirty ●가 액센트가 된다.
     "& [data-dirty]": { color: "accent" },
   },
+});
+
+// 탭 목록만 tablist다 — 사이드바 토글이 같은 띠에 서므로 role을 바깥 띠에 두면
+// 탭이 아닌 버튼이 tablist의 자식이 된다.
+const tabListClass = css({
+  display: "flex",
+  alignItems: "stretch",
+  minWidth: 0,
+  overflowX: "auto",
+});
+
+// 유리에서는 토글을 드래그 띠의 클릭 통과 영역(→ window-chrome.md#계약--드래그-띠) 자리에
+// 절대배치한다. left·width는 titlebar_drag.rs의 그 영역 상수와 같아야 한다(docs-drift가 대조).
+// 유리가 꺼지면 탭바 흐름에 선다.
+const toggleSlotClass = css({
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  paddingX: "1",
+  _glass: {
+    position: "absolute",
+    top: 0,
+    left: "70px",
+    width: "32px",
+    height: "36px",
+    paddingX: 0,
+    justifyContent: "center",
+  },
+  // 전체화면에선 표준 창 버튼이 숨으므로 그 자리를 비울 필요가 없다 — 왼쪽 끝에 붙인다.
+  // 두 속성 선택자라 _glass(속성 하나)보다 특정도가 높아 left를 덮는다.
+  '[data-glass="on"][data-fullscreen="on"] &': { left: "8px" },
 });
 
 // 비활성 탭의 ●는 유리 위에 있으므로 본문색이다.
@@ -143,80 +172,79 @@ export function TabBar() {
   // (→ document-model.md#빈-탭--탭바는-비지-않는다). 스토어에 빈 문서를 만들지는 않는다.
   if (tabs.length === 0) {
     return (
-      <div
-        className={barClass}
-        role="tablist"
-        aria-label={STRINGS.tabListLabel}
-        data-testid="tab-bar"
-      >
+      <div className={barClass} data-testid="tab-bar">
         <span className={appNameClass} aria-hidden="true" data-testid="app-name">
           {STRINGS.appName}
         </span>
-        <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
-          <span>{STRINGS.newTabTitle}</span>
+        <span className={toggleSlotClass}>
+          <SidebarToggle />
+        </span>
+        <div className={tabListClass} role="tablist" aria-label={STRINGS.tabListLabel}>
+          <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
+            <span>{STRINGS.newTabTitle}</span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      ref={barRef}
-      className={barClass}
-      role="tablist"
-      aria-label={STRINGS.tabListLabel}
-      data-testid="tab-bar"
-    >
+    <div className={barClass} data-testid="tab-bar">
       <span className={appNameClass} aria-hidden="true" data-testid="app-name">
         {STRINGS.appName}
       </span>
-      {tabs.map((tab) => {
-        const alerted = conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id);
-        return (
-          <div
-            key={tab.id}
-            role="tab"
-            aria-selected={tab.id === activeTabId}
-            tabIndex={tab.id === activeTabId ? 0 : -1}
-            className={tabClass}
-            data-testid="tab"
-            onClick={() => activateTab(tab.id)}
-            onKeyDown={(event) => onTabKeyDown(event, tab.id)}
-          >
-            <span className={alerted ? alertTitleClass : undefined}>{tab.title}</span>
-            {alerted && (
-              <span
-                className={warningClass}
-                data-testid="tab-warning"
-                aria-label={
-                  conflictTabIds.includes(tab.id)
-                    ? STRINGS.conflictBadgeLabel
-                    : STRINGS.missingBadgeLabel
-                }
-              >
-                <AlertTriangleIcon />
-              </span>
-            )}
-            {tab.isDirty && (
-              <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
-                ●
-              </span>
-            )}
-            <button
-              type="button"
-              className={closeClass}
-              aria-label={STRINGS.closeTabLabel}
-              tabIndex={-1}
-              onClick={(event) => {
-                event.stopPropagation();
-                void requestCloseTab(tab.id);
-              }}
+      <span className={toggleSlotClass}>
+        <SidebarToggle />
+      </span>
+      <div ref={barRef} className={tabListClass} role="tablist" aria-label={STRINGS.tabListLabel}>
+        {tabs.map((tab) => {
+          const alerted = conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id);
+          return (
+            <div
+              key={tab.id}
+              role="tab"
+              aria-selected={tab.id === activeTabId}
+              tabIndex={tab.id === activeTabId ? 0 : -1}
+              className={tabClass}
+              data-testid="tab"
+              onClick={() => activateTab(tab.id)}
+              onKeyDown={(event) => onTabKeyDown(event, tab.id)}
             >
-              ×
-            </button>
-          </div>
-        );
-      })}
+              <span className={alerted ? alertTitleClass : undefined}>{tab.title}</span>
+              {alerted && (
+                <span
+                  className={warningClass}
+                  data-testid="tab-warning"
+                  aria-label={
+                    conflictTabIds.includes(tab.id)
+                      ? STRINGS.conflictBadgeLabel
+                      : STRINGS.missingBadgeLabel
+                  }
+                >
+                  <AlertTriangleIcon />
+                </span>
+              )}
+              {tab.isDirty && (
+                <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
+                  ●
+                </span>
+              )}
+              <button
+                type="button"
+                className={closeClass}
+                aria-label={STRINGS.closeTabLabel}
+                tabIndex={-1}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void requestCloseTab(tab.id);
+                }}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

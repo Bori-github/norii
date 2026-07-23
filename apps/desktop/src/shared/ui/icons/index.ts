@@ -12,3 +12,4 @@ export { default as FileEyeIcon } from "./generated/file-eye";
 export { default as InformationCircleContainedIcon } from "./generated/information-circle-contained";
 export { default as LightbulbIcon } from "./generated/lightbulb";
 export { default as MinusCircleContainedIcon } from "./generated/minus-circle-contained";
+export { default as PanelLeftIcon } from "./generated/panel-left";

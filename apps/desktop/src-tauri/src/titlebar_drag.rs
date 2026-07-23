@@ -9,58 +9,24 @@
 //!
 //! 값의 단일 출처는 .claude/docs/design/window-chrome.md다.
 
-/// 드래그 띠 높이(px). OS 타이틀바 높이와 같게 둔다 — 신호등이 이 띠 안에 놓이고,
-/// 웹 쪽 탭바는 이만큼 위를 비워 띠 아래에서 시작한다(→ window-chrome.md).
-pub const TITLEBAR_STRIP_HEIGHT: f64 = 28.0;
+/// 드래그 띠 높이(px). 웹 쪽 탭바는 이만큼 위를 비워 띠 아래에서 시작하고,
+/// 표준 창 버튼은 이 높이의 세로 중앙에 놓인다(→ window-chrome.md).
+pub const TITLEBAR_STRIP_HEIGHT: f64 = 36.0;
+
+/// 띠에서 클릭이 웹뷰로 통과하는 영역(→ window-chrome.md#계약--드래그-띠).
+/// 표준 창 버튼 오른쪽에 둔다 — 겹치면 토글이 그 버튼 아래로 들어간다.
+pub const TITLEBAR_CUTOUT_X: f64 = 70.0;
+pub const TITLEBAR_CUTOUT_WIDTH: f64 = 32.0;
 
 #[cfg(target_os = "macos")]
 mod platform {
     use std::sync::OnceLock;
 
-    use objc2::encode::{Encode, Encoding};
     use objc2::rc::Retained;
     use objc2::runtime::{AnyClass, AnyObject, ClassBuilder, NSObject, Sel};
     use objc2::{class, msg_send, sel, MainThreadMarker};
 
-    // CoreGraphics 기하 타입 — 프레임을 넘기려면 인코딩을 알려야 한다.
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    struct CGPoint {
-        x: f64,
-        y: f64,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    struct CGSize {
-        width: f64,
-        height: f64,
-    }
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    struct CGRect {
-        origin: CGPoint,
-        size: CGSize,
-    }
-
-    // SAFETY: 세 타입 모두 CoreGraphics의 C 구조체와 필드 순서·표현이 같다(#[repr(C)] + f64).
-    unsafe impl Encode for CGPoint {
-        const ENCODING: Encoding = Encoding::Struct(
-            "CGPoint",
-            &[<f64 as Encode>::ENCODING, <f64 as Encode>::ENCODING],
-        );
-    }
-    unsafe impl Encode for CGSize {
-        const ENCODING: Encoding = Encoding::Struct(
-            "CGSize",
-            &[<f64 as Encode>::ENCODING, <f64 as Encode>::ENCODING],
-        );
-    }
-    unsafe impl Encode for CGRect {
-        const ENCODING: Encoding = Encoding::Struct(
-            "CGRect",
-            &[<CGPoint as Encode>::ENCODING, <CGSize as Encode>::ENCODING],
-        );
-    }
+    use crate::mac_geometry::{CGPoint, CGRect, CGSize};
 
     // 창이 리사이즈돼도 띠가 상단에 붙어 폭을 따라가게 한다.
     const NS_VIEW_WIDTH_SIZABLE: usize = 2;
@@ -83,6 +49,24 @@ mod platform {
                 return;
             }
             let _: () = msg_send![window, performWindowDragWithEvent: event];
+        }
+    }
+
+    /// 이 영역 안에서는 `nil`을 돌려 클릭이 아래 웹뷰로 내려가게 한다.
+    ///
+    /// `hitTest:`가 받는 점은 **superview 좌표**다. 띠는 x=0에서 시작하지만 프레임을 읽어
+    /// 빼 준다 — 시작점이 바뀌어도 영역이 따라 움직인다.
+    unsafe extern "C" fn hit_test(this: &AnyObject, _cmd: Sel, point: CGPoint) -> *mut AnyObject {
+        // SAFETY: AppKit이 이 뷰의 hitTest:로 부른 것이므로 메인 스레드이고 this는 유효하다.
+        unsafe {
+            let frame: CGRect = msg_send![this, frame];
+            let local_x = point.x - frame.origin.x;
+            let cutout =
+                super::TITLEBAR_CUTOUT_X..super::TITLEBAR_CUTOUT_X + super::TITLEBAR_CUTOUT_WIDTH;
+            if cutout.contains(&local_x) {
+                return std::ptr::null_mut();
+            }
+            msg_send![super(this, class!(NSView)), hitTest: point]
         }
     }
 
@@ -118,6 +102,11 @@ mod platform {
                 builder.add_method(
                     sel!(mouseDown:),
                     mouse_down as unsafe extern "C" fn(_, _, _),
+                );
+                // SAFETY: 시그니처가 hitTest:의 것(id, SEL, NSPoint → NSView*)과 일치한다.
+                builder.add_method(
+                    sel!(hitTest:),
+                    hit_test as unsafe extern "C" fn(_, _, _) -> _,
                 );
             }
             Some(builder.register())
