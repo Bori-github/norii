@@ -11,6 +11,7 @@ import { PreviewPane } from "@widgets/preview-pane";
 import { Sidebar } from "@widgets/sidebar";
 import { StatusBar } from "@widgets/status-bar";
 import { TabBar } from "@widgets/tab-bar";
+import { TitleStrip } from "@widgets/title-strip";
 import { ViewModeBar } from "@widgets/view-mode-bar";
 
 const pageClass = css({
@@ -19,7 +20,7 @@ const pageClass = css({
   height: "100%",
 });
 
-// 사이드바(파일 트리) | 소스(에디터) | 렌더(프리뷰) — 세 칸이 남은 높이를 나눠 가진다.
+// 타이틀 스트립 아래 남은 높이를 사이드바(왼쪽 전체) | 오른쪽 칸(탭바·본문)이 나눈다.
 const splitClass = css({
   flex: 1,
   minHeight: 0,
@@ -48,7 +49,7 @@ const paneSlotClass = css({
   "&[hidden]": { display: "none" },
 });
 
-// 에디터 화면 — 탭바 + 알림/충돌 배너 + 사이드바·에디터·프리뷰 패널 + 상태바.
+// 에디터 화면 — 타이틀 스트립 + (사이드바 | 탭바·배너·에디터·프리뷰) + 상태바.
 export function EditorPage() {
   const mode = useViewModeStore((state) => state.mode);
   // 탭이 없으면 모드를 무시하고 빈 상태만 보인다(→ preview-strategy.md#뷰-모드).
@@ -56,10 +57,11 @@ export function EditorPage() {
   const sidebarVisible = useSidebarStore((state) => state.visible);
   return (
     <div className={pageClass}>
-      <TabBar />
+      <TitleStrip />
       <div className={splitClass}>
         {sidebarVisible && <Sidebar />}
         <div className={documentClass}>
+          <TabBar />
           <NoticeBanner />
           <NormalizationBanner />
           <ConflictBanner />
