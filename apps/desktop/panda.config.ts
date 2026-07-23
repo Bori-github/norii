@@ -190,7 +190,15 @@ export default defineConfig({
             danger: { value: "#e44339" },
           },
 
-          border: { value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" } },
+          border: {
+            DEFAULT: {
+              value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" },
+            },
+            // 더 연한 경계선 — 트리 세로 가이드 등 옅게 두는 선.
+            muted: {
+              value: { base: "rgba(22, 33, 42, 0.2)", _dark: "rgba(252, 253, 254, 0.2)" },
+            },
+          },
         },
       },
     },

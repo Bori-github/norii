@@ -49,6 +49,7 @@ export const STRINGS = {
   openFolderButtonLabel: "폴더 열기",
   sidebarEmptyBody: "폴더를 열면 파일 트리가 표시됩니다",
   symlinkBadgeLabel: "심볼릭 링크",
+  sidebarEmptyFolder: "비어 있음",
   sidebarHideLabel: "사이드바 접기",
   sidebarShowLabel: "사이드바 열기",
 
