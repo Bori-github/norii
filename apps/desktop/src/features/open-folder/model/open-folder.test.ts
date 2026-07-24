@@ -34,7 +34,7 @@ import type { TreeNode } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useNoticeStore } from "@shared/ui";
 
-import { openFolderInteractive, toggleDir } from "./open-folder";
+import { expandDir, openFolderInteractive, toggleDir } from "./open-folder";
 import { resetTreeWatchForTest } from "./tree-refresh";
 
 const NOTES_DIR: TreeNode = {
@@ -174,5 +174,28 @@ describe("toggleDir", () => {
 
     expect(useWorkspaceStore.getState().expandedDirs).toEqual([]);
     expect(useNoticeStore.getState().notices).toHaveLength(1);
+  });
+});
+
+// 왜: 접힌 폴더 안에 인라인 입력칸을 세우려면 그 폴더를 펼쳐야 하는데, toggleDir은 이미
+//     펼쳐진 폴더를 접어 버려 쓸 수 없다 — 펼치기만 하는 길이 따로 필요하다.
+// 보장: 안 읽은 폴더는 읽어서 펼치고, 이미 펼쳐진 폴더는 펼친 채로 둔다(다시 읽지 않는다).
+// 경계: 접기는 toggleDir이 소유한다.
+describe("expandDir", () => {
+  it("펼치기만 하고 접지 않는다", async () => {
+    readDir.mockResolvedValue([]);
+    useWorkspaceStore.setState({
+      rootDir: "/vault",
+      fileTree: [NOTES_DIR],
+      expandedDirs: [],
+    });
+
+    await expandDir("/vault/notes");
+    expect(useWorkspaceStore.getState().expandedDirs).toEqual(["/vault/notes"]);
+    expect(readDir).toHaveBeenCalledTimes(1);
+
+    await expandDir("/vault/notes");
+    expect(useWorkspaceStore.getState().expandedDirs).toEqual(["/vault/notes"]);
+    expect(readDir).toHaveBeenCalledTimes(1);
   });
 });

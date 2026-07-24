@@ -40,14 +40,9 @@ export async function openFolderAtPath(root: string): Promise<void> {
   }
 }
 
-/** 폴더 펼침/접힘 토글(레벨별 lazy·캐시 재펼침 → document-model.md#파일-트리-사이드바). */
-export async function toggleDir(path: string): Promise<void> {
-  const store = useWorkspaceStore.getState();
-  if (store.expandedDirs.includes(path)) {
-    store.setExpanded(path, false);
-    return;
-  }
-  const node = findTreeNode(store.fileTree, path);
+/** 폴더 펼치기(레벨별 lazy·캐시 재펼침 → document-model.md#파일-트리-사이드바). */
+export async function expandDir(path: string): Promise<void> {
+  const node = findTreeNode(useWorkspaceStore.getState().fileTree, path);
   if (node !== undefined && node.children === undefined) {
     try {
       const entries = await ipc.readDir(path);
@@ -58,4 +53,14 @@ export async function toggleDir(path: string): Promise<void> {
     }
   }
   useWorkspaceStore.getState().setExpanded(path, true);
+}
+
+/** 폴더 펼침/접힘 토글. */
+export async function toggleDir(path: string): Promise<void> {
+  const store = useWorkspaceStore.getState();
+  if (store.expandedDirs.includes(path)) {
+    store.setExpanded(path, false);
+    return;
+  }
+  await expandDir(path);
 }

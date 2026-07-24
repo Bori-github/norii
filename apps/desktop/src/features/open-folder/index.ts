@@ -1,2 +1,2 @@
-export { openFolderAtPath, openFolderInteractive, toggleDir } from "./model/open-folder";
+export { expandDir, openFolderAtPath, openFolderInteractive, toggleDir } from "./model/open-folder";
 export { useTreeWatch } from "./model/tree-refresh";
