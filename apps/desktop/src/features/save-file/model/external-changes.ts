@@ -129,7 +129,7 @@ export function syncWatchedPaths(tabs: Tab[]): Promise<void> {
       while (pendingTabs !== null) {
         const next = pendingTabs;
         pendingTabs = null;
-        // declareWatchedPaths는 내부에서 실패를 삼키므로(loop 지속) 여기서 throw하지 않는다.
+        // declareWatchedPaths는 실패해도 예외를 올리지 않으므로(loop 지속) 여기서 throw하지 않는다.
         await declareWatchedPaths(next);
       }
     } finally {
