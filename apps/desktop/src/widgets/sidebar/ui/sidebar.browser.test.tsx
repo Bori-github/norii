@@ -274,4 +274,18 @@ describe("Sidebar 접근성·키보드", () => {
       expect(getByTestId("tree-empty").textContent).toBe("비어 있음");
     });
   });
+
+  it("'비어 있음'을 클릭해도 폴더가 접히지 않는다", async () => {
+    useWorkspaceStore.getState().openRoot("/vault", [NOTES_DIR]);
+    readDir.mockResolvedValueOnce([]);
+    const { getByTestId } = render(<Sidebar />);
+
+    fireEvent.click(getByTestId("tree-dir"));
+    await waitFor(() => expect(getByTestId("tree-empty")).toBeTruthy());
+
+    // placeholder 클릭이 부모 폴더 treeitem으로 버블하면 toggleDir로 접힌다 — 멈춰야 한다.
+    fireEvent.click(getByTestId("tree-empty"));
+    expect(getByTestId("tree-dir").getAttribute("aria-expanded")).toBe("true");
+    expect(getByTestId("tree-empty")).toBeTruthy();
+  });
 });

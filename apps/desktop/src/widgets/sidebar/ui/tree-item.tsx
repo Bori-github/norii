@@ -19,6 +19,8 @@ import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 // 선택/포커스 표시는 줄(data-row)에 여백 있는 둥근 배경으로 그린다 — 전체폭 띠도, 하위 트리를
 // 감싸는 링도 아니다. `:focus`다(:focus-visible 아님) — 마우스·키보드 무관하게 늘 보이게(깜빡임
 // 없음). 활성 파일은 더 강한 종이 배경으로 구분한다(→ decisions/color-palette).
+// 활성 파일이 포커스까지 받으면 배경만으로는 선택과 구분이 안 되므로, 그때만 accent 인셋 링을
+// 얹어 키보드 포커스 위치를 드러낸다.
 const treeItemClass = css({
   listStyle: "none",
   margin: 0,
@@ -26,6 +28,9 @@ const treeItemClass = css({
   outline: "none",
   '&:focus:not([aria-selected="true"]) > [data-row]': { background: "bg.hover" },
   '&[aria-selected="true"] > [data-row]': { background: "bg.paper" },
+  '&:focus[aria-selected="true"] > [data-row]': {
+    boxShadow: "inset 0 0 0 1px token(colors.accent)",
+  },
 });
 
 const rowClass = css({
@@ -141,7 +146,13 @@ export const TreeItem = memo(function TreeItem({
               ))
             ) : (
               // 빈 것은 빈 group이 이미 알린다 — 이 줄은 눈으로 보는 힌트라 SR에서 감춘다.
-              <li aria-hidden="true" className={emptyClass} data-testid="tree-empty">
+              // 클릭은 아무 일도 하지 않지만, 부모 폴더 treeitem으로 버블하면 폴더가 접히므로 멈춘다.
+              <li
+                aria-hidden="true"
+                className={emptyClass}
+                data-testid="tree-empty"
+                onClick={(event) => event.stopPropagation()}
+              >
                 {STRINGS.sidebarEmptyFolder}
               </li>
             )}
