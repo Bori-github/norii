@@ -136,6 +136,11 @@ export function createEditorController(options: Options): EditorController {
   return {
     showTab(tabId, focus = true) {
       if (tabId === activeTabId && view) {
+        // 이미 보이는 탭이라도 포커스 요청은 존중한다 — 트리 클릭(focus=false)으로 활성만
+        // 시킨 파일을 Enter로 다시 활성화(focus=true)해 편집에 진입하는 경로.
+        if (focus) {
+          view.focus();
+        }
         return;
       }
       if (view && activeTabId !== null && states.has(activeTabId)) {

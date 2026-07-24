@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
 import { resetScrollSync, SWAP_SUPPRESS_WINDOW_MS } from "@features/scroll-sync";
 import { useSidebarStore } from "@features/toggle-sidebar";
+import type { FileContent } from "@shared/ipc";
 
 import { EditorPage } from "../index";
 
@@ -75,6 +76,19 @@ async function mountDocPage(readySelector: string) {
 
 const renderLongDocPage = () => renderDocPage(LONG_DOC, "p");
 const renderUnevenDocPage = () => renderDocPage(UNEVEN_DOC, "h1");
+
+function fileContent(path: string): FileContent {
+  return {
+    path,
+    text: "# 본문\n",
+    encoding: "utf-8",
+    hasBom: false,
+    eol: "lf",
+    eolMixed: false,
+    mtime: 1_000,
+    hash: "hash-1",
+  };
+}
 
 describe("스크롤 동기화 (EditorPage 통합)", () => {
   it("에디터를 스크롤하면 프리뷰가 따라온다", async () => {
@@ -239,7 +253,7 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
 // 경계: 단축키(Cmd+B)는 앱 루트의 전역 리스너가 등록하므로 여기 범위가 아니다 —
 //       리스너는 toggleSidebar를 부를 뿐이고 그 전이는 sidebar-store 테스트가 고정한다.
 describe("사이드바 접기 (EditorPage 배선)", () => {
-  it("상태바 토글이 사이드바를 없앴다 되돌린다", async () => {
+  it("타이틀 스트립 토글이 사이드바를 없앴다 되돌린다", async () => {
     useSidebarStore.setState({ visible: true });
     const { getByTestId, queryByTestId } = render(<EditorPage />);
 
@@ -254,5 +268,35 @@ describe("사이드바 접기 (EditorPage 배선)", () => {
     await waitFor(() => {
       expect(queryByTestId("sidebar")).not.toBeNull();
     });
+  });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — "파일 클릭은 트리 포커스를 유지하고, 편집
+//       진입은 Enter가 맡는다". Enter는 이미 활성인 그 탭을 focus=true로 재활성화한다.
+// 왜: 활성 탭이 안 바뀌면(같은 id) activeTabId만 보는 이펙트는 다시 돌지 않아 view.focus()가
+//     불려야 할 바로 그 경로(방금 클릭한 파일에서의 Enter)에서 포커스가 오지 않는다.
+// 보장: focus=false로 연 탭을 focus=true로 재활성화하면 에디터가 포커스를 받는다.
+// 경계: 실제 Enter 키 합성은 E2E 밖(수정자·키 합성 한계) — 스토어 액션으로 경로를 재현한다.
+describe("탭 활성화 포커스 (EditorPage 배선)", () => {
+  it("focus=false로 연 탭을 focus=true로 다시 활성화하면 에디터가 포커스를 받는다", async () => {
+    // 트리 클릭 경로 — 활성만 시키고 포커스는 트리에 남긴다.
+    const tabId = useDocumentStore.getState().openFileTab(fileContent("/x.md"), false);
+    const { container } = render(
+      <div style={{ height: 400 }}>
+        <style>{LAYOUT_CSS}</style>
+        <EditorPage />
+      </div>,
+    );
+    const content = await waitFor(() => {
+      const el = container.querySelector(".cm-content");
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    // 아직 에디터에는 포커스가 없다(포커스는 트리에 있다는 전제).
+    expect(document.activeElement).not.toBe(content);
+
+    // Enter 경로 — 같은 탭을 focus=true로 재활성화하면 activeTabId는 그대로지만 포커스가 와야 한다.
+    useDocumentStore.getState().activateTab(tabId, true);
+    await waitFor(() => expect(document.activeElement).toBe(content));
   });
 });
