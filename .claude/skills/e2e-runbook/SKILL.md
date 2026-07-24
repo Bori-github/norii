@@ -25,12 +25,14 @@ mise run e2e               # webdriverio가 그 앱에 붙어 시나리오 실�
 
 `dev`와 `dev-webdriver`는 동시에 띄울 수 있다(각자 빈 포트 1420~ / 1520~). 데모 녹화가 필요하면 `mise run e2e` 대신 `mise run demo`(내부에서 E2E를 돌리며 녹화). 세부는 [development-commands.md](../../docs/development-commands.md).
 
+네이티브 층(창 버튼 정렬·드래그 불변식·전체화면 클릭)은 `mise run verify-native`가 실제 입력으로 검증한다. **frontmost가 필요하므로 실행 전 사용자에게 알리고** 화면을 비워둘 수 있게 한 뒤 돌린다 — 실행 중 마우스·키보드·창을 건드리면 좌표가 어긋나 실패한다(→ [testing.md#성숙도-주의](../../docs/testing.md)).
+
 ## 시나리오 작성 — 지킬 것
 
 작성 중 아래를 지킨다. 각 항목의 **이유는 링크가 소유**하며, 여기서는 무엇을 할지만 정한다.
 
 - [ ] **정상 케이스만 담지 않는다 — 실패 공간을 먼저 열거하고 시나리오를 도출한다**(→ [testing.md#실패-경로를-먼저-열거한다](../../docs/testing.md)).
-- [ ] **트리거는 단축키 대신 UI 클릭이나 `browser.execute`로 만든다.** 수정자 키 합성이 왜 안 되는지·현재 한계(플러그인 버전·플랫폼별)는 [testing.md#성숙도-주의](../../docs/testing.md)가 소유한다. 단축키 계약 자체는 수동 검증 항목.
+- [ ] **트리거는 WebDriver 키 액션으로 만들지 않는다** — UI 클릭이나 `browser.execute`로 만든다. 단축키도 `browser.execute`로 합성 `KeyboardEvent`를 디스패치해 핸들러 층까지 고정한다. 방법·현재 한계는 [testing.md#성숙도-주의](../../docs/testing.md)가 소유한다.
 - [ ] **텍스트 입력 방식은 [testing.md#성숙도-주의](../../docs/testing.md)를 따른다**(현재 검증된 방법: `element.addValue()`). 한글 조합 이벤트는 미검증 영역.
 - [ ] **selector는 이름 텍스트로 잡는다**(예: `span=이름`) — 근거는 [testing.md#위험-영역은-실제-앱으로-검증-핵심](../../docs/testing.md)가 소유한다.
 - [ ] **파일을 다루는 시나리오는 E2E 스코프 루트(`NORII_E2E_SCOPE_ROOT`, dev-webdriver가 설정) 안에서만 논다.** 임의 경로를 쓰지 않는다.
@@ -48,4 +50,4 @@ mise run e2e               # webdriverio가 그 앱에 붙어 시나리오 실�
 
 ## 정말 자동화가 불가한 것
 
-훅으로도 우회되지 않는 것(수정자 키 단축키 등)만 수동 검증으로 남기고, **그 사유와 검증 방법을 PR·문서에 적는다**(→ [작업 규칙 — 품질 게이트](../../rules/project-rules.md)). 재현이 어렵다는 이유로 목록에서 빼지 않는다.
+훅으로도 우회되지 않는 것(실제 OS 키가 핸들러로 라우팅되는지·유리 투과 등)만 수동 검증으로 남기고, **그 사유와 검증 방법을 PR·문서에 적는다**(→ [작업 규칙 — 품질 게이트](../../rules/project-rules.md)). 재현이 어렵다는 이유로 목록에서 빼지 않는다.
