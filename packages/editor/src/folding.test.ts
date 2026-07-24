@@ -20,12 +20,17 @@ import type { EditorColors } from "./theme";
 // 경계: 접힘 UI(거터·placeholder)·키맵 실동작은 CM6 기본을 신뢰한다(단축키 계약 표).
 //       접힘 상태 영속화는 하지 않는다(→ editor-strategy.md#접힘-상태-영속화).
 
-function stateOf(doc: string): EditorState {
-  const state = EditorState.create({ doc, extensions: [markdown(), markdownFolding()] });
-  // syntaxTree는 파싱 예산 탓에 부분 트리일 수 있고, 그러면 foldable이 null을 낸다(CI에서
-  // 드물게 실패). 전체 파싱을 강제해 접기 판정을 타이밍과 무관하게 한다.
+// EditorState.create의 초기 파싱은 20ms 예산이라, CI 부하로 그 안에 못 끝내면 트리가 잘려
+// (때로 헤딩 이전까지) foldable이 null을 낸다. ensureSyntaxTree는 context만 끝까지 진행시키고
+// field.tree(생성 시 캡처한 참조)는 그대로라 syntaxTree(state)가 부분 트리로 남는다 — 빈
+// 트랜잭션으로 LanguageState를 다시 만들어 field.tree를 완전한 트리로 교체한다.
+function fullyParsed(state: EditorState): EditorState {
   ensureSyntaxTree(state, state.doc.length, 5000);
-  return state;
+  return state.update({}).state;
+}
+
+function stateOf(doc: string): EditorState {
+  return fullyParsed(EditorState.create({ doc, extensions: [markdown(), markdownFolding()] }));
 }
 
 /** 줄 번호(1부터)의 접기 범위를 "줄 번호 구간"으로 요약한다 — 오프셋보다 의도가 읽히게. */
@@ -123,12 +128,12 @@ describe("에디터 확장 배선 (변이 검증)", () => {
   };
 
   it("noriiEditorExtensions에 접기가 배선되어 있다 — fold 이펙트가 기록된다", () => {
-    const state = EditorState.create({
-      doc: ["# 제목", "본문 1", "본문 2"].join("\n"),
-      extensions: noriiEditorExtensions(COLORS),
-    });
-    // stateOf와 같은 이유로 전체 파싱을 강제한다.
-    ensureSyntaxTree(state, state.doc.length, 5000);
+    const state = fullyParsed(
+      EditorState.create({
+        doc: ["# 제목", "본문 1", "본문 2"].join("\n"),
+        extensions: noriiEditorExtensions(COLORS),
+      }),
+    );
     const line = state.doc.line(1);
     const range = foldable(state, line.from, line.to);
     expect(range).not.toBeNull();
