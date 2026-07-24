@@ -6,6 +6,8 @@
 
 ## 커맨드 시그니처
 
+### 파일 열기·저장
+
 ```rust
 #[tauri::command]
 async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
@@ -42,7 +44,11 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 // - 디스크 내용 해시 ≠ expected_hash면 쓰지 않고 AppError::Conflict 반환
 //   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
 // - expected_hash가 있는데 파일이 디스크에 없어도 Conflict다 — 기준으로 삼은 원본이 사라진 것도 외부 변경이다
+```
 
+### 트리 읽기
+
+```rust
 #[tauri::command]
 async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
 // TreeNode { path, name, kind: "dir"|"file", is_symlink: bool }
@@ -62,7 +68,11 @@ async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
 // - 심볼릭 링크: is_symlink로 표시하고 일반 항목처럼 다룬다.
 //   대상이 없는(깨진) 링크도 표시하며, 열면 AppError::NotFound.
 //   루트 밖을 가리키는 링크는 펼칠 때 canonicalize 스코프 검증이 거부한다(→ 권한)
+```
 
+### 항목 조작
+
+```rust
 #[tauri::command]
 async fn create_file(dir: String, name: String) -> Result<String, AppError>;
 // 빈 마크다운 파일을 만들고 만들어진 파일의 canonical 경로를 반환한다(프론트는 이 값으로
@@ -103,7 +113,11 @@ async fn delete_entry(path: String) -> Result<(), AppError>;
 // rename_entry·delete_entry가 심볼릭 링크를 만나면 링크 자체를 다룬다는 뜻이다(대상이 아니라).
 // 트리가 링크를 항목으로 보여주므로(read_dir), 링크를 지웠는데 대상이 사라지면 보이는 것과
 // 어긋난다. 이름은 '/'를 포함할 수 없어(§항목 이름 규칙) 부모 밖으로 나갈 수 없다
+```
 
+### 변경 감시
+
+```rust
 #[tauri::command]
 async fn watch_paths(paths: Vec<String>) -> Result<u32, AppError>;
 // 감시 대상 전체를 선언적으로 교체한다(누적 아님) — 호출 시 이전 감시는 모두 해제.
@@ -150,7 +164,11 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 //   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
 // 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
 //   열기가 새 감시를 세운다.
+```
 
+### 다이얼로그
+
+```rust
 #[tauri::command]
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
