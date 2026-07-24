@@ -107,6 +107,8 @@ export const STRINGS = {
     notFound: "파일을 찾을 수 없습니다.",
     permission: "권한이 없습니다.",
     conflict: "파일이 외부에서 수정되었습니다.",
+    alreadyExists: "같은 이름이 이미 있습니다.",
+    invalidName: "쓸 수 없는 이름입니다.",
     diskFull: "디스크가 가득 찼습니다.",
     encoding: "지원되지 않는 파일 형식입니다.",
     io: "파일 처리 중 오류가 발생했습니다.",

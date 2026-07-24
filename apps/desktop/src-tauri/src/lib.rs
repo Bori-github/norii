@@ -3,6 +3,7 @@
 
 mod content_hash;
 mod dialog_commands;
+mod entry_commands;
 mod eol;
 mod error;
 mod fs_commands;
@@ -23,6 +24,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         fs_commands::open_file,
         fs_commands::save_file,
         tree_commands::read_dir,
+        entry_commands::create_file,
+        entry_commands::create_dir,
         watch::watch_paths,
         tree_watch::watch_tree,
         dialog_commands::show_open_dialog,
