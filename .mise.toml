@@ -90,9 +90,9 @@ dir = "apps/desktop"
 run = "pnpm test:e2e"
 
 [tasks.verify-native]
-description = "네이티브 검증(전체화면 토글 클릭 등) — 실제 OS 입력이라 앱을 최상위로 세운다(dev-webdriver 필요, 로컬 전용)"
+description = "네이티브 검증(표준 창 버튼 중앙·드래그 불변식·전체화면 토글 클릭) — 실제 OS 입력이라 앱을 최상위로 세운다(dev-webdriver 필요, 로컬 전용)"
 dir = "apps/desktop"
-run = "node scripts/verify-native.mjs"
+run = "node e2e/verify-native.mjs"
 
 # --- PR 데모 영상 (E2E 화면을 그대로 녹화 → GitHub CDN 업로드) ---
 [tasks.demo]

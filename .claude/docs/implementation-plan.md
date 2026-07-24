@@ -70,7 +70,7 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 
 ### 테스트 · 도구
 
-- **네이티브 E2E** — 로컬 harness(`mise run verify-native`)를 시작했다: AppleScript 실제 클릭 + WebDriver 단언으로 **전체화면 토글 클릭**을 검증한다(실제 클릭은 웹뷰에 닿지만 실제 키는 안 닿는다는 실측 위에). frontmost·화면 좌표 의존이라 헤드리스 CI가 아니라 로컬 전용이다. 남은 것: 창 드래그·표준 창 버튼 위치·유리 투과의 픽셀 판정(`screencapture` + 이미지 비교) 추가 (→ [테스트 전략 — 성숙도 주의](testing.md#성숙도-주의) · [창 표면 계약 — 검증](design/window-chrome.md#검증))
+- **네이티브 E2E** — 로컬 harness(`mise run verify-native`)가 **표준 창 버튼 세로 중앙 정렬·드래그 불변식(띠는 창 이동·본문은 불변)·전체화면 토글 클릭**을 실제 입력(AppleScript·CGEvent) + WebDriver/접근성 단언으로 검증한다. frontmost·화면 좌표 의존이라 헤드리스 CI가 아니라 로컬 전용이다. 남은 것: **유리 투과**의 픽셀 판정 — `screencapture`는 되나 통제 배경(뒤에 알려진 색 창)이 필요해 아직 수동, 도입 판단이 열려 있다 (→ [테스트 전략 — 성숙도 주의](testing.md#성숙도-주의) · [창 표면 계약 — 검증](design/window-chrome.md#검증))
 - **커버리지 임계값** — 도입 시점·수치 (→ [테스트 전략](testing.md))
 - **번들 크기 임계값** — 앱 번들 15MB 예산은 확정. 프론트엔드 dist 하드 임계값 도입 여부가 열림 (→ [플랫폼 전략](platform-strategy.md))
 - **oxfmt 1.0 재확인** — 베타(0.x) → 1.0 도달 시 안정성 재점검 (→ [코드 품질](code-quality.md))
