@@ -16,11 +16,7 @@ import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 // 두지 않는다(중첩 인터랙티브 금지). 화살표 탐색·roving tabindex는 sidebar가 소유한다.
 // lazy 읽기·캐시 규칙은 features/open-folder가 소유한다(여기는 표시와 클릭 연결만).
 
-// 선택/포커스 표시는 줄(data-row)에 여백 있는 둥근 배경으로 그린다 — 전체폭 띠도, 하위 트리를
-// 감싸는 링도 아니다. `:focus`다(:focus-visible 아님) — 마우스·키보드 무관하게 늘 보이게(깜빡임
-// 없음). 활성 파일은 더 강한 종이 배경으로 구분한다(→ decisions/color-palette).
-// 활성 파일이 포커스까지 받으면 배경만으로는 선택과 구분이 안 되므로, 그때만 accent 인셋 링을
-// 얹어 키보드 포커스 위치를 드러낸다.
+// 선택(활성 파일)은 종이 배경, 포커스(비활성 행)는 hover 배경으로 표시한다(→ decisions/color-palette).
 const treeItemClass = css({
   listStyle: "none",
   margin: 0,
@@ -28,9 +24,6 @@ const treeItemClass = css({
   outline: "none",
   '&:focus:not([aria-selected="true"]) > [data-row]': { background: "bg.hover" },
   '&[aria-selected="true"] > [data-row]': { background: "bg.paper" },
-  '&:focus[aria-selected="true"] > [data-row]': {
-    boxShadow: "inset 0 0 0 1px token(colors.accent)",
-  },
 });
 
 const rowClass = css({
