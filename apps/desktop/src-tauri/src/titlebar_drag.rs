@@ -33,6 +33,8 @@ mod platform {
     const NS_VIEW_MIN_Y_MARGIN: usize = 8;
     // addSubview:positioned:relativeTo: 의 NSWindowAbove — 웹뷰 위에 얹는다.
     const NS_WINDOW_ABOVE: isize = 1;
+    // NSWindowStyleMaskFullScreen — 전체화면이면 띠를 통과시킨다(hit_test).
+    const NS_WINDOW_STYLE_MASK_FULLSCREEN: usize = 1 << 14;
 
     /// 띠에서 마우스가 눌리면 그 **살아 있는 이벤트**를 창에 넘겨 네이티브 드래그를 시작한다.
     ///
@@ -59,6 +61,15 @@ mod platform {
     unsafe extern "C" fn hit_test(this: &AnyObject, _cmd: Sel, point: CGPoint) -> *mut AnyObject {
         // SAFETY: AppKit이 이 뷰의 hitTest:로 부른 것이므로 메인 스레드이고 this는 유효하다.
         unsafe {
+            // 전체화면 창은 끌 수 없다 — 띠가 마우스를 가로챌 이유가 없다. 전부 통과시켜
+            // 그 위 크롬(왼쪽 끝으로 옮겨 앉는 사이드바 토글)이 눌리게 한다(→ window-chrome.md).
+            let window: *mut AnyObject = msg_send![this, window];
+            if !window.is_null() {
+                let style_mask: usize = msg_send![window, styleMask];
+                if style_mask & NS_WINDOW_STYLE_MASK_FULLSCREEN != 0 {
+                    return std::ptr::null_mut();
+                }
+            }
             let frame: CGRect = msg_send![this, frame];
             let local_x = point.x - frame.origin.x;
             let cutout =

@@ -57,7 +57,9 @@ const toggleSlotClass = css({
     justifyContent: "center",
   },
   // 전체화면에선 표준 창 버튼이 숨으므로 그 자리를 비울 필요가 없다 — 왼쪽 끝에 붙인다.
-  // 두 속성 선택자라 _glass(속성 하나)보다 특정도가 높아 left를 덮는다.
+  // 이 자리는 클릭 통과 영역 밖이지만, 전체화면 창은 끌 수 없어 네이티브 띠가 통째로 클릭을
+  // 통과시키므로 눌린다(→ titlebar_drag.rs hit_test). 두 속성 선택자라 _glass보다 특정도가
+  // 높아 left를 덮는다.
   '[data-glass="on"][data-fullscreen="on"] &': { left: "8px" },
 });
 
