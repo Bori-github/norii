@@ -30,7 +30,7 @@ mise run e2e               # webdriverio가 그 앱에 붙어 시나리오 실�
 
 - [ ] **트리거는 단축키 대신 UI 클릭이나 `browser.execute`로 만든다.** 수정자 키 합성이 왜 안 되는지·현재 한계(플러그인 버전·플랫폼별)는 [testing.md#성숙도-주의](../../docs/testing.md)가 소유한다. 단축키 계약 자체는 수동 검증 항목.
 - [ ] **텍스트 입력 방식은 [testing.md#성숙도-주의](../../docs/testing.md)를 따른다**(현재 검증된 방법: `element.addValue()`). 한글 조합 이벤트는 미검증 영역.
-- [ ] **selector는 이름 텍스트로 잡는다**(예: `span=이름`). 경로 문자열(`data-path`)은 OS별 경로 정규화에 취약하다.
+- [ ] **selector는 이름 텍스트로 잡는다**(예: `span=이름`) — 근거는 [testing.md#위험-영역은-실제-앱으로-검증-핵심](../../docs/testing.md)가 소유한다.
 - [ ] **자동화 장벽을 만나면 먼저 훅을 본다.** 네이티브 다이얼로그 등은 "자동화 불가"로 분류하기 전에 E2E 훅(`apps/desktop/src/app/lib/expose-e2e-api.ts`, `window.noriiE2e`)으로 우회 가능한지 확인한다 — 파일·폴더 열기가 이미 이 방식이다(→ [testing.md#위험-영역은-실제-앱으로-검증-핵심](../../docs/testing.md), 예: `apps/desktop/e2e/file-lifecycle.e2e.ts`).
 - [ ] **타이밍에 좌우되는 시나리오는 반복 실행으로 검증한다**(실패까지 N회 반복, 실패 출력 보존). 한 번 통과는 증거가 아니다(→ [testing.md#타이밍-기반-테스트는-반복-실행으로-검증한다](../../docs/testing.md)).
 
