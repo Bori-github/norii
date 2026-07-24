@@ -49,6 +49,10 @@ mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 
 # dev와 dev-webdriver는 동시에 띄울 수 있다 — 각자 빈 포트를 잡는다(1420~ / 1520~).
 # E2E를 돌리려고 개발 중인 앱을 끌 필요가 없다.
 
+# 네이티브 검증 (check·CI 미포함 — 실제 OS 입력이라 앱을 최상위로 세운다, macOS 로컬 전용)
+mise run dev-webdriver & # 1) E2E용 앱 실행
+mise run verify-native   # 2) 전체화면 토글 클릭 등 실제 클릭 검증 (실행 전 경고·카운트다운, → testing.md#성숙도-주의)
+
 # PR 데모 영상 (check 미포함 — 앱 실행·화면 기록 권한 필요, macOS 전용)
 mise run dev-webdriver &        # 1) E2E용 앱 실행
 mise run demo                   # 2) E2E 시나리오를 실행하며 앱 창을 녹화 → /tmp/norii-demo.mov
