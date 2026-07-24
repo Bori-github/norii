@@ -28,6 +28,58 @@ pub async fn create_dir(
     create_dir_impl(&scope, &dir, &name)
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn rename_entry(
+    scope: State<'_, FileScope>,
+    path: String,
+    new_name: String,
+) -> Result<String, AppError> {
+    rename_entry_impl(&scope, &path, &new_name)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_entry(scope: State<'_, FileScope>, path: String) -> Result<(), AppError> {
+    delete_entry_impl(&scope, &path)
+}
+
+pub fn rename_entry_impl(
+    scope: &FileScope,
+    path: &str,
+    new_name: &str,
+) -> Result<String, AppError> {
+    let source = resolve_entry(scope, path)?;
+    let parent = source
+        .parent()
+        .ok_or_else(|| AppError::Io("부모 디렉터리가 없습니다".into()))?;
+    let name = validate_name(new_name)?;
+    let name = if source.is_dir() {
+        name
+    } else {
+        with_markdown_extension(name)
+    };
+    let target = parent.join(&name);
+    if fs::symlink_metadata(&target).is_ok() && !is_same_entry(&source, &target) {
+        return Err(AppError::AlreadyExists(name));
+    }
+    fs::rename(&source, &target)?;
+    Ok(path_string(&target))
+}
+
+pub fn delete_entry_impl(scope: &FileScope, path: &str) -> Result<(), AppError> {
+    let entry = resolve_entry(scope, path)?;
+    trash::delete(&entry).map_err(|_| AppError::Io("휴지통으로 보내지 못했습니다".into()))
+}
+
+fn is_same_entry(one: &Path, other: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    match (fs::symlink_metadata(one), fs::symlink_metadata(other)) {
+        (Ok(one), Ok(other)) => one.dev() == other.dev() && one.ino() == other.ino(),
+        _ => false,
+    }
+}
+
 pub fn create_file_impl(scope: &FileScope, dir: &str, name: &str) -> Result<String, AppError> {
     let parent = resolve_dir(scope, dir)?;
     let file_name = with_markdown_extension(validate_name(name)?);
@@ -56,6 +108,17 @@ pub fn create_dir_impl(scope: &FileScope, dir: &str, name: &str) -> Result<Strin
         }
         Err(err) => Err(err.into()),
     }
+}
+
+fn resolve_entry(scope: &FileScope, path: &str) -> Result<PathBuf, AppError> {
+    let raw = Path::new(path);
+    let (Some(parent), Some(name)) = (raw.parent(), raw.file_name()) else {
+        return Err(AppError::Io("항목 경로가 아닙니다".into()));
+    };
+    let entry = fs::canonicalize(parent)?.join(name);
+    scope.ensure_allowed(&entry)?;
+    fs::symlink_metadata(&entry)?;
+    Ok(entry)
 }
 
 /// 스코프 검증(→ rust-commands.md#권한-capabilities).
@@ -202,6 +265,108 @@ mod tests {
             create_dir_impl(&scope, root, "회의록"),
             Err(AppError::AlreadyExists(_))
         ));
+    }
+
+    // 집행: rust-commands.md rename_entry — "같은 부모 안에서 이름만 바꾼다"·"파일이면
+    //       확장자를 .md로 수렴하고, 디렉터리면 이름 그대로다".
+    // 왜: 이름 변경으로 파일이 다른 폴더로 새면 사용자가 문서를 잃어버린 것처럼 느끼고,
+    //     확장자가 빠지면 트리 필터에 걸려 바꾼 파일이 목록에서 사라진다.
+    // 보장: 새 이름은 같은 부모 아래에 놓이고, 파일은 .md로 수렴하며 내용이 보존된다.
+    //       폴더 이름에는 확장자가 붙지 않고 옛 경로는 사라진다.
+    // 경계: 다른 폴더로 옮기는 이동은 이 커맨드의 일이 아니다 — 이름의 '/' 금지가 막는다.
+    #[test]
+    fn 이름을_바꾸면_같은_부모에_남고_파일은_md로_수렴한다() {
+        let (_dir, scope, canonical) = scoped_tempdir();
+        let file = create_file_impl(&scope, canonical.to_str().unwrap(), "회의").unwrap();
+        fs::write(&file, "본문").unwrap();
+        let folder = create_dir_impl(&scope, canonical.to_str().unwrap(), "묶음").unwrap();
+
+        let renamed = rename_entry_impl(&scope, &file, "결산").unwrap();
+
+        assert_eq!(renamed, canonical.join("결산.md").to_str().unwrap());
+        assert_eq!(fs::read_to_string(&renamed).unwrap(), "본문");
+        assert!(!Path::new(&file).exists());
+        assert_eq!(
+            rename_entry_impl(&scope, &folder, "보관").unwrap(),
+            canonical.join("보관").to_str().unwrap()
+        );
+    }
+
+    // 집행: rust-commands.md rename_entry — "대상 이름이 이미 있으면 AlreadyExists"·"단
+    //       대소문자만 바꾸는 이름변경은 허용한다 … 같은 항목인지는 inode로 판정한다".
+    // 왜: rename은 대상을 조용히 덮어쓴다 — 막지 않으면 이름 변경 한 번에 다른 문서가
+    //     사라진다. 반대로 대소문자 교정까지 막으면 APFS에서 그 교정을 영영 할 수 없다
+    //     (해소한 경로를 비교하면 자기 자신이 남으로 보인다).
+    // 보장: 남의 이름과 겹치면 거부되고 두 파일 모두 그대로 남는다. 자기 이름의 대소문자만
+    //       바꾸는 것은 통과한다.
+    // 경계: 대소문자를 구분하는 파일시스템에서는 애초에 겹치지 않아 같은 결과가 된다.
+    #[test]
+    fn 남의_이름과_겹치면_거부하고_대소문자_교정은_허용한다() {
+        let (_dir, scope, canonical) = scoped_tempdir();
+        let root = canonical.to_str().unwrap();
+        let file = create_file_impl(&scope, root, "회의").unwrap();
+        fs::write(&file, "본문").unwrap();
+        let other = create_file_impl(&scope, root, "결산").unwrap();
+
+        assert!(matches!(
+            rename_entry_impl(&scope, &file, "결산"),
+            Err(AppError::AlreadyExists(_))
+        ));
+        assert_eq!(fs::read_to_string(&file).unwrap(), "본문");
+        assert!(Path::new(&other).exists());
+
+        let corrected = rename_entry_impl(&scope, &file, "회의.MD").unwrap();
+        assert!(corrected.ends_with("회의.MD"));
+        assert_eq!(fs::read_to_string(&corrected).unwrap(), "본문");
+    }
+
+    // 집행: rust-commands.md — "스코프 검증은 넷 다 부모 디렉터리를 canonicalize해서 한다 …
+    //       심볼릭 링크를 만나면 링크 자체를 다룬다(대상이 아니라)".
+    // 왜: 링크를 지웠는데 링크가 가리키던 원본이 사라지면, 트리에서 한 줄을 지운 대가로
+    //     다른 곳의 문서를 잃는다 — 되돌릴 수 있어도 사용자가 의도한 일이 아니다.
+    // 보장: 링크 자신이 휴지통에 나타나고 자리에서 사라지며, 링크의 대상은 그대로 남는다.
+    //       허용 루트 밖과 없는 경로는 휴지통에 닿기 전에 거부된다.
+    // 경계: 휴지통에 들어간 뒤의 복원("Put Back")은 OS의 일이라 다루지 않는다. 옮긴 항목을
+    //       치우지 못해 남는 것은 testing.md#테스트가-휴지통에-남기는-것이 소유한다.
+    #[test]
+    fn 삭제는_링크_자체를_휴지통으로_보내고_스코프_밖은_거부한다() {
+        let (_dir, scope, canonical) = scoped_tempdir();
+        let target = canonical.join("원본.md");
+        // 이름이 겹치면 휴지통이 개명해 넣고, 이 단언은 옛 실행이 남긴 동명 항목을 보고
+        // 통과한다(휴지통은 나열이 막혀 개명된 이름을 찾을 수 없다). 프로세스 번호는
+        // 재사용되므로 나노초를 더한다.
+        let name = format!(
+            "norii-테스트-{}-{}.md",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("UNIX_EPOCH 이후")
+                .as_nanos()
+        );
+        let link = canonical.join(&name);
+        fs::write(&target, "본문").unwrap();
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        delete_entry_impl(&scope, link.to_str().unwrap()).unwrap();
+
+        assert_eq!(fs::read_link(trash_path(&name)).unwrap(), target);
+        assert!(fs::symlink_metadata(&link).is_err());
+        assert!(target.exists());
+
+        assert!(matches!(
+            delete_entry_impl(&scope, "/etc/hosts"),
+            Err(AppError::Permission(_))
+        ));
+        assert!(matches!(
+            delete_entry_impl(&scope, canonical.join("없는.md").to_str().unwrap()),
+            Err(AppError::NotFound(_))
+        ));
+    }
+
+    fn trash_path(name: &str) -> PathBuf {
+        PathBuf::from(std::env::var("HOME").expect("HOME"))
+            .join(".Trash")
+            .join(name)
     }
 
     // 집행: rust-commands.md#권한-capabilities — 경로 스코프 강제는 커맨드 코드에 있다.

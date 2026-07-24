@@ -26,6 +26,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         tree_commands::read_dir,
         entry_commands::create_file,
         entry_commands::create_dir,
+        entry_commands::rename_entry,
+        entry_commands::delete_entry,
         watch::watch_paths,
         tree_watch::watch_tree,
         dialog_commands::show_open_dialog,

@@ -40,6 +40,9 @@ encoding_rs = "0.8.35"
 chardetng = "1.0.0"
 # 파일 외부 변경 감시(watch_paths → rust-commands.md)
 notify = "8.2.0"
+# 삭제를 휴지통 이동으로(delete_entry → rust-commands.md). 기본 기능은 휴지통 목록 조회를
+# 딸려오게 하는데 norii는 보내기만 한다.
+trash = { version = "5.2.6", default-features = false }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-opener = "2.5.4"
 tauri-plugin-log = "2.8.0"

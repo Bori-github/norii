@@ -81,23 +81,28 @@ async fn create_dir(dir: String, name: String) -> Result<String, AppError>;
 async fn rename_entry(path: String, new_name: String) -> Result<String, AppError>;
 // 같은 부모 안에서 이름만 바꾼다(다른 폴더로 옮기지 않는다 — 이름에 '/'가 금지된다).
 // 바뀐 항목의 canonical 경로를 반환한다.
-// - path는 canonicalize 후 허용 루트 검증. 새 경로는 같은 부모 아래라 스코프가 유지된다
+// - 새 경로는 같은 부모 아래라 스코프가 유지된다
 // - 파일이면 확장자를 .md로 수렴하고, 디렉터리면 이름 그대로다
 // - 대상 이름이 이미 있으면 AlreadyExists — rename은 조용히 덮어쓰므로 먼저 막는다.
 //   단 대소문자만 바꾸는 이름변경(a.md → A.md)은 허용한다: 대소문자를 무시하는
 //   파일시스템(APFS 기본)에서 "이미 있음"으로 보이지만 원본과 같은 항목이다 —
-//   대상을 해소한 경로가 원본과 같으면 통과시킨다
+//   같은 항목인지는 inode로 판정한다(macOS realpath는 대소문자를 교정하지 않아
+//   해소한 경로를 비교하면 자기 자신을 남으로 본다)
 
 #[tauri::command]
 async fn delete_entry(path: String) -> Result<(), AppError>;
 // 휴지통으로 보낸다 — 디스크에서 지우지 않는다(되돌릴 수 있게. 확인 모달은 프론트가 띄운다).
-// - path는 canonicalize 후 허용 루트 검증
 // - 폴더는 하위 전체가 함께 간다
 // - 휴지통으로 보낼 수 없는 환경(지원하지 않는 볼륨 등)은 AppError::Io로 실패하고 완전
 //   삭제로 대체하지 않는다 — 되돌릴 수 없는 삭제는 사용자가 고른 정책이 아니다
 
 // 네 커맨드 모두 트리를 직접 갱신하지 않는다 — 자기 변경도 watch_tree의 dir-changed로
 // 돌아와 반영된다(외부 변경과 같은 경로. 프론트에 낙관적 갱신을 두지 않는다)
+
+// 스코프 검증은 넷 다 부모 디렉터리를 canonicalize해서 한다 — 항목 이름은 해소하지 않는다.
+// rename_entry·delete_entry가 심볼릭 링크를 만나면 링크 자체를 다룬다는 뜻이다(대상이 아니라).
+// 트리가 링크를 항목으로 보여주므로(read_dir), 링크를 지웠는데 대상이 사라지면 보이는 것과
+// 어긋난다. 이름은 '/'를 포함할 수 없어(§항목 이름 규칙) 부모 밖으로 나갈 수 없다
 
 #[tauri::command]
 async fn watch_paths(paths: Vec<String>) -> Result<u32, AppError>;
