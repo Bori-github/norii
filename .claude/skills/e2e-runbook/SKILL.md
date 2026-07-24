@@ -25,7 +25,7 @@ mise run e2e               # webdriverio가 그 앱에 붙어 시나리오 실�
 
 `dev`와 `dev-webdriver`는 동시에 띄울 수 있다(각자 빈 포트 1420~ / 1520~). 데모 녹화가 필요하면 `mise run e2e` 대신 `mise run demo`(내부에서 E2E를 돌리며 녹화). 세부는 [development-commands.md](../../docs/development-commands.md).
 
-## 시나리오 작성 — 사전 점검
+## 시나리오 작성 — 지킬 것
 
 작성 중 아래를 지킨다. 각 항목의 **이유는 링크가 소유**하며, 여기서는 무엇을 할지만 정한다.
 
