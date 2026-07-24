@@ -9,6 +9,8 @@ export { default as ColumnVerticalIcon } from "./generated/column-vertical";
 export { default as CopyRightIcon } from "./generated/copy-right";
 export { default as EditIcon } from "./generated/edit";
 export { default as FileEyeIcon } from "./generated/file-eye";
+export { default as FilePlusIcon } from "./generated/file-plus";
+export { default as FolderPlusIcon } from "./generated/folder-plus";
 export { default as InformationCircleContainedIcon } from "./generated/information-circle-contained";
 export { default as LightbulbIcon } from "./generated/lightbulb";
 export { default as MinusCircleContainedIcon } from "./generated/minus-circle-contained";
