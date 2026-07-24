@@ -23,19 +23,23 @@ export async function openFileInteractive(): Promise<void> {
   await openPathInTab(path);
 }
 
-export async function openPathInTab(path: string): Promise<void> {
+// focusEditor=false면 열어도 포커스가 에디터로 넘어가지 않는다(→ document-model.md#파일-트리-사이드바).
+export async function openPathInTab(
+  path: string,
+  { focusEditor = true }: { focusEditor?: boolean } = {},
+): Promise<void> {
   const store = useDocumentStore.getState();
   // 빠른 경로 — 같은 문자열은 같은 파일이라 IPC 없이 활성화한다. 표기만 다른 같은 파일
   // (별칭·대소문자·NFC/NFD)은 아래에서 열기 결과의 canonical 경로(file.path)로 잡는다
   // (→ document-model.md#다중-탭-규칙).
   const existing = store.tabs.find((tab) => tab.filePath === path);
   if (existing) {
-    store.activateTab(existing.id);
+    store.activateTab(existing.id, focusEditor);
     return;
   }
   try {
     const file = await ipc.openFile(path);
-    useDocumentStore.getState().openFileTab(file);
+    useDocumentStore.getState().openFileTab(file, focusEditor);
   } catch (error) {
     // 바이너리·손상 파일의 열기 거부도 이 경로로 안내된다 — 파일은 건드리지 않았다.
     notifyIpcError(STRINGS.openFailedTitle, error);

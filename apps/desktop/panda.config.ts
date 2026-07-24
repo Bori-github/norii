@@ -190,7 +190,15 @@ export default defineConfig({
             danger: { value: "#e44339" },
           },
 
-          border: { value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" } },
+          border: {
+            DEFAULT: {
+              value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" },
+            },
+            // 더 연한 경계선 — 트리 세로 가이드 등 옅게 두는 선.
+            muted: {
+              value: { base: "rgba(22, 33, 42, 0.2)", _dark: "rgba(252, 253, 254, 0.2)" },
+            },
+          },
         },
       },
     },
@@ -198,7 +206,9 @@ export default defineConfig({
 
   // 앱 전역 표면 — 시맨틱 토큰으로 배경·글자·높이를 잡는다.
   globalCss: {
-    "html, body, #root": { height: "100%" },
+    // overscroll-behavior 없이는 스크롤할 콘텐츠가 없어도 WKWebView가 페이지 전체를
+    // 탄성 오버스크롤(러버밴드)로 튕겨, 창이 흔들리는 것처럼 보인다.
+    "html, body, #root": { height: "100%", overscrollBehavior: "none" },
     body: {
       margin: "0",
       background: "bg.canvas",

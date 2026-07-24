@@ -63,7 +63,7 @@ function findDocLines(lines, name) {
 //       (→ .claude/docs/design/window-chrome.md#검증).
 function checkPlatformConstants(problems) {
   const rust = read("apps/desktop/src-tauri/src/titlebar_drag.rs");
-  const css = read("apps/desktop/src/widgets/tab-bar/ui/tab-bar.tsx");
+  const css = read("apps/desktop/src/widgets/title-strip/ui/title-strip.tsx");
 
   const rustMatch = /TITLEBAR_STRIP_HEIGHT:\s*f64\s*=\s*(\d+(?:\.\d+)?)/.exec(rust);
   if (!rustMatch) {
@@ -72,18 +72,49 @@ function checkPlatformConstants(problems) {
   }
   const stripHeight = Number.parseFloat(rustMatch[1]);
 
-  // 탭바는 유리(_glass)에서만 띠만큼 위를 비운다.
-  const cssMatch = /_glass:\s*\{[^}]*paddingTop:\s*"(\d+)px"/.exec(css);
+  // 타이틀 스트립은 유리(_glass)에서만 띠 높이를 차지한다. 소문자 height:만 잡아 minHeight는 건너뛴다.
+  const cssMatch = /_glass:\s*\{[^}]*[ ,]height:\s*"(\d+)px"/.exec(css);
   if (!cssMatch) {
-    problems.push("tab-bar.tsx의 _glass paddingTop(띠 높이 확보)을 찾지 못했습니다.");
+    problems.push("title-strip.tsx의 _glass height(띠 높이)를 찾지 못했습니다.");
     return 0;
   }
-  const paddingTop = Number.parseFloat(cssMatch[1]);
+  const stripCssHeight = Number.parseFloat(cssMatch[1]);
 
-  if (stripHeight !== paddingTop) {
+  if (stripHeight !== stripCssHeight) {
     problems.push(
       `드래그 띠 높이가 어긋납니다 — Rust TITLEBAR_STRIP_HEIGHT=${stripHeight}, ` +
-        `탭바 paddingTop=${paddingTop}px. 같은 값이어야 탭이 띠 아래에서 시작한다.`,
+        `title-strip height=${stripCssHeight}px. 같은 값이어야 띠 아래에서 콘텐츠가 시작한다.`,
+    );
+  }
+
+  // 클릭 통과 영역 — 띠에서 클릭이 웹뷰로 통과하는 사각형과 토글이 실제로 앉는 자리가 같아야 한다.
+  // 어긋나면 조용히 깨진다: 토글이 그 영역 밖으로 나가면 눌러도 창만 끌린다.
+  const cutout = { x: "TITLEBAR_CUTOUT_X", width: "TITLEBAR_CUTOUT_WIDTH" };
+  const rustCutout = {};
+  for (const [key, name] of Object.entries(cutout)) {
+    const match = new RegExp(`${name}:\\s*f64\\s*=\\s*(\\d+(?:\\.\\d+)?)`).exec(rust);
+    if (!match) {
+      problems.push(`titlebar_drag.rs에서 ${name}를 찾지 못했습니다.`);
+      return 1;
+    }
+    rustCutout[key] = Number.parseFloat(match[1]);
+  }
+
+  // 토글 자리는 _glass 안에서만 절대배치된다 — left·width 순서로 쓴다(아래 정규식의 전제).
+  const slotMatch =
+    /const toggleSlotClass = css\(\{[\s\S]*?left:\s*"(\d+)px"[\s\S]*?width:\s*"(\d+)px"/.exec(css);
+  if (!slotMatch) {
+    problems.push(
+      "title-strip.tsx의 toggleSlotClass에서 클릭 통과 영역 좌표(left·width)를 찾지 못했습니다.",
+    );
+    return 1;
+  }
+  const [slotX, slotWidth] = [Number.parseFloat(slotMatch[1]), Number.parseFloat(slotMatch[2])];
+
+  if (rustCutout.x !== slotX || rustCutout.width !== slotWidth) {
+    problems.push(
+      `클릭 통과 영역이 어긋납니다 — Rust(${rustCutout.x}, ${rustCutout.width}), ` +
+        `토글 자리(${slotX}, ${slotWidth}). 같아야 토글이 그 영역 안에서 눌린다.`,
     );
   }
   return 1;

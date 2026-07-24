@@ -237,3 +237,29 @@ describe("탭 메타 전이", () => {
     expect(tabB).toMatchObject({ isDirty: false, filePath: null, lastSavedHash: null });
   });
 });
+
+// 집행: document-model.md#파일-트리-사이드바 — "클릭은 포커스를 트리에 남긴다".
+// 왜: 사이드바 트리 클릭이 파일을 열되 포커스를 뺏기지 않아야 방향키 탐색이 이어진다.
+//     이 의도는 focusEditorOnActivate로 전달되고, editor-pane이 그 값으로 view.focus를 가른다.
+// 보장: 기본 활성화는 에디터 포커스(true)이고, focusEditor=false 열기만 false다. 다음 활성화가
+//       값을 새로 정해 false가 남지 않는다.
+// 경계: 실제로 에디터가 포커스를 안 가져가는지는 editor-pane 배선의 몫이다(실앱·수동 확인).
+describe("focusEditorOnActivate", () => {
+  it("기본 열기·활성화는 에디터 포커스(true)다", () => {
+    const store = useDocumentStore.getState();
+    store.openFileTab(fileContent());
+    expect(useDocumentStore.getState().focusEditorOnActivate).toBe(true);
+  });
+
+  it("focusEditor=false 열기는 포커스를 넘기지 않는다(false)", () => {
+    useDocumentStore.getState().openFileTab(fileContent(), false);
+    expect(useDocumentStore.getState().focusEditorOnActivate).toBe(false);
+  });
+
+  it("false 뒤의 다음 활성화가 true로 되돌린다 — false가 남지 않는다", () => {
+    useDocumentStore.getState().openFileTab(fileContent({ path: "/vault/a.md" }), false);
+    expect(useDocumentStore.getState().focusEditorOnActivate).toBe(false);
+    useDocumentStore.getState().addUntitledTab();
+    expect(useDocumentStore.getState().focusEditorOnActivate).toBe(true);
+  });
+});

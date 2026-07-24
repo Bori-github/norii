@@ -45,6 +45,9 @@ const emptyClass = css({
 // docChanged를 dirty 추적·자동 저장 예약으로 연결한다(→ file-lifecycle.md).
 export function EditorPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
+  // 활성화마다 새로 정해지므로, 같은 탭이 focus=true로 다시 활성화되면(트리 클릭 후 Enter)
+  // 이 값이 바뀌어 이펙트가 다시 돌아 view.focus()가 호출된다(→ document-store).
+  const focusEditorOnActivate = useDocumentStore((state) => state.focusEditorOnActivate);
   const openTabIds = useDocumentStore(useShallow((state) => state.tabs.map((tab) => tab.id)));
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<EditorController | null>(null);
@@ -75,8 +78,8 @@ export function EditorPane() {
       // 스크롤 동기화 — 사용자 스크롤을 중계소로 발행한다(→ features/scroll-sync).
       onScroll: (position) => publishScroll("editor", position),
     });
-    controllerRef.current.showTab(activeTabId);
-  }, [activeTabId]);
+    controllerRef.current.showTab(activeTabId, focusEditorOnActivate);
+  }, [activeTabId, focusEditorOnActivate]);
 
   // 프리뷰발 동기화 신호를 받아 뷰포트를 따라 옮긴다.
   useEffect(

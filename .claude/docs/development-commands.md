@@ -49,6 +49,10 @@ mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 
 # dev와 dev-webdriver는 동시에 띄울 수 있다 — 각자 빈 포트를 잡는다(1420~ / 1520~).
 # E2E를 돌리려고 개발 중인 앱을 끌 필요가 없다.
 
+# 네이티브 검증 (check·CI 미포함 — 실제 OS 입력이라 앱을 최상위로 세운다, macOS 로컬 전용)
+mise run dev-webdriver & # 1) E2E용 앱 실행
+mise run verify-native   # 2) 전체화면 토글 클릭 등 실제 클릭 검증 (실행 전 경고·카운트다운, → testing.md#성숙도-주의)
+
 # PR 데모 영상 (check 미포함 — 앱 실행·화면 기록 권한 필요, macOS 전용)
 mise run dev-webdriver &        # 1) E2E용 앱 실행
 mise run demo                   # 2) E2E 시나리오를 실행하며 앱 창을 녹화 → /tmp/norii-demo.mov
@@ -78,7 +82,7 @@ mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-dri
 
 - Rust 소스의 `#[tauri::command]` 함수명이 [Rust 커맨드 계약](rust-commands.md)에 등재됐는지 — **코드 → 문서 단방향 검사**다. 계약 없는 커맨드는 게이트 실패이고, 문서에만 있는 커맨드는 아직 미구현 계약으로 허용한다(개발 진행 중 게이트가 항상 빨간불이 되지 않게)
 - [기술 스택](tech-stack.md) 표에 적힌 버전이 `package.json`·`Cargo.toml`의 실제 핀과 일치하는지 — **단방향 검사**다. 표에 없는 의존성에 등재를 요구하지 않는다(요구하면 모든 의존성 추가가 게이트에 걸리는 과잉 검사가 된다)
-- **플랫폼 상수가 네이티브와 웹에서 같은 값인지** — 지금은 드래그 띠 높이 하나다(Rust `TITLEBAR_STRIP_HEIGHT` ↔ 탭바 CSS `padding-top`). **같은 숫자가 두 곳에 사는 자리**라 한쪽만 고치면 조용히 깨진다(탭이 띠에 먹히거나 빈 띠가 남는다). 화면을 봐야만 아는 종류의 버그라 기계가 막는다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠))
+- **플랫폼 상수가 네이티브와 웹에서 같은 값인지** — 지금은 드래그 띠 높이 하나다(Rust `TITLEBAR_STRIP_HEIGHT` ↔ 타이틀 스트립 CSS `height`). **같은 숫자가 두 곳에 사는 자리**라 한쪽만 고치면 조용히 깨진다(콘텐츠가 띠에 먹히거나 빈 띠가 남는다). 화면을 봐야만 아는 종류의 버그라 기계가 막는다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠))
 
 ## PR 데모 영상 (demo · upload-demo)
 

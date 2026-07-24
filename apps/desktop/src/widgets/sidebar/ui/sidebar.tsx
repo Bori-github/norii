@@ -1,9 +1,12 @@
+import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
 import { useWorkspaceStore } from "@entities/workspace";
-import { openFolderInteractive } from "@features/open-folder";
+import { openPathInTab } from "@features/open-file";
+import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
 
+import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 import { TreeItem } from "./tree-item";
 
 // 사이드바는 유리(크롬)다 — 탭바·상태바와 같은 표면 역할(→ DESIGN.md 표면 표).
@@ -56,6 +59,7 @@ const treeClass = css({
   listStyle: "none",
   margin: 0,
   padding: 0,
+  paddingTop: "1.5",
   paddingBottom: "2",
 });
 
@@ -91,9 +95,111 @@ function folderNameOf(path: string): string {
   return name && name.length > 0 ? name : path;
 }
 
+// 정지점을 index로 옮기고 포커스한다(범위는 [0, 끝]으로 물린다).
+function focusAt(list: HTMLElement[], index: number): void {
+  const el = list[Math.max(0, Math.min(index, list.length - 1))];
+  if (el) {
+    setTreeNavCurrent(el.dataset.path ?? "");
+    el.focus();
+  }
+}
+
+// 트리 키보드 탐색 — WAI-ARIA Tree View. 컨테이너 한 곳에서 처리한다: 포커스된 treeitem은
+// DOM 순서(곧 보이는 순서)로 알 수 있어, 노드마다 핸들러를 달지 않아도 이웃을 찾을 수 있다.
+function useTreeKeyboard(treeRef: React.RefObject<HTMLUListElement | null>) {
+  return function onKeyDown(event: React.KeyboardEvent): void {
+    const list = [...(treeRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [])];
+    if (list.length === 0) {
+      return;
+    }
+    const focused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement.closest<HTMLElement>('[role="treeitem"]')
+        : null;
+    const current = focused && list.includes(focused) ? focused : list[0];
+    if (!current) {
+      return;
+    }
+    const index = list.indexOf(current);
+    const isDir = current.dataset.testid === "tree-dir";
+    const isExpanded = current.getAttribute("aria-expanded") === "true";
+    const path = current.dataset.path ?? "";
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        focusAt(list, index + 1);
+        return;
+      case "ArrowUp":
+        event.preventDefault();
+        focusAt(list, index - 1);
+        return;
+      case "Home":
+        event.preventDefault();
+        focusAt(list, 0);
+        return;
+      case "End":
+        event.preventDefault();
+        focusAt(list, list.length - 1);
+        return;
+      case "ArrowRight":
+        event.preventDefault();
+        // 접힌 폴더는 펼치고 자리를 지킨다. 이미 펼친 폴더는 첫 자식으로. 파일은 무동작.
+        if (isDir && !isExpanded) {
+          void toggleDir(path);
+        } else if (isDir) {
+          focusAt(list, index + 1);
+        }
+        return;
+      case "ArrowLeft": {
+        event.preventDefault();
+        // 펼친 폴더는 접고, 그 외는 부모로 올라간다.
+        if (isDir && isExpanded) {
+          void toggleDir(path);
+          return;
+        }
+        const parent = current.parentElement?.closest<HTMLElement>('[role="treeitem"]');
+        if (parent) {
+          setTreeNavCurrent(parent.dataset.path ?? "");
+          parent.focus();
+        }
+        return;
+      }
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        if (isDir) {
+          void toggleDir(path);
+        } else {
+          void openPathInTab(path);
+        }
+        return;
+      default:
+    }
+  };
+}
+
 export function Sidebar() {
   const rootDir = useWorkspaceStore((state) => state.rootDir);
   const fileTree = useWorkspaceStore((state) => state.fileTree);
+  const currentPath = useTreeNavStore((state) => state.currentPath);
+  const treeRef = useRef<HTMLUListElement>(null);
+  const onTreeKeyDown = useTreeKeyboard(treeRef);
+
+  // Tab 정지점은 항상 하나여야 한다 — currentPath가 접혀 사라지거나 아직 없으면 첫 노드로
+  // 자가 복구한다. 정지점이 이미 있으면 아무것도 하지 않아 반복되지 않는다.
+  useEffect(() => {
+    const list = treeRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]');
+    if (!list || list.length === 0) {
+      return;
+    }
+    const nodes = [...list];
+    const hasStop = nodes.some((el) => el.tabIndex === 0);
+    const first = nodes[0];
+    if (!hasStop && first) {
+      setTreeNavCurrent(first.dataset.path ?? "");
+    }
+  }, [fileTree, currentPath]);
 
   if (rootDir === null) {
     return (
@@ -129,7 +235,14 @@ export function Sidebar() {
           {STRINGS.openFolderButtonLabel}
         </button>
       </div>
-      <ul className={treeClass} data-testid="file-tree">
+      <ul
+        ref={treeRef}
+        className={treeClass}
+        role="tree"
+        aria-label={STRINGS.sidebarTreeLabel}
+        data-testid="file-tree"
+        onKeyDown={onTreeKeyDown}
+      >
         {fileTree.map((node) => (
           <TreeItem key={node.path} node={node} depth={0} />
         ))}

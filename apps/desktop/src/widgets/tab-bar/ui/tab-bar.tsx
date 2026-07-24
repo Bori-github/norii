@@ -6,44 +6,17 @@ import { requestCloseTab, useConflictStore, useMissingFileStore } from "@feature
 import { STRINGS } from "@shared/config";
 import { AlertTriangleIcon } from "@shared/ui";
 
-// 탭바는 유리(크롬)다 — macOS에서 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표).
-//
-// 유리가 켜지면 웹뷰가 창 맨 위까지 올라와 상단이 한 장이 된다(titleBarStyle: Overlay).
-// 그 위 28px는 네이티브 드래그 띠가 덮으므로(→ src-tauri/src/titlebar_drag.rs) 탭을 그 아래로
-// 내린다 — 침범하면 탭을 눌러도 클릭이 띠에 먹혀 창이 끌린다.
+// 탭바는 유리(크롬)다 — 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표). 유리 드래그 띠·앱
+// 이름·토글은 타이틀 스트립이 소유한다(→ widgets/title-strip); 탭바는 그 아래 오른쪽 칸에 선다.
 const barClass = css({
   display: "flex",
   alignItems: "stretch",
+  minWidth: 0,
   overflowX: "auto",
   background: "bg.chrome",
   borderBottom: "1px solid",
   borderColor: "border",
   minHeight: "9",
-  // 띠 높이(28px)와 같아야 한다 — titlebar_drag.rs의 TITLEBAR_STRIP_HEIGHT가 단일 출처다.
-  _glass: { position: "relative", paddingTop: "28px" },
-});
-
-// 앱 이름 — **우리가 그린다.** OS 타이틀 텍스트를 켜 두면 그 글자가 놓인 자리는 OS 뷰의 것이라
-// 드래그 띠보다 위에 있고, 이름 위를 잡으면 창이 끌리지 않는다(실측). 그래서 OS 이름을 끄고
-// (hiddenTitle) 같은 자리에 우리가 그린다 — 띠는 투명하므로 이 글자가 그대로 비쳐 보이고,
-// 클릭은 띠가 받아 창이 끌린다(→ design/window-chrome.md#계약--드래그-띠).
-const appNameClass = css({
-  display: "none",
-  _glass: {
-    display: "flex",
-    position: "absolute",
-    insetInline: 0,
-    top: 0,
-    height: "28px",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "sm",
-    fontWeight: "medium",
-    color: "text",
-    // 글자는 보이기만 한다 — 마우스는 위에 얹힌 네이티브 띠가 받는다.
-    pointerEvents: "none",
-    userSelect: "none",
-  },
 });
 
 // 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
@@ -149,9 +122,6 @@ export function TabBar() {
         aria-label={STRINGS.tabListLabel}
         data-testid="tab-bar"
       >
-        <span className={appNameClass} aria-hidden="true" data-testid="app-name">
-          {STRINGS.appName}
-        </span>
         <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
           <span>{STRINGS.newTabTitle}</span>
         </div>
@@ -167,9 +137,6 @@ export function TabBar() {
       aria-label={STRINGS.tabListLabel}
       data-testid="tab-bar"
     >
-      <span className={appNameClass} aria-hidden="true" data-testid="app-name">
-        {STRINGS.appName}
-      </span>
       {tabs.map((tab) => {
         const alerted = conflictTabIds.includes(tab.id) || missingTabIds.includes(tab.id);
         return (
