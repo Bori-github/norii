@@ -10,6 +10,8 @@ norii의 에러 처리·로깅 전략의 단일 출처다. **데이터 유실 �
 AppError::NotFound       파일 없음
 AppError::Permission     권한 없음
 AppError::Conflict       저장 시 외부 변경 충돌 — 내용 해시 불일치 (→ file-lifecycle.md)
+AppError::AlreadyExists  같은 이름의 항목이 이미 있음 — 생성·이름 변경이 덮어쓰지 않고 멈춘다
+AppError::InvalidName    항목 이름 규칙 위반 (→ rust-commands.md#항목-이름-규칙-create_file--create_dir--rename_entry)
 AppError::DiskFull       디스크 부족
 AppError::Encoding       인코딩 오류 (감지 불가 파일 — → file-lifecycle.md)
 AppError::Io(...)        기타 I/O

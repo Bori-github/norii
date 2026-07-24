@@ -72,6 +72,7 @@
 | `specta-typescript`     | 0.0.12  | TS 내보내기 백엔드 (pre-1.0)                                                                 |
 | `thiserror`             | 2.0.18  | `AppError` 정의 (→ [에러 처리와 로깅](error-handling.md))                                    |
 | `notify`                | 8.2.0   | 파일 외부 변경 감시(watch) (→ [Rust 커맨드 계약](rust-commands.md))                          |
+| `trash`                 | 5.2.6   | 삭제를 휴지통 이동으로 (→ [Rust 커맨드 계약](rust-commands.md)). 기본 기능(휴지통 목록 조회)은 끄고 이동만 쓴다 |
 | `encoding_rs`           | 0.8.35  | 인코딩 변환(레거시 → UTF-8)·BOM 처리 (→ [파일 생명주기 정책](file-lifecycle.md#인코딩-정책)) |
 | `chardetng`             | 1.0.0   | 인코딩 감지 — Firefox 감지기, encoding_rs와 짝으로 설계됨                                    |
 | `tauri` / `tauri-build` | 2.x     | Tauri 코어 (애플리케이션 스택의 Tauri와 동일 릴리스)                                         |
