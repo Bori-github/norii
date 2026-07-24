@@ -1,5 +1,5 @@
 import { markdown } from "@codemirror/lang-markdown";
-import { foldable, foldEffect, foldedRanges } from "@codemirror/language";
+import { ensureSyntaxTree, foldable, foldEffect, foldedRanges } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
@@ -21,7 +21,11 @@ import type { EditorColors } from "./theme";
 //       접힘 상태 영속화는 하지 않는다(→ editor-strategy.md#접힘-상태-영속화).
 
 function stateOf(doc: string): EditorState {
-  return EditorState.create({ doc, extensions: [markdown(), markdownFolding()] });
+  const state = EditorState.create({ doc, extensions: [markdown(), markdownFolding()] });
+  // syntaxTree는 파싱 예산 탓에 부분 트리일 수 있고, 그러면 foldable이 null을 낸다(CI에서
+  // 드물게 실패). 전체 파싱을 강제해 접기 판정을 타이밍과 무관하게 한다.
+  ensureSyntaxTree(state, state.doc.length, 5000);
+  return state;
 }
 
 /** 줄 번호(1부터)의 접기 범위를 "줄 번호 구간"으로 요약한다 — 오프셋보다 의도가 읽히게. */
@@ -123,6 +127,8 @@ describe("에디터 확장 배선 (변이 검증)", () => {
       doc: ["# 제목", "본문 1", "본문 2"].join("\n"),
       extensions: noriiEditorExtensions(COLORS),
     });
+    // stateOf와 같은 이유로 전체 파싱을 강제한다.
+    ensureSyntaxTree(state, state.doc.length, 5000);
     const line = state.doc.line(1);
     const range = foldable(state, line.from, line.to);
     expect(range).not.toBeNull();
