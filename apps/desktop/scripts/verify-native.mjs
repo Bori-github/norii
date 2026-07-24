@@ -15,7 +15,12 @@ const WARN_SECONDS = 4;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const osa = (...lines) =>
-  execFileSync("osascript", lines.flatMap((l) => ["-e", l])).toString().trim();
+  execFileSync(
+    "osascript",
+    lines.flatMap((l) => ["-e", l]),
+  )
+    .toString()
+    .trim();
 
 function portOpen(port) {
   return new Promise((resolve) => {
@@ -32,7 +37,9 @@ function portOpen(port) {
 async function fullscreenToggleClick(browser) {
   const toggleAria = () =>
     browser.execute(
-      () => document.querySelector('[data-testid="sidebar-toggle"]')?.getAttribute("aria-pressed") ?? "null",
+      () =>
+        document.querySelector('[data-testid="sidebar-toggle"]')?.getAttribute("aria-pressed") ??
+        "null",
     );
   osa(
     'tell application "System Events" to tell process "norii" to set frontmost to true',
@@ -41,7 +48,9 @@ async function fullscreenToggleClick(browser) {
   );
   try {
     await sleep(2500);
-    const fsFlag = await browser.execute(() => document.documentElement.dataset.fullscreen ?? "(none)");
+    const fsFlag = await browser.execute(
+      () => document.documentElement.dataset.fullscreen ?? "(none)",
+    );
     if (fsFlag !== "on") {
       return { ok: false, detail: `data-fullscreen=${fsFlag} (전체화면 진입 실패)` };
     }
@@ -50,7 +59,9 @@ async function fullscreenToggleClick(browser) {
       const r = el.getBoundingClientRect();
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     });
-    const win = osa('tell application "System Events" to tell process "norii" to get position of window 1')
+    const win = osa(
+      'tell application "System Events" to tell process "norii" to get position of window 1',
+    )
       .split(",")
       .map((s) => Number.parseInt(s.trim(), 10));
     const sx = Math.round(win[0] + rect.x);
@@ -90,7 +101,12 @@ async function main() {
   console.log("│ 시작합니다.                    ");
   console.log("└─────────────────────────────────────────────────────");
 
-  const browser = await remote({ hostname: "127.0.0.1", port: PORT, capabilities: {}, logLevel: "error" });
+  const browser = await remote({
+    hostname: "127.0.0.1",
+    port: PORT,
+    capabilities: {},
+    logLevel: "error",
+  });
   let failed = 0;
   try {
     await browser.execute(() => {
@@ -113,7 +129,11 @@ async function main() {
   } finally {
     await browser.deleteSession().catch(() => {});
   }
-  console.log(failed === 0 ? `\n✔ 네이티브 검증 통과 (${CHECKS.length})` : `\n✘ 실패 ${failed}/${CHECKS.length}`);
+  console.log(
+    failed === 0
+      ? `\n✔ 네이티브 검증 통과 (${CHECKS.length})`
+      : `\n✘ 실패 ${failed}/${CHECKS.length}`,
+  );
   process.exit(failed === 0 ? 0 : 1);
 }
 
