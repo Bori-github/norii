@@ -103,6 +103,28 @@ export const STRINGS = {
   errorBoundaryTitle: "문제가 발생했습니다",
   errorBoundaryBody: "예상치 못한 오류로 화면을 표시할 수 없습니다. 앱을 다시 시작해 주세요.",
 
+  // 사이드바 항목 조작 — 입력칸에 미리 채우는 이름(→ document-model.md#파일-트리-사이드바).
+  defaultFileName: "새 파일",
+  defaultDirName: "새 폴더",
+
+  createEntryFailedTitle: "만들지 못했습니다",
+  renameEntryFailedTitle: "이름을 바꾸지 못했습니다",
+  deleteEntryFailedTitle: "지우지 못했습니다",
+
+  deleteEntryTitle: "휴지통으로 보내기",
+  deleteEntryBody: (name: string) => `${name}을(를) 휴지통으로 보냅니다.`,
+  deleteEntryConfirmLabel: "휴지통으로",
+  deleteEntryCancelLabel: "취소",
+
+  // 이름 입력칸 옆 경고(→ rust-commands.md#항목-이름-규칙).
+  entryProblemMessages: {
+    empty: "이름을 입력하세요.",
+    hidden: "'.'으로 시작할 수 없습니다.",
+    invalid: "'/'는 쓸 수 없습니다.",
+    duplicate: "같은 이름이 이미 있습니다.",
+    failed: "만들지 못했습니다.",
+  },
+
   errorKindMessages: {
     notFound: "파일을 찾을 수 없습니다.",
     permission: "권한이 없습니다.",

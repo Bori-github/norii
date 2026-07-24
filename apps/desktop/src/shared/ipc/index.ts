@@ -21,6 +21,11 @@ export const ipc = {
       commands.saveFile(args.path, args.text, args.eol, args.hasBom, args.expectedHash),
     ),
   readDir: (dir: string) => unwrapIpcResult(commands.readDir(dir)),
+  createFile: (dir: string, name: string) => unwrapIpcResult(commands.createFile(dir, name)),
+  createDir: (dir: string, name: string) => unwrapIpcResult(commands.createDir(dir, name)),
+  renameEntry: (path: string, newName: string) =>
+    unwrapIpcResult(commands.renameEntry(path, newName)),
+  deleteEntry: (path: string) => unwrapIpcResult(commands.deleteEntry(path)),
   watchPaths: (paths: string[]) => unwrapIpcResult(commands.watchPaths(paths)),
   watchTree: (root: string | null) => unwrapIpcResult(commands.watchTree(root)),
   showOpenDialog: () => unwrapIpcResult(commands.showOpenDialog()),
