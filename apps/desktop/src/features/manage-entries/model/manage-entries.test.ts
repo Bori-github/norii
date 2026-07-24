@@ -30,6 +30,7 @@ vi.mock("@tauri-apps/plugin-log", () => ({
   info: vi.fn(async () => {}),
 }));
 
+import { useDocumentStore } from "@entities/document";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
@@ -39,6 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useNoticeStore.setState({ notices: [] });
   useConfirmStore.setState({ pending: null });
+  useDocumentStore.setState({ tabs: [], activeTabId: null });
 });
 
 describe("createEntryIn · renameEntryTo", () => {
@@ -57,6 +59,29 @@ describe("createEntryIn · renameEntryTo", () => {
     expect(createFile).toHaveBeenCalledWith("/vault", "회의");
     expect(await createEntryIn("/vault", "묶음", "dir")).toEqual({ ok: true, path: "/vault/묶음" });
     expect(createDir).toHaveBeenCalledWith("/vault", "묶음");
+  });
+
+  // 집행: document-model.md#다중-탭-규칙 — "이름을 바꾸면 그 파일의 탭이 새 경로를 가리킨다".
+  // 왜: 탭이 옛 경로에 머무르면 파일 감시가 그 경로의 삭제를 보고 "파일이 사라졌습니다"를
+  //     띄운다 — 이름만 바꿨는데 문서를 잃은 것처럼 보인다.
+  // 보장: 이름 변경이 성공하면 열려 있던 탭이 새 경로를 가리킨다.
+  // 경계: 어떤 탭이 따라가는지(폴더 아래까지)는 스토어의 retargetTabs가 소유한다.
+  it("이름을 바꾸면 열린 탭이 새 경로를 따라간다", async () => {
+    useDocumentStore.getState().openFileTab({
+      path: "/vault/회의.md",
+      text: "",
+      encoding: "utf-8",
+      hasBom: false,
+      eol: "lf",
+      eolMixed: false,
+      mtime: 1,
+      hash: "h",
+    });
+    renameEntry.mockResolvedValue("/vault/결산.md");
+
+    await renameEntryTo("/vault/회의.md", "결산");
+
+    expect(useDocumentStore.getState().tabs[0]?.filePath).toBe("/vault/결산.md");
   });
 
   // 왜: 중복·잘못된 이름은 사용자가 고쳐 쓰면 되는 것이라 입력칸 옆에 붙어야 한다.

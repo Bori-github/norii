@@ -1,3 +1,4 @@
+import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore } from "@shared/ui";
@@ -39,7 +40,9 @@ export async function createEntryIn(
 
 export async function renameEntryTo(path: string, newName: string): Promise<EntryResult> {
   try {
-    return { ok: true, path: await ipc.renameEntry(path, newName) };
+    const renamed = await ipc.renameEntry(path, newName);
+    useDocumentStore.getState().retargetTabs(path, renamed);
+    return { ok: true, path: renamed };
   } catch (error) {
     return toResult(error, STRINGS.renameEntryFailedTitle);
   }

@@ -70,6 +70,9 @@ interface WorkspaceState {
            "이미 열림" 판정은 open_file이 반환한 canonical 경로로 한다 — 같은 파일을
            별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)으로 열어도 기존 탭에 합류한다
 탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
+이름 변경: 사이드바에서 이름을 바꾸면 그 파일의 탭이 새 경로를 가리키고 제목도 바뀐다.
+           폴더 이름을 바꾸면 그 아래 파일의 탭도 함께 옮겨진다. 앱 밖에서 바꾼 이름은
+           옛 경로의 삭제로 보여 file-removed 경로를 탄다(→ file-lifecycle.md#외부-변경-처리)
 활성 탭:   activeTabId. 에디터/프리뷰는 활성 탭 문서를 표시
 ```
 

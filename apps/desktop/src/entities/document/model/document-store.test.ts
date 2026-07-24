@@ -263,3 +263,40 @@ describe("focusEditorOnActivate", () => {
     expect(useDocumentStore.getState().focusEditorOnActivate).toBe(true);
   });
 });
+
+// 집행: document-model.md#다중-탭-규칙 — "이름을 바꾸면 그 파일의 탭이 새 경로를 가리키고
+//       제목도 바뀐다. 폴더 이름을 바꾸면 그 아래 파일의 탭도 함께 옮겨진다".
+// 왜: 탭 경로가 옛 이름에 머무르면 파일 감시가 옛 경로의 삭제를 보고 "파일이 사라졌습니다"를
+//     띄운다 — 사용자는 이름만 바꿨는데 문서를 잃은 것처럼 보인다.
+// 보장: 바뀐 항목 자신과 그 아래 탭이 새 경로·제목으로 옮겨간다.
+// 경계: 앱 밖에서 바뀐 이름은 이 경로로 오지 않는다 — 삭제로 보여 file-removed가 처리한다.
+describe("retargetTabs", () => {
+  it("이름이 바뀐 파일과 그 폴더 아래 탭을 함께 옮긴다", () => {
+    const store = useDocumentStore.getState();
+    store.openFileTab(fileContent({ path: "/vault/회의.md" }));
+    store.openFileTab(fileContent({ path: "/vault/묶음/주간.md", hash: "hash-2" }));
+
+    useDocumentStore.getState().retargetTabs("/vault/회의.md", "/vault/결산.md");
+    useDocumentStore.getState().retargetTabs("/vault/묶음", "/vault/보관");
+
+    const paths = useDocumentStore.getState().tabs.map((tab) => tab.filePath);
+    expect(paths).toEqual(["/vault/결산.md", "/vault/보관/주간.md"]);
+    expect(useDocumentStore.getState().tabs.map((tab) => tab.title)).toEqual([
+      "결산.md",
+      "주간.md",
+    ]);
+  });
+
+  // 왜: 이름 비교가 문자열 접두어면 묶음을 바꿀 때 묶음2 아래 탭까지 끌려간다 —
+  //     그 탭은 없는 경로를 가리키게 되고 저장이 엉뚱한 곳으로 간다.
+  // 보장: 경로 구분자 경계에서만 걸리고, 무관하면 상태를 새로 만들지 않는다.
+  it("이름이 겹치는 형제 폴더는 끌어가지 않는다", () => {
+    const store = useDocumentStore.getState();
+    store.openFileTab(fileContent({ path: "/vault/묶음2/주간.md" }));
+    const before = useDocumentStore.getState().tabs;
+
+    useDocumentStore.getState().retargetTabs("/vault/묶음", "/vault/보관");
+
+    expect(useDocumentStore.getState().tabs).toBe(before);
+  });
+});

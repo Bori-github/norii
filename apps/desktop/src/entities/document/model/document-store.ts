@@ -38,6 +38,8 @@ interface DocumentActions {
   assignPath(tabId: string, path: string): void;
   /** 디스크 리로드 후 파일 유래 메타 반영 — 리로드 직후는 디스크와 동일하므로 dirty 해제. */
   updateFileMeta(tabId: string, file: FileContent): void;
+  /** 이름이 바뀐 항목을 따라 탭 경로를 옮긴다(→ document-model.md#다중-탭-규칙). */
+  retargetTabs(oldPath: string, newPath: string): void;
   /** 정규화 승인 — 배너 승인·첫 수동 저장이 부른다. 승인은 탭 상태다 (→ file-lifecycle.md#자동-저장). */
   approveNormalization(tabId: string): void;
   /** 승인 후 첫 저장 성공 — 디스크가 UTF-8·판정 EOL로 통일됐다. 변환은 1회로 끝난다(배너 해제). */
@@ -50,6 +52,18 @@ function fileNameOf(path: string): string {
   // Windows canonical 경로(\\?\C:\...)까지 고려해 양쪽 구분자를 다룬다(→ platform-strategy.md).
   const name = path.split(/[/\\]/).at(-1);
   return name && name.length > 0 ? name : path;
+}
+
+// 경로 구분자 경계에서만 하위로 친다 — 문자열 접두어로 보면 /vault/묶음2가 /vault/묶음의
+// 하위가 된다.
+function movedPath(filePath: string | null, oldPath: string, newPath: string): string | null {
+  if (filePath === oldPath) {
+    return newPath;
+  }
+  if (filePath !== null && filePath.startsWith(`${oldPath}/`)) {
+    return newPath + filePath.slice(oldPath.length);
+  }
+  return null;
 }
 
 function updateTab(tabs: Tab[], tabId: string, patch: Partial<Tab>): Tab[] {
@@ -181,6 +195,21 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
         isDirty: false,
       }),
     }));
+  },
+
+  retargetTabs(oldPath, newPath) {
+    set((state) => {
+      let changed = false;
+      const tabs = state.tabs.map((tab) => {
+        const moved = movedPath(tab.filePath, oldPath, newPath);
+        if (moved === null) {
+          return tab;
+        }
+        changed = true;
+        return { ...tab, filePath: moved, title: fileNameOf(moved) };
+      });
+      return changed ? { tabs } : state;
+    });
   },
 
   approveNormalization(tabId) {
