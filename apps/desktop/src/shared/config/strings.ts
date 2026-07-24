@@ -107,6 +107,10 @@ export const STRINGS = {
   defaultFileName: "새 파일",
   defaultDirName: "새 폴더",
 
+  newFileButtonLabel: "새 파일 만들기",
+  newDirButtonLabel: "새 폴더 만들기",
+  entryNameInputLabel: "이름",
+
   createEntryFailedTitle: "만들지 못했습니다",
   renameEntryFailedTitle: "이름을 바꾸지 못했습니다",
   deleteEntryFailedTitle: "지우지 못했습니다",

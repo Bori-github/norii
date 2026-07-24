@@ -9,7 +9,9 @@ import { toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
 import { ChevronRightIcon } from "@shared/ui";
 
+import { useEntryEditStore } from "../model/entry-edit-store";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
+import { EntryNameInput } from "./entry-name-input";
 
 // 트리 한 줄 — 폴더는 펼침 토글, 파일은 탭 열기. 들여쓰기는 깊이에 비례한다.
 // 접근성은 WAI-ARIA 트리 패턴이다: li 자체가 treeitem(포커스 대상)이고 그 안에 별도 버튼을
@@ -31,7 +33,7 @@ const rowClass = css({
   alignItems: "center",
   gap: "1.5",
   marginX: "1.5",
-  marginY: "0.5",
+  marginY: "1",
   paddingLeft: "2",
   paddingRight: "2",
   paddingY: "1.5",
@@ -98,6 +100,8 @@ export const TreeItem = memo(function TreeItem({
   );
   // roving tabindex — 보이는 노드 중 하나만 Tab 정지점이다(→ model/tree-nav-store).
   const isCurrent = useTreeNavStore((state) => state.currentPath === node.path);
+  const edit = useEntryEditStore((state) => state.edit);
+  const creatingHere = edit?.mode === "create" && edit.dir === node.path;
 
   const symlinkBadge = node.isSymlink && (
     <span className={symlinkBadgeClass} aria-label={STRINGS.symlinkBadgeLabel}>
@@ -133,6 +137,7 @@ export const TreeItem = memo(function TreeItem({
         </div>
         {expanded && node.children !== undefined && (
           <ul role="group" className={groupClass}>
+            {creatingHere && edit !== null && <EntryNameInput edit={edit} />}
             {node.children.length > 0 ? (
               node.children.map((child) => (
                 <TreeItem key={child.path} node={child} depth={depth + 1} />
