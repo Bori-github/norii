@@ -57,7 +57,7 @@ input(insertFromComposition) → compositionend(data="한")
 | 층 | 무엇을 고정하는가 |
 |---|---|
 | 브라우저 모드 테스트(실제 WebKit) | 조합 종료 직후 Enter를 편집기가 처리해 개행이 하나만 들어가는 것. 합성 이벤트라 실제 IME는 아니다. CI에서 돈다. |
-| 실키 검증(`verify-native`) | 실제 한국어 IME로 친 결과. 앱을 최상위로 세우고 CGEvent로 키를 보낸다 — 로컬 전용이다. |
+| 실키 검증(`verify-native`) | 실제 한국어 IME로 친 결과 — 편집기의 조합 확정 Enter와 사이드바의 한글 이름 짓기. 앱을 최상위로 세우고 CGEvent로 키를 보낸다 — 로컬 전용이다. |
 
 실키 검증의 전제와 금지 사항:
 
