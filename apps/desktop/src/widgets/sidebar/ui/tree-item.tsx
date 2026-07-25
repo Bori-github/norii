@@ -73,16 +73,6 @@ const groupClass = css({
   borderColor: "border.muted",
 });
 
-const emptyClass = css({
-  fontSize: "xs",
-  color: "text.muted",
-  fontStyle: "italic",
-  paddingY: "1.5",
-  paddingLeft: "3.5",
-  paddingRight: "2",
-  whiteSpace: "nowrap",
-});
-
 // memo — 스토어의 참조 보존(무변경 병합이 기존 노드를 재사용)과 짝을 이룬다.
 // node 참조가 같으면 그 가지의 리렌더를 건너뛴다(자동 저장마다 트리 전체가 그려지지 않게).
 export const TreeItem = memo(function TreeItem({
@@ -153,22 +143,9 @@ export const TreeItem = memo(function TreeItem({
         {expanded && node.children !== undefined && (
           <ul role="group" className={groupClass}>
             {creatingHere && edit !== null && <EntryNameInput edit={edit} />}
-            {node.children.length > 0 ? (
-              node.children.map((child) => (
-                <TreeItem key={child.path} node={child} depth={depth + 1} />
-              ))
-            ) : (
-              // 빈 것은 빈 group이 이미 알린다 — 이 줄은 눈으로 보는 힌트라 SR에서 감춘다.
-              // 클릭은 아무 일도 하지 않지만, 부모 폴더 treeitem으로 버블하면 폴더가 접히므로 멈춘다.
-              <li
-                aria-hidden="true"
-                className={emptyClass}
-                data-testid="tree-empty"
-                onClick={(event) => event.stopPropagation()}
-              >
-                {STRINGS.sidebarEmptyFolder}
-              </li>
-            )}
+            {node.children.map((child) => (
+              <TreeItem key={child.path} node={child} depth={depth + 1} />
+            ))}
           </ul>
         )}
       </li>

@@ -197,7 +197,7 @@ describe("Sidebar", () => {
 // 왜: "반쪽 ARIA는 없느니만 못하다"(작업 규칙) — 롤만 붙이고 키보드가 없으면 포인터 없이
 //     못 쓰고, 정지점이 여럿이면 Tab이 헷갈린다. 시맨틱과 키보드를 한 세트로 검증한다.
 // 보장: role=tree/treeitem/group·aria-level·정지점 하나(roving)·↑↓·→(펼침)·Enter(열기),
-//       펼친 빈 폴더의 "비어 있음".
+//       펼친 빈 폴더는 아무것도 표시하지 않음.
 // 경계: 시각(들여쓰기·링)은 수동. 화살표 세부(←접힘·Home/End)는 같은 DOM-순서 로직이라
 //       대표 경로(↑↓·→·Enter)로 대신한다.
 describe("Sidebar 접근성·키보드", () => {
@@ -285,30 +285,19 @@ describe("Sidebar 접근성·키보드", () => {
     await waitFor(() => expect(document.activeElement).toBe(getByTestId("tree-dir")));
   });
 
-  it("펼친 빈 폴더는 '비어 있음'을 보인다", async () => {
+  // 집행: document-model.md#파일-트리-사이드바 — "펼친 폴더가 비어 있으면 아무것도 표시하지
+  //       않는다".
+  // 왜: 만드는 중에 "비어 있음"이 함께 뜨면 모순이었다 — 정책을 바꿔 빈 폴더는 표시를 없앴다.
+  // 보장: 빈 폴더를 펼치면 펼친 채로 있고 안내 문구가 렌더되지 않는다.
+  it("펼친 빈 폴더는 아무것도 표시하지 않는다", async () => {
     useWorkspaceStore.getState().openRoot("/vault", [NOTES_DIR]);
     readDir.mockResolvedValueOnce([]);
-    const { getByTestId } = render(<Sidebar />);
+    const { getByTestId, queryByTestId } = render(<Sidebar />);
 
     fireEvent.click(getByTestId("tree-dir"));
 
-    await waitFor(() => {
-      expect(getByTestId("tree-empty").textContent).toBe("비어 있음");
-    });
-  });
-
-  it("'비어 있음'을 클릭해도 폴더가 접히지 않는다", async () => {
-    useWorkspaceStore.getState().openRoot("/vault", [NOTES_DIR]);
-    readDir.mockResolvedValueOnce([]);
-    const { getByTestId } = render(<Sidebar />);
-
-    fireEvent.click(getByTestId("tree-dir"));
-    await waitFor(() => expect(getByTestId("tree-empty")).toBeTruthy());
-
-    // placeholder 클릭이 부모 폴더 treeitem으로 버블하면 toggleDir로 접힌다 — 멈춰야 한다.
-    fireEvent.click(getByTestId("tree-empty"));
-    expect(getByTestId("tree-dir").getAttribute("aria-expanded")).toBe("true");
-    expect(getByTestId("tree-empty")).toBeTruthy();
+    await waitFor(() => expect(getByTestId("tree-dir").getAttribute("aria-expanded")).toBe("true"));
+    expect(queryByTestId("tree-empty")).toBeNull();
   });
 });
 
