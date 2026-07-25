@@ -7,7 +7,9 @@ import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
 import { FilePlusIcon, FolderPlusIcon } from "@shared/ui";
 
+import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
 import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
+import { EntryContextMenu } from "./entry-context-menu";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 import { EntryNameInput } from "./entry-name-input";
 import { TreeItem } from "./tree-item";
@@ -84,7 +86,7 @@ const treeClass = css({
   margin: 0,
   padding: 0,
   paddingTop: "1.5",
-  // 마지막 줄에서 이름을 고칠 때 말풍선이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
+  // 마지막 줄에서 이름을 고칠 때 툴팁이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
   paddingBottom: "8",
 });
 
@@ -209,6 +211,7 @@ export function Sidebar() {
   const fileTree = useWorkspaceStore((state) => state.fileTree);
   const currentPath = useTreeNavStore((state) => state.currentPath);
   const edit = useEntryEditStore((state) => state.edit);
+  const menu = useContextMenuStore((state) => state.menu);
   const treeRef = useRef<HTMLUListElement>(null);
   const onTreeKeyDown = useTreeKeyboard(treeRef);
 
@@ -288,12 +291,18 @@ export function Sidebar() {
         aria-label={STRINGS.sidebarTreeLabel}
         data-testid="file-tree"
         onKeyDown={onTreeKeyDown}
+        // 빈 영역 우클릭 — 항목의 onContextMenu는 전파를 멈추므로 여기는 항목 밖에서만 뜬다.
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openEntryMenu({ target: null, x: event.clientX, y: event.clientY });
+        }}
       >
         {fileTree.map((node) => (
           <TreeItem key={node.path} node={node} depth={0} />
         ))}
         {edit?.mode === "create" && edit.dir === rootDir && <EntryNameInput edit={edit} />}
       </ul>
+      {menu !== null && <EntryContextMenu key={menu.target?.path ?? ""} menu={menu} />}
     </nav>
   );
 }

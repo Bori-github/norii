@@ -111,6 +111,13 @@ export const STRINGS = {
   newDirButtonLabel: "새 폴더 만들기",
   entryNameInputLabel: "이름",
 
+  // 트리 항목 우클릭 메뉴.
+  entryMenuLabel: "항목 메뉴",
+  menuNewFileLabel: "새 파일",
+  menuNewDirLabel: "새 폴더",
+  menuRenameLabel: "이름 변경",
+  menuDeleteLabel: "휴지통으로 이동",
+
   createEntryFailedTitle: "만들지 못했습니다",
   renameEntryFailedTitle: "이름을 바꾸지 못했습니다",
   deleteEntryFailedTitle: "지우지 못했습니다",

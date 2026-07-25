@@ -9,6 +9,7 @@ import { toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
 import { ChevronRightIcon } from "@shared/ui";
 
+import { openEntryMenu } from "../model/context-menu-store";
 import { useEntryEditStore } from "../model/entry-edit-store";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 import { EntryNameInput } from "./entry-name-input";
@@ -56,9 +57,6 @@ const chevronClass = css({
   '[aria-expanded="true"] > [data-row] > &': { transform: "rotate(90deg)" },
 });
 
-// 파일 줄에는 셰브론이 없다 — 같은 폭의 자리로 이름 열을 맞춘다.
-const chevronGapClass = css({ flexShrink: 0, width: "3.5", height: "3.5" });
-
 const nameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 
 const symlinkBadgeClass = css({ flexShrink: 0, fontSize: "xs", opacity: 0.7 });
@@ -102,6 +100,22 @@ export const TreeItem = memo(function TreeItem({
   const isCurrent = useTreeNavStore((state) => state.currentPath === node.path);
   const edit = useEntryEditStore((state) => state.edit);
   const creatingHere = edit?.mode === "create" && edit.dir === node.path;
+  const renamingThis = edit?.mode === "rename" && edit.path === node.path;
+
+  const onContextMenu = (event: React.MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTreeNavCurrent(node.path);
+    openEntryMenu({
+      target: { path: node.path, name: node.name, kind: node.kind === "dir" ? "dir" : "file" },
+      x: event.clientX,
+      y: event.clientY,
+    });
+  };
+
+  if (renamingThis && edit !== null) {
+    return <EntryNameInput edit={edit} />;
+  }
 
   const symlinkBadge = node.isSymlink && (
     <span className={symlinkBadgeClass} aria-label={STRINGS.symlinkBadgeLabel}>
@@ -119,6 +133,7 @@ export const TreeItem = memo(function TreeItem({
         className={treeItemClass}
         data-testid="tree-dir"
         data-path={node.path}
+        onContextMenu={onContextMenu}
         onClick={(event) => {
           // treeitem이 중첩돼 있어 클릭이 부모 treeitem으로 버블하면 상위 폴더까지 토글된다 —
           // 자기 항목에서 멈춘다.
@@ -169,6 +184,7 @@ export const TreeItem = memo(function TreeItem({
       className={treeItemClass}
       data-testid="tree-file"
       data-path={node.path}
+      onContextMenu={onContextMenu}
       onClick={(event) => {
         event.stopPropagation();
         event.currentTarget.focus();
@@ -178,7 +194,6 @@ export const TreeItem = memo(function TreeItem({
       }}
     >
       <div data-row className={rowClass}>
-        <span className={chevronGapClass} aria-hidden="true" />
         <span className={nameClass}>{node.name}</span>
         {symlinkBadge}
       </div>

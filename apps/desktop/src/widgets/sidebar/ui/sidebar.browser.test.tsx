@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // IPC는 모킹한다 — 대상은 실제 파일시스템이 아니라 "트리 표시·클릭 연결"이다
 // (read_dir·다이얼로그의 실제 동작은 Rust 테스트 소관 → testing.md#레이어별).
-const { readDir, openFile, showOpenFolderDialog, createFile, createDir } = vi.hoisted(() => ({
-  readDir: vi.fn(),
-  openFile: vi.fn(),
-  showOpenFolderDialog: vi.fn(),
-  createFile: vi.fn(),
-  createDir: vi.fn(),
-}));
+const { readDir, openFile, showOpenFolderDialog, createFile, createDir, renameEntry, deleteEntry } =
+  vi.hoisted(() => ({
+    readDir: vi.fn(),
+    openFile: vi.fn(),
+    showOpenFolderDialog: vi.fn(),
+    createFile: vi.fn(),
+    createDir: vi.fn(),
+    renameEntry: vi.fn(),
+    deleteEntry: vi.fn(),
+  }));
 
 vi.mock("@shared/ipc", () => {
   class IpcError extends Error {
@@ -23,7 +26,15 @@ vi.mock("@shared/ipc", () => {
   return {
     IpcError,
     isIpcError: (value: unknown) => value instanceof IpcError,
-    ipc: { readDir, openFile, showOpenFolderDialog, createFile, createDir },
+    ipc: {
+      readDir,
+      openFile,
+      showOpenFolderDialog,
+      createFile,
+      createDir,
+      renameEntry,
+      deleteEntry,
+    },
   };
 });
 vi.mock("@tauri-apps/plugin-log", () => ({
@@ -35,6 +46,8 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 import { resetTabTextRegistry, useDocumentStore } from "@entities/document";
 import { useWorkspaceStore } from "@entities/workspace";
 import type { FileContent, TreeNode } from "@shared/ipc";
+
+import { useConfirmStore } from "@shared/ui";
 
 import { useEntryEditStore } from "../model/entry-edit-store";
 import { resetTreeNav } from "../model/tree-nav-store";
@@ -83,6 +96,9 @@ beforeEach(() => {
   createFile.mockReset();
   createDir.mockReset();
   useEntryEditStore.setState({ edit: null });
+  useConfirmStore.setState({ pending: null });
+  renameEntry.mockReset();
+  deleteEntry.mockReset();
 });
 
 afterEach(() => {
@@ -382,5 +398,72 @@ describe("Sidebar 항목 만들기", () => {
 
     fireEvent.keyDown(getByTestId("entry-name-input"), { key: "Enter" });
     expect(createFile).not.toHaveBeenCalled();
+  });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — "하위 폴더에 만들 때는 그 항목의 컨텍스트
+//       메뉴를 쓴다"·이름 변경과 삭제의 진입점.
+// 왜: 헤더 버튼은 루트에만 만든다 — 트리 깊은 곳을 다루는 길이 없으면 폴더를 연 사람이
+//     그 안에 파일 하나를 만들 수 없다.
+// 보장: 우클릭이 그 항목의 메뉴를 열고, Escape로 닫히며, 이름 변경은 그 자리에 입력칸을
+//       세우고, 삭제는 확인을 먼저 받는다.
+// 경계: 메뉴 자체의 키보드 이동은 아래 테스트가, 커맨드 동작은 Rust가 검증한다.
+describe("Sidebar 컨텍스트 메뉴", () => {
+  beforeEach(() => {
+    useWorkspaceStore.setState({
+      rootDir: "/vault",
+      fileTree: [NOTES_DIR, README_FILE],
+      expandedDirs: [],
+    });
+  });
+
+  it("우클릭하면 그 항목의 메뉴가 열리고 Escape로 닫힌다", () => {
+    const { getAllByTestId, getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+
+    const menu = getByTestId("entry-context-menu");
+    expect(menu.getAttribute("role")).toBe("menu");
+    expect(menu.textContent).toContain("이름 변경");
+
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(queryByTestId("entry-context-menu")).toBeNull();
+  });
+
+  it("이름 변경은 그 항목 자리에 입력칸을 세운다", () => {
+    const { getAllByTestId, getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+    fireEvent.click(getByTestId("menu-rename"));
+
+    expect(queryByTestId("entry-context-menu")).toBeNull();
+    expect((getByTestId("entry-name-input") as HTMLInputElement).value).toBe("readme.md");
+  });
+
+  // 왜: 폴더를 지우면 그 아래가 통째로 간다 — 되돌릴 수 있어도 확인 없이 사라지면 안 된다.
+  // 보장: 삭제를 고르면 확인이 뜨고, 확인 전에는 커맨드가 불리지 않는다.
+  it("삭제는 확인을 먼저 받는다", () => {
+    const { getAllByTestId, getByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+    fireEvent.click(getByTestId("menu-delete"));
+
+    expect(deleteEntry).not.toHaveBeenCalled();
+    expect(useConfirmStore.getState().pending).not.toBeNull();
+  });
+
+  // 왜: 메뉴는 포인터 없이도 쓸 수 있어야 한다 — 트리가 이미 방향키로 도는데 메뉴만 마우스
+  //     전용이면 키보드 사용자는 이름 변경·삭제에 닿지 못한다.
+  // 보장: 열면 첫 항목에 포커스가 가고 방향키로 옮겨진다.
+  it("열면 첫 항목에 포커스가 가고 방향키로 옮겨진다", () => {
+    const { getAllByTestId, getByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+
+    const items = [...getByTestId("entry-context-menu").querySelectorAll('[role="menuitem"]')];
+    expect(document.activeElement).toBe(items[0]);
+
+    fireEvent.keyDown(getByTestId("entry-context-menu"), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(items[1]);
   });
 });

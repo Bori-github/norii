@@ -35,9 +35,6 @@ const rowClass = css({
   outlineColor: "color-mix(in srgb, var(--colors-glacier-300) 50%, transparent)",
 });
 
-// 트리의 파일 줄과 같은 폭의 빈 자리 — 이름 열을 맞춘다.
-const chevronGapClass = css({ flexShrink: 0, width: "3.5", height: "3.5" });
-
 const inputClass = css({
   width: "100%",
   border: "none",
@@ -48,8 +45,7 @@ const inputClass = css({
   _focusVisible: { outline: "none" },
 });
 
-// 툴팁을 이름 열에 맞춘다 — 줄 안쪽 여백(2) + 셰브론 자리(3.5) + 간격(1.5).
-const problemClass = css({ left: "7" });
+const problemClass = css({ left: "2" });
 
 const PROBLEM_ID = "entry-name-problem";
 
@@ -132,7 +128,6 @@ export function EntryNameInput({ edit }: { edit: EntryEdit }) {
     // 의미를 지워 트리 구조에 맞지 않는 항목이 끼지 않게 한다.
     <li role="none" data-testid="entry-name-input-row">
       <div className={rowClass}>
-        <span className={chevronGapClass} aria-hidden="true" />
         <input
           ref={inputRef}
           className={inputClass}
