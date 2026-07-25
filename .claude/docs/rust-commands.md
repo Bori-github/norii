@@ -6,6 +6,8 @@
 
 ## 커맨드 시그니처
 
+### 파일 열기·저장
+
 ```rust
 #[tauri::command]
 async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
@@ -42,7 +44,11 @@ async fn save_file(path: String, text: String, eol: String, has_bom: bool,
 // - 디스크 내용 해시 ≠ expected_hash면 쓰지 않고 AppError::Conflict 반환
 //   (외부 변경 충돌. 새 파일·강제 덮어쓰기는 None. mtime은 세분성 문제로 기준으로 쓰지 않는다)
 // - expected_hash가 있는데 파일이 디스크에 없어도 Conflict다 — 기준으로 삼은 원본이 사라진 것도 외부 변경이다
+```
 
+### 트리 읽기
+
+```rust
 #[tauri::command]
 async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
 // TreeNode { path, name, kind: "dir"|"file", is_symlink: bool }
@@ -62,7 +68,56 @@ async fn read_dir(dir: String) -> Result<Vec<TreeNode>, AppError>;
 // - 심볼릭 링크: is_symlink로 표시하고 일반 항목처럼 다룬다.
 //   대상이 없는(깨진) 링크도 표시하며, 열면 AppError::NotFound.
 //   루트 밖을 가리키는 링크는 펼칠 때 canonicalize 스코프 검증이 거부한다(→ 권한)
+```
 
+### 항목 조작
+
+```rust
+#[tauri::command]
+async fn create_file(dir: String, name: String) -> Result<String, AppError>;
+// 빈 마크다운 파일을 만들고 만들어진 파일의 canonical 경로를 반환한다(프론트는 이 값으로
+// 탭을 연다 — open_file과 같은 신원 규칙).
+// - dir는 canonicalize 후 허용 루트 검증. 디렉터리가 아니면 AppError::Io
+// - name은 아래 §항목 이름 규칙으로 검증하고(위반은 InvalidName) 확장자를 .md로 수렴한다
+// - 같은 이름이 이미 있으면 AppError::AlreadyExists — 존재 확인과 생성 사이의 경합이
+//   덮어쓰기가 되지 않게 create_new로 원자적으로 만든다
+// - 내용은 빈 문자열이다(템플릿을 넣지 않는다)
+
+#[tauri::command]
+async fn create_dir(dir: String, name: String) -> Result<String, AppError>;
+// 새 폴더. 규칙은 create_file과 같고 확장자 수렴만 없다.
+
+#[tauri::command]
+async fn rename_entry(path: String, new_name: String) -> Result<String, AppError>;
+// 같은 부모 안에서 이름만 바꾼다(다른 폴더로 옮기지 않는다 — 이름에 '/'가 금지된다).
+// 바뀐 항목의 canonical 경로를 반환한다.
+// - 새 경로는 같은 부모 아래라 스코프가 유지된다
+// - 파일이면 확장자를 .md로 수렴하고, 디렉터리면 이름 그대로다
+// - 대상 이름이 이미 있으면 AlreadyExists — rename은 조용히 덮어쓰므로 먼저 막는다.
+//   단 대소문자만 바꾸는 이름변경(a.md → A.md)은 허용한다: 대소문자를 무시하는
+//   파일시스템(APFS 기본)에서 "이미 있음"으로 보이지만 원본과 같은 항목이다 —
+//   같은 항목인지는 inode로 판정한다(macOS realpath는 대소문자를 교정하지 않아
+//   해소한 경로를 비교하면 자기 자신을 남으로 본다)
+
+#[tauri::command]
+async fn delete_entry(path: String) -> Result<(), AppError>;
+// 휴지통으로 보낸다 — 디스크에서 지우지 않는다(되돌릴 수 있게. 확인 모달은 프론트가 띄운다).
+// - 폴더는 하위 전체가 함께 간다
+// - 휴지통으로 보낼 수 없는 환경(지원하지 않는 볼륨 등)은 AppError::Io로 실패하고 완전
+//   삭제로 대체하지 않는다 — 되돌릴 수 없는 삭제는 사용자가 고른 정책이 아니다
+
+// 네 커맨드 모두 트리를 직접 갱신하지 않는다 — 자기 변경도 watch_tree의 dir-changed로
+// 돌아와 반영된다(외부 변경과 같은 경로. 프론트에 낙관적 갱신을 두지 않는다)
+
+// 스코프 검증은 넷 다 부모 디렉터리를 canonicalize해서 한다 — 항목 이름은 해소하지 않는다.
+// rename_entry·delete_entry가 심볼릭 링크를 만나면 링크 자체를 다룬다는 뜻이다(대상이 아니라).
+// 트리가 링크를 항목으로 보여주므로(read_dir), 링크를 지웠는데 대상이 사라지면 보이는 것과
+// 어긋난다. 이름은 '/'를 포함할 수 없어(§항목 이름 규칙) 부모 밖으로 나갈 수 없다
+```
+
+### 변경 감시
+
+```rust
 #[tauri::command]
 async fn watch_paths(paths: Vec<String>) -> Result<u32, AppError>;
 // 감시 대상 전체를 선언적으로 교체한다(누적 아님) — 호출 시 이전 감시는 모두 해제.
@@ -109,7 +164,11 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 //   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
 // 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
 //   열기가 새 감시를 세운다.
+```
 
+### 다이얼로그
+
+```rust
 #[tauri::command]
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
@@ -126,6 +185,21 @@ async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
 // 세 다이얼로그 모두 반환 경로는 canonicalize된 정식 경로다 — 탭·트리가 쓰는 신원 규칙
 // (open_file의 path)과 같은 표기로 시작하게 한다
 ```
+
+## 항목 이름 규칙 (create_file · create_dir · rename_entry)
+
+이름은 "한 항목의 이름"이지 경로가 아니다. 아래를 어기면 `AppError::InvalidName`이다.
+
+```text
+- 앞뒤 공백을 트림한 뒤 판정한다. 트림 결과가 비면 거부
+- 경로 구분자('/')·NUL·제어문자를 포함하면 거부 — 이름으로 다른 폴더에 손대지 못하게 한다
+- '.'으로 시작하면 거부 — 트리가 숨김 항목을 표시하지 않아 만들자마자 사라진다
+  ('.'과 '..'도 이 규칙에 걸린다)
+```
+
+**확장자 수렴(파일에만)** — 이름이 `.md`/`.markdown`(대소문자 무시)으로 끝나지 않으면 `.md`를 덧붙인다. 트리가 `.md`/`.markdown`만 표시하므로(위 `read_dir` 필터), 보정하지 않으면 방금 만든 파일이 트리에서 보이지 않는다.
+
+프론트도 입력 중에 같은 규칙을 판정해 확정을 막지만(즉시 피드백), **거부의 강제는 여기다** — 웹뷰를 우회한 IPC 직접 호출도 이 검증을 지난다.
 
 ## 이벤트 계약 (Rust → 웹뷰)
 
@@ -154,6 +228,7 @@ tree-desynced  {}                      트리 감시 — 백엔드가 이벤트�
 serde / serde_json   커맨드 인자·반환의 직렬화
 thiserror            AppError 정의 (→ error-handling.md)
 notify               파일 외부 변경 감시(watch_paths)
+trash                삭제를 휴지통 이동으로(delete_entry)
 encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog

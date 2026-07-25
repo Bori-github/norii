@@ -9,7 +9,10 @@ import { toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
 import { ChevronRightIcon } from "@shared/ui";
 
+import { openEntryMenu } from "../model/context-menu-store";
+import { useEntryEditStore } from "../model/entry-edit-store";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
+import { EntryNameInput } from "./entry-name-input";
 
 // 트리 한 줄 — 폴더는 펼침 토글, 파일은 탭 열기. 들여쓰기는 깊이에 비례한다.
 // 접근성은 WAI-ARIA 트리 패턴이다: li 자체가 treeitem(포커스 대상)이고 그 안에 별도 버튼을
@@ -31,7 +34,7 @@ const rowClass = css({
   alignItems: "center",
   gap: "1.5",
   marginX: "1.5",
-  marginY: "0.5",
+  marginY: "1",
   paddingLeft: "2",
   paddingRight: "2",
   paddingY: "1.5",
@@ -54,9 +57,6 @@ const chevronClass = css({
   '[aria-expanded="true"] > [data-row] > &': { transform: "rotate(90deg)" },
 });
 
-// 파일 줄에는 셰브론이 없다 — 같은 폭의 자리로 이름 열을 맞춘다.
-const chevronGapClass = css({ flexShrink: 0, width: "3.5", height: "3.5" });
-
 const nameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 
 const symlinkBadgeClass = css({ flexShrink: 0, fontSize: "xs", opacity: 0.7 });
@@ -71,16 +71,6 @@ const groupClass = css({
   marginLeft: "21px",
   borderLeft: "1px solid",
   borderColor: "border.muted",
-});
-
-const emptyClass = css({
-  fontSize: "xs",
-  color: "text.muted",
-  fontStyle: "italic",
-  paddingY: "1.5",
-  paddingLeft: "3.5",
-  paddingRight: "2",
-  whiteSpace: "nowrap",
 });
 
 // memo — 스토어의 참조 보존(무변경 병합이 기존 노드를 재사용)과 짝을 이룬다.
@@ -98,6 +88,24 @@ export const TreeItem = memo(function TreeItem({
   );
   // roving tabindex — 보이는 노드 중 하나만 Tab 정지점이다(→ model/tree-nav-store).
   const isCurrent = useTreeNavStore((state) => state.currentPath === node.path);
+  const edit = useEntryEditStore((state) => state.edit);
+  const creatingHere = edit?.mode === "create" && edit.dir === node.path;
+  const renamingThis = edit?.mode === "rename" && edit.path === node.path;
+
+  const onContextMenu = (event: React.MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setTreeNavCurrent(node.path);
+    openEntryMenu({
+      target: { path: node.path, name: node.name, kind: node.kind === "dir" ? "dir" : "file" },
+      x: event.clientX,
+      y: event.clientY,
+    });
+  };
+
+  if (renamingThis && edit !== null) {
+    return <EntryNameInput edit={edit} />;
+  }
 
   const symlinkBadge = node.isSymlink && (
     <span className={symlinkBadgeClass} aria-label={STRINGS.symlinkBadgeLabel}>
@@ -115,6 +123,7 @@ export const TreeItem = memo(function TreeItem({
         className={treeItemClass}
         data-testid="tree-dir"
         data-path={node.path}
+        onContextMenu={onContextMenu}
         onClick={(event) => {
           // treeitem이 중첩돼 있어 클릭이 부모 treeitem으로 버블하면 상위 폴더까지 토글된다 —
           // 자기 항목에서 멈춘다.
@@ -133,22 +142,10 @@ export const TreeItem = memo(function TreeItem({
         </div>
         {expanded && node.children !== undefined && (
           <ul role="group" className={groupClass}>
-            {node.children.length > 0 ? (
-              node.children.map((child) => (
-                <TreeItem key={child.path} node={child} depth={depth + 1} />
-              ))
-            ) : (
-              // 빈 것은 빈 group이 이미 알린다 — 이 줄은 눈으로 보는 힌트라 SR에서 감춘다.
-              // 클릭은 아무 일도 하지 않지만, 부모 폴더 treeitem으로 버블하면 폴더가 접히므로 멈춘다.
-              <li
-                aria-hidden="true"
-                className={emptyClass}
-                data-testid="tree-empty"
-                onClick={(event) => event.stopPropagation()}
-              >
-                {STRINGS.sidebarEmptyFolder}
-              </li>
-            )}
+            {creatingHere && edit !== null && <EntryNameInput edit={edit} />}
+            {node.children.map((child) => (
+              <TreeItem key={child.path} node={child} depth={depth + 1} />
+            ))}
           </ul>
         )}
       </li>
@@ -164,6 +161,7 @@ export const TreeItem = memo(function TreeItem({
       className={treeItemClass}
       data-testid="tree-file"
       data-path={node.path}
+      onContextMenu={onContextMenu}
       onClick={(event) => {
         event.stopPropagation();
         event.currentTarget.focus();
@@ -173,7 +171,6 @@ export const TreeItem = memo(function TreeItem({
       }}
     >
       <div data-row className={rowClass}>
-        <span className={chevronGapClass} aria-hidden="true" />
         <span className={nameClass}>{node.name}</span>
         {symlinkBadge}
       </div>

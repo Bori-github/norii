@@ -84,7 +84,7 @@ export function usePreviewScrollSync(
     // 순서로 덮어주지만, 순서에 기대지 않고 여기서 결정적으로 끊는다).
     wasAtBottomRef.current = false;
     // 에코 가드도 탭마다 새로 — 이전 탭에서 arm만 되고 소비되지 않은 카운트가
-    // 새 탭의 진짜 사용자 스크롤을 삼키지 않게 한다.
+    // 새 탭의 진짜 사용자 스크롤을 무시하지 않게 한다.
     echoGuardRef.current = createEchoGuard();
     const echoGuard = echoGuardRef.current;
 

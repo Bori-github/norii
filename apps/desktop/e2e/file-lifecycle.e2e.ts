@@ -1,4 +1,5 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -87,6 +88,58 @@ async function typeIntoEditor(text: string): Promise<void> {
   await content.waitForExist({ timeout: 10_000 });
   await content.click();
   await content.addValue(text);
+}
+
+// WebDriver의 우클릭은 이 WebKit 드라이버에서 contextmenu 이벤트를 만들지 못한다(합성 keydown과
+// 같은 한계 → 파일 머리). 트리 항목의 span에 합성 contextmenu를 디스패치한다 — bubbles로 li의
+// React onContextMenu까지 올라간다. 좌표는 메뉴 위치용이라 임의값으로 둔다.
+async function rightClickTreeItem(name: string): Promise<void> {
+  await browser.execute((label: string) => {
+    const item = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(document.querySelectorAll('[data-testid="file-tree"] [role="treeitem"]') as any),
+    ].find((element: Element) => element.textContent?.trim() === label);
+    item?.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        button: 2,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    return null;
+  }, name);
+}
+
+// 트리에 그 이름의 treeitem이 나타날 때까지 기다린다. span= 셀렉터는 탭 제목과도 겹치므로
+// 트리 안으로 스코프해 treeitem 텍스트로 확인한다.
+async function waitTreeItem(name: string): Promise<void> {
+  await browser.waitUntil(
+    async () =>
+      browser.execute(
+        (label: string) =>
+          [
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...(document.querySelectorAll('[data-testid="file-tree"] [role="treeitem"]') as any),
+          ].some((element: Element) => element.textContent?.trim() === label),
+        name,
+      ),
+    { timeout: 15_000, interval: 500, timeoutMsg: `${name} 트리 항목이 나타나지 않았다` },
+  );
+}
+
+// 만든 직후엔 트리가 watch_tree로 리렌더 중이라 한 번의 디스패치가 리렌더와 겹쳐 놓칠 수
+// 있다(진단으로 확인). 메뉴가 열릴 때까지 재디스패치한다.
+async function openMenuFor(name: string): Promise<void> {
+  await browser.waitUntil(
+    async () => {
+      await rightClickTreeItem(name);
+      return (await browser.$('[data-testid="entry-context-menu"]')).isExisting();
+    },
+    { timeout: 10_000, interval: 500, timeoutMsg: `${name} 컨텍스트 메뉴가 열리지 않았다` },
+  );
 }
 
 // 왜: 이후 모든 시나리오가 전제하는 하네스 동작(연결·렌더)을 가장 먼저 고정한다.
@@ -522,6 +575,81 @@ it("사이드바 접기 — Cmd+B(합성 keydown)로 여닫힌다", async () => 
 
   await cmdB();
   await tree.waitForExist({ timeout: 5_000, timeoutMsg: "Cmd+B로 트리가 돌아오지 않았다" });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — 사이드바 항목 조작(만들기·이름 변경·삭제)과
+//       Rust 커맨드 계약(create_file·rename_entry·delete_entry).
+// 왜: 지금까지 이 표면은 모킹으로만 검증했다 — 위젯→feature→IPC→Rust→디스크의 끝단 배선은
+//     실앱에서만 증명된다. 이름 변경 후 탭이 옛 경로의 삭제를 "파일 사라짐"으로 오인하지
+//     않는지도 여기서만 드러난다.
+// 보장: 헤더 버튼으로 만든 파일이 디스크에 생기고 탭으로 열린다. 우클릭 이름 변경이 디스크
+//       파일과 열린 탭을 함께 새 경로로 옮긴다. 우클릭 삭제가 확인 뒤 디스크에서 사라진다.
+// 경계: 휴지통으로 실제 이동하는지는 OS 소관이라 "디스크에서 사라짐"까지만 본다. 루트는
+//       정규 경로로 연다 — E2E 훅은 다이얼로그를 우회해 비정규 경로를 넣는데, watch_tree의
+//       dir-changed는 정규 경로라 루트 레벨 변경이 반영되지 않는다(프로덕션 다이얼로그는
+//       정규 경로를 반환하므로 이 문제가 없다).
+it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크와 탭에 반영된다", async () => {
+  const opsRoot = await realpath(SCOPE_ROOT);
+  await rm(path.join(opsRoot, "ops-회의록.md"), { force: true });
+  await rm(path.join(opsRoot, "ops-결산.md"), { force: true });
+  await openFolderInApp(opsRoot);
+  await (await browser.$('[data-testid="file-tree"]')).waitForExist({ timeout: 10_000 });
+
+  // 만들기: 헤더 +파일 → 입력칸에 이름 → Enter. 파일이 디스크에 생기고 탭으로 열린다.
+  await (await browser.$('[data-testid="new-file"]')).click();
+  const input = await browser.$('[data-testid="entry-name-input"]');
+  await input.waitForExist({ timeout: 5_000 });
+  await input.clearValue();
+  await input.addValue("ops-회의록");
+  await browser.keys("Enter");
+
+  const createdPath = path.join(opsRoot, "ops-회의록.md");
+  await browser.waitUntil(async () => existsSync(createdPath), {
+    timeout: 10_000,
+    timeoutMsg: "만든 파일이 디스크에 생기지 않았다",
+  });
+  await browser.waitUntil(
+    async () =>
+      String(await browser.execute(() => (window as any).noriiE2e.activeTabPath())).endsWith(
+        "ops-회의록.md",
+      ),
+    { timeout: 10_000, timeoutMsg: "만든 파일이 탭으로 열리지 않았다" },
+  );
+
+  // 이름 변경: 트리에 나타난 항목을 우클릭 → 이름 변경 → 새 이름 → Enter.
+  await waitTreeItem("ops-회의록.md");
+  await openMenuFor("ops-회의록.md");
+  await (await browser.$('[data-testid="menu-rename"]')).click();
+  const renameInput = await browser.$('[data-testid="entry-name-input"]');
+  await renameInput.waitForExist({ timeout: 5_000 });
+  await renameInput.clearValue();
+  await renameInput.addValue("ops-결산");
+  await browser.keys("Enter");
+
+  const renamedPath = path.join(opsRoot, "ops-결산.md");
+  await browser.waitUntil(async () => existsSync(renamedPath) && !existsSync(createdPath), {
+    timeout: 10_000,
+    timeoutMsg: "이름 변경이 디스크에 반영되지 않았다",
+  });
+  // 탭이 옛 경로의 삭제를 "파일 사라짐"으로 오인하지 않고 새 경로로 따라간다.
+  await browser.waitUntil(
+    async () =>
+      String(await browser.execute(() => (window as any).noriiE2e.activeTabPath())).endsWith(
+        "ops-결산.md",
+      ),
+    { timeout: 10_000, timeoutMsg: "이름 변경 뒤 탭이 새 경로를 가리키지 않았다" },
+  );
+  expect(await (await browser.$('[data-testid="missing-file-banner"]')).isExisting()).toBe(false);
+
+  // 삭제: 우클릭 → 휴지통으로 이동 → 확인. 디스크에서 사라진다.
+  await waitTreeItem("ops-결산.md");
+  await openMenuFor("ops-결산.md");
+  await (await browser.$('[data-testid="menu-delete"]')).click();
+  await (await browser.$('[data-testid="confirm-accept"]')).click();
+  await browser.waitUntil(async () => !existsSync(renamedPath), {
+    timeout: 10_000,
+    timeoutMsg: "삭제가 디스크에 반영되지 않았다",
+  });
 });
 
 // 집행: file-lifecycle.md#종료-방어 — "종료 시 저장 대기 탭은 플러시. 데이터 유실 방지 최우선".

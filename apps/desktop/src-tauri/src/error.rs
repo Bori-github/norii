@@ -13,6 +13,10 @@ pub enum AppError {
     Permission(String),
     #[error("외부 변경 충돌: {0}")]
     Conflict(String),
+    #[error("같은 이름이 이미 있습니다: {0}")]
+    AlreadyExists(String),
+    #[error("쓸 수 없는 이름입니다: {0}")]
+    InvalidName(String),
     #[error("디스크 공간이 부족합니다: {0}")]
     DiskFull(String),
     #[error("인코딩 오류: {0}")]
@@ -28,6 +32,7 @@ impl From<std::io::Error> for AppError {
         match err.kind() {
             ErrorKind::NotFound => AppError::NotFound(message),
             ErrorKind::PermissionDenied => AppError::Permission(message),
+            ErrorKind::AlreadyExists => AppError::AlreadyExists(message),
             ErrorKind::StorageFull | ErrorKind::QuotaExceeded => AppError::DiskFull(message),
             _ => AppError::Io(message),
         }

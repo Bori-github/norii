@@ -14,6 +14,8 @@ export {
   CopyRightIcon,
   EditIcon,
   FileEyeIcon,
+  FilePlusIcon,
+  FolderPlusIcon,
   InformationCircleContainedIcon,
   LightbulbIcon,
   MinusCircleContainedIcon,
@@ -22,6 +24,7 @@ export {
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";
 export { NoticeBanner } from "./notice-banner";
+export { Tooltip } from "./tooltip";
 export { useNoticeStore } from "./notice-store";
 export type { Notice, NoticeAction } from "./notice-store";
 export { notifyIpcError } from "./notify-ipc-error";

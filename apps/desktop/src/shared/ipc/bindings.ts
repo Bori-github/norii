@@ -7,6 +7,10 @@ export const commands = {
 	openFile: (path: string, encodingOverride: string | null) => typedError<FileContent, AppError>(__TAURI_INVOKE("open_file", { path, encodingOverride })),
 	saveFile: (path: string, text: string, eol: Eol, hasBom: boolean, expectedHash: string | null) => typedError<SaveResult, AppError>(__TAURI_INVOKE("save_file", { path, text, eol, hasBom, expectedHash })),
 	readDir: (dir: string) => typedError<TreeNode[], AppError>(__TAURI_INVOKE("read_dir", { dir })),
+	createFile: (dir: string, name: string) => typedError<string, AppError>(__TAURI_INVOKE("create_file", { dir, name })),
+	createDir: (dir: string, name: string) => typedError<string, AppError>(__TAURI_INVOKE("create_dir", { dir, name })),
+	renameEntry: (path: string, newName: string) => typedError<string, AppError>(__TAURI_INVOKE("rename_entry", { path, newName })),
+	deleteEntry: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("delete_entry", { path })),
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
 	watchTree: (root: string | null) => typedError<null, AppError>(__TAURI_INVOKE("watch_tree", { root })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
@@ -16,7 +20,7 @@ export const commands = {
 
 /* Types */
 /**  커맨드 실패의 종류. `{ kind, message }`로 직렬화되어 shared/ipc가 정규화한다. */
-export type AppError = { kind: "notFound"; message: string } | { kind: "permission"; message: string } | { kind: "conflict"; message: string } | { kind: "diskFull"; message: string } | { kind: "encoding"; message: string } | { kind: "io"; message: string };
+export type AppError = { kind: "notFound"; message: string } | { kind: "permission"; message: string } | { kind: "conflict"; message: string } | { kind: "alreadyExists"; message: string } | { kind: "invalidName"; message: string } | { kind: "diskFull"; message: string } | { kind: "encoding"; message: string } | { kind: "io"; message: string };
 
 /**  판정된 EOL. IPC에서는 "lf"|"crlf" 문자열이다(→ rust-commands.md FileContent.eol). */
 export type Eol = "lf" | "crlf";

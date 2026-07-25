@@ -3,11 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // IPC는 모킹한다 — 대상은 실제 파일시스템이 아니라 "트리 표시·클릭 연결"이다
 // (read_dir·다이얼로그의 실제 동작은 Rust 테스트 소관 → testing.md#레이어별).
-const { readDir, openFile, showOpenFolderDialog } = vi.hoisted(() => ({
-  readDir: vi.fn(),
-  openFile: vi.fn(),
-  showOpenFolderDialog: vi.fn(),
-}));
+const { readDir, openFile, showOpenFolderDialog, createFile, createDir, renameEntry, deleteEntry } =
+  vi.hoisted(() => ({
+    readDir: vi.fn(),
+    openFile: vi.fn(),
+    showOpenFolderDialog: vi.fn(),
+    createFile: vi.fn(),
+    createDir: vi.fn(),
+    renameEntry: vi.fn(),
+    deleteEntry: vi.fn(),
+  }));
 
 vi.mock("@shared/ipc", () => {
   class IpcError extends Error {
@@ -21,7 +26,15 @@ vi.mock("@shared/ipc", () => {
   return {
     IpcError,
     isIpcError: (value: unknown) => value instanceof IpcError,
-    ipc: { readDir, openFile, showOpenFolderDialog },
+    ipc: {
+      readDir,
+      openFile,
+      showOpenFolderDialog,
+      createFile,
+      createDir,
+      renameEntry,
+      deleteEntry,
+    },
   };
 });
 vi.mock("@tauri-apps/plugin-log", () => ({
@@ -34,6 +47,9 @@ import { resetTabTextRegistry, useDocumentStore } from "@entities/document";
 import { useWorkspaceStore } from "@entities/workspace";
 import type { FileContent, TreeNode } from "@shared/ipc";
 
+import { useConfirmStore } from "@shared/ui";
+
+import { useEntryEditStore } from "../model/entry-edit-store";
 import { resetTreeNav } from "../model/tree-nav-store";
 import { Sidebar } from "../index";
 
@@ -77,6 +93,12 @@ beforeEach(() => {
   readDir.mockReset();
   openFile.mockReset();
   showOpenFolderDialog.mockReset();
+  createFile.mockReset();
+  createDir.mockReset();
+  useEntryEditStore.setState({ edit: null });
+  useConfirmStore.setState({ pending: null });
+  renameEntry.mockReset();
+  deleteEntry.mockReset();
 });
 
 afterEach(() => {
@@ -175,7 +197,7 @@ describe("Sidebar", () => {
 // 왜: "반쪽 ARIA는 없느니만 못하다"(작업 규칙) — 롤만 붙이고 키보드가 없으면 포인터 없이
 //     못 쓰고, 정지점이 여럿이면 Tab이 헷갈린다. 시맨틱과 키보드를 한 세트로 검증한다.
 // 보장: role=tree/treeitem/group·aria-level·정지점 하나(roving)·↑↓·→(펼침)·Enter(열기),
-//       펼친 빈 폴더의 "비어 있음".
+//       펼친 빈 폴더는 아무것도 표시하지 않음.
 // 경계: 시각(들여쓰기·링)은 수동. 화살표 세부(←접힘·Home/End)는 같은 DOM-순서 로직이라
 //       대표 경로(↑↓·→·Enter)로 대신한다.
 describe("Sidebar 접근성·키보드", () => {
@@ -263,29 +285,174 @@ describe("Sidebar 접근성·키보드", () => {
     await waitFor(() => expect(document.activeElement).toBe(getByTestId("tree-dir")));
   });
 
-  it("펼친 빈 폴더는 '비어 있음'을 보인다", async () => {
+  // 집행: document-model.md#파일-트리-사이드바 — "펼친 폴더가 비어 있으면 아무것도 표시하지
+  //       않는다".
+  // 왜: 만드는 중에 "비어 있음"이 함께 뜨면 모순이었다 — 정책을 바꿔 빈 폴더는 표시를 없앴다.
+  // 보장: 빈 폴더를 펼치면 펼친 채로 있고 안내 문구가 렌더되지 않는다.
+  it("펼친 빈 폴더는 아무것도 표시하지 않는다", async () => {
     useWorkspaceStore.getState().openRoot("/vault", [NOTES_DIR]);
     readDir.mockResolvedValueOnce([]);
-    const { getByTestId } = render(<Sidebar />);
+    const { getByTestId, queryByTestId } = render(<Sidebar />);
 
     fireEvent.click(getByTestId("tree-dir"));
 
-    await waitFor(() => {
-      expect(getByTestId("tree-empty").textContent).toBe("비어 있음");
+    await waitFor(() => expect(getByTestId("tree-dir").getAttribute("aria-expanded")).toBe("true"));
+    expect(queryByTestId("tree-empty")).toBeNull();
+  });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — 항목 조작의 진입점과 인라인 입력 규칙.
+// 왜: 입력칸은 만들어질 자리에 떠야 사용자가 어디에 생기는지 보고 판단한다. 기본 이름을
+//     채워 Enter만으로도 만들 수 있게 하되, 확장자는 남기고 앞부분만 골라 둬야 바로
+//     타이핑해 이름을 바꿀 수 있다.
+// 보장: 헤더 버튼이 트리에 입력칸을 세우고, 기본 이름이 채워지며 앞부분만 선택된다.
+//       Enter가 커맨드로 이어지고, Esc는 아무것도 만들지 않고 닫는다.
+// 경계: 이름 규칙·번호 계산은 features/manage-entries가, 실제 파일 생성은 Rust가 검증한다.
+describe("Sidebar 항목 만들기", () => {
+  beforeEach(() => {
+    useWorkspaceStore.setState({
+      rootDir: "/vault",
+      fileTree: [NOTES_DIR, README_FILE],
+      expandedDirs: [],
     });
   });
 
-  it("'비어 있음'을 클릭해도 폴더가 접히지 않는다", async () => {
-    useWorkspaceStore.getState().openRoot("/vault", [NOTES_DIR]);
-    readDir.mockResolvedValueOnce([]);
+  it("새 파일 버튼이 기본 이름을 채운 입력칸을 세우고 앞부분만 고른다", () => {
     const { getByTestId } = render(<Sidebar />);
 
-    fireEvent.click(getByTestId("tree-dir"));
-    await waitFor(() => expect(getByTestId("tree-empty")).toBeTruthy());
+    fireEvent.click(getByTestId("new-file"));
 
-    // placeholder 클릭이 부모 폴더 treeitem으로 버블하면 toggleDir로 접힌다 — 멈춰야 한다.
-    fireEvent.click(getByTestId("tree-empty"));
-    expect(getByTestId("tree-dir").getAttribute("aria-expanded")).toBe("true");
-    expect(getByTestId("tree-empty")).toBeTruthy();
+    const input = getByTestId("entry-name-input") as HTMLInputElement;
+    expect(input.value).toBe("새 파일.md");
+    // 확장자는 남기고 이름만 바꿀 수 있어야 한다.
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe("새 파일".length);
+  });
+
+  it("Enter는 입력한 이름으로 만들고 Esc는 아무것도 만들지 않는다", async () => {
+    createFile.mockResolvedValue("/vault/회의.md");
+    openFile.mockResolvedValue(fileContent("/vault/회의.md"));
+    const { getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.click(getByTestId("new-file"));
+    fireEvent.change(getByTestId("entry-name-input"), { target: { value: "회의" } });
+    fireEvent.keyDown(getByTestId("entry-name-input"), { key: "Enter" });
+
+    await waitFor(() => expect(createFile).toHaveBeenCalledWith("/vault", "회의"));
+    await waitFor(() => expect(queryByTestId("entry-name-input")).toBeNull());
+
+    fireEvent.click(getByTestId("new-dir"));
+    fireEvent.keyDown(getByTestId("entry-name-input"), { key: "Escape" });
+
+    expect(queryByTestId("entry-name-input")).toBeNull();
+    expect(createDir).not.toHaveBeenCalled();
+  });
+
+  // 집행: document-model.md#파일-트리-사이드바 — "입력칸 밖을 누르면 확정하되, 확정할 수
+  //       없는 이름이면 취소한다".
+  // 왜: 이름을 다 쳐 놓고 트리 밖을 누르는 것은 흔한 흐름이라 그때 버리면 다시 쳐야 한다.
+  //     반대로 못 쓰는 이름인 채로 두면 포커스가 떠난 자리에 고칠 수 없는 입력칸이 남는다.
+  // 보장: 쓸 수 있는 이름은 밖을 눌러도 만들어지고, 중복 이름은 만들지 않고 닫힌다.
+  // 경계: 확정 뒤 늦게 오는 blur가 같은 이름을 또 만들지 않는지는 settled 표시가 막는다.
+  it("밖을 누르면 확정하고 못 쓰는 이름이면 취소한다", async () => {
+    createFile.mockResolvedValue("/vault/회의.md");
+    openFile.mockResolvedValue(fileContent("/vault/회의.md"));
+    const { getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.click(getByTestId("new-file"));
+    fireEvent.change(getByTestId("entry-name-input"), { target: { value: "회의" } });
+    fireEvent.blur(getByTestId("entry-name-input"));
+
+    await waitFor(() => expect(createFile).toHaveBeenCalledWith("/vault", "회의"));
+    await waitFor(() => expect(queryByTestId("entry-name-input")).toBeNull());
+
+    createFile.mockClear();
+    fireEvent.click(getByTestId("new-file"));
+    fireEvent.change(getByTestId("entry-name-input"), { target: { value: "readme" } });
+    fireEvent.blur(getByTestId("entry-name-input"));
+
+    expect(queryByTestId("entry-name-input")).toBeNull();
+    expect(createFile).not.toHaveBeenCalled();
+  });
+
+  // 왜: 이미 있는 이름은 Rust가 거부한다 — 확정을 누른 뒤 알면 사용자는 이미 다 쳤다.
+  // 보장: 중복 이름을 치면 경고가 뜨고 Enter가 커맨드로 가지 않는다.
+  it("이미 있는 이름은 경고를 띄우고 만들지 않는다", () => {
+    const { getByTestId } = render(<Sidebar />);
+
+    fireEvent.click(getByTestId("new-file"));
+    fireEvent.change(getByTestId("entry-name-input"), { target: { value: "readme" } });
+
+    expect(getByTestId("entry-name-problem").textContent).toContain("이미 있습니다");
+
+    fireEvent.keyDown(getByTestId("entry-name-input"), { key: "Enter" });
+    expect(createFile).not.toHaveBeenCalled();
+  });
+});
+
+// 집행: document-model.md#파일-트리-사이드바 — "하위 폴더에 만들 때는 그 항목의 컨텍스트
+//       메뉴를 쓴다"·이름 변경과 삭제의 진입점.
+// 왜: 헤더 버튼은 루트에만 만든다 — 트리 깊은 곳을 다루는 길이 없으면 폴더를 연 사람이
+//     그 안에 파일 하나를 만들 수 없다.
+// 보장: 우클릭이 그 항목의 메뉴를 열고, Escape로 닫히며, 이름 변경은 그 자리에 입력칸을
+//       세우고, 삭제는 확인을 먼저 받는다.
+// 경계: 메뉴 자체의 키보드 이동은 아래 테스트가, 커맨드 동작은 Rust가 검증한다.
+describe("Sidebar 컨텍스트 메뉴", () => {
+  beforeEach(() => {
+    useWorkspaceStore.setState({
+      rootDir: "/vault",
+      fileTree: [NOTES_DIR, README_FILE],
+      expandedDirs: [],
+    });
+  });
+
+  it("우클릭하면 그 항목의 메뉴가 열리고 Escape로 닫힌다", () => {
+    const { getAllByTestId, getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+
+    const menu = getByTestId("entry-context-menu");
+    expect(menu.getAttribute("role")).toBe("menu");
+    expect(menu.textContent).toContain("이름 변경");
+
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(queryByTestId("entry-context-menu")).toBeNull();
+  });
+
+  it("이름 변경은 그 항목 자리에 입력칸을 세운다", () => {
+    const { getAllByTestId, getByTestId, queryByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+    fireEvent.click(getByTestId("menu-rename"));
+
+    expect(queryByTestId("entry-context-menu")).toBeNull();
+    expect((getByTestId("entry-name-input") as HTMLInputElement).value).toBe("readme.md");
+  });
+
+  // 왜: 폴더를 지우면 그 아래가 통째로 간다 — 되돌릴 수 있어도 확인 없이 사라지면 안 된다.
+  // 보장: 삭제를 고르면 확인이 뜨고, 확인 전에는 커맨드가 불리지 않는다.
+  it("삭제는 확인을 먼저 받는다", () => {
+    const { getAllByTestId, getByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+    fireEvent.click(getByTestId("menu-delete"));
+
+    expect(deleteEntry).not.toHaveBeenCalled();
+    expect(useConfirmStore.getState().pending).not.toBeNull();
+  });
+
+  // 왜: 메뉴는 포인터 없이도 쓸 수 있어야 한다 — 트리가 이미 방향키로 도는데 메뉴만 마우스
+  //     전용이면 키보드 사용자는 이름 변경·삭제에 닿지 못한다.
+  // 보장: 열면 첫 항목에 포커스가 가고 방향키로 옮겨진다.
+  it("열면 첫 항목에 포커스가 가고 방향키로 옮겨진다", () => {
+    const { getAllByTestId, getByTestId } = render(<Sidebar />);
+
+    fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);
+
+    const items = [...getByTestId("entry-context-menu").querySelectorAll('[role="menuitem"]')];
+    expect(document.activeElement).toBe(items[0]);
+
+    fireEvent.keyDown(getByTestId("entry-context-menu"), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(items[1]);
   });
 });

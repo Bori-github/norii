@@ -12,6 +12,8 @@ interface NoriiE2eApi {
   /** 폴더 다이얼로그 우회 — 사이드바 시나리오용(전제는 → openFolderAtPath). */
   openFolder(path: string): Promise<void>;
   tabCount(): number;
+  /** 활성 탭의 파일 경로 — 이름 변경이 탭을 새 경로로 옮겼는지 확인한다. */
+  activeTabPath(): string | null;
   closeWindow(): void;
 }
 
@@ -29,6 +31,10 @@ export function exposeE2eApi(): void {
     openPath: (path) => openPathInTab(path),
     openFolder: (path) => openFolderAtPath(path),
     tabCount: () => useDocumentStore.getState().tabs.length,
+    activeTabPath: () => {
+      const { tabs, activeTabId } = useDocumentStore.getState();
+      return tabs.find((tab) => tab.id === activeTabId)?.filePath ?? null;
+    },
     closeWindow: () => {
       // 실제 종료 경로(onCloseRequested → 종료 방어)를 태운다 — destroy가 아니라 close.
       void import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>

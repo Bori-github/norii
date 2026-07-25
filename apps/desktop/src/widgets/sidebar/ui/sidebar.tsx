@@ -5,8 +5,13 @@ import { useWorkspaceStore } from "@entities/workspace";
 import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
+import { FilePlusIcon, FolderPlusIcon } from "@shared/ui";
 
+import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
+import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
+import { EntryContextMenu } from "./entry-context-menu";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
+import { EntryNameInput } from "./entry-name-input";
 import { TreeItem } from "./tree-item";
 
 // 사이드바는 유리(크롬)다 — 탭바·상태바와 같은 표면 역할(→ DESIGN.md 표면 표).
@@ -39,6 +44,27 @@ const headerClass = css({
 
 const headerNameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 
+const headerActionsClass = css({
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5",
+  flexShrink: 0,
+});
+
+const iconButtonClass = css({
+  display: "flex",
+  border: "none",
+  background: "transparent",
+  color: "text",
+  borderRadius: "sm",
+  padding: "1",
+  cursor: "pointer",
+  _hover: { background: "bg.hover" },
+  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+});
+
+const iconClass = css({ width: "4", height: "4" });
+
 const folderButtonClass = css({
   border: "none",
   background: "transparent",
@@ -60,7 +86,8 @@ const treeClass = css({
   margin: 0,
   padding: 0,
   paddingTop: "1.5",
-  paddingBottom: "2",
+  // 마지막 줄에서 이름을 고칠 때 툴팁이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
+  paddingBottom: "8",
 });
 
 const emptyClass = css({
@@ -183,6 +210,8 @@ export function Sidebar() {
   const rootDir = useWorkspaceStore((state) => state.rootDir);
   const fileTree = useWorkspaceStore((state) => state.fileTree);
   const currentPath = useTreeNavStore((state) => state.currentPath);
+  const edit = useEntryEditStore((state) => state.edit);
+  const menu = useContextMenuStore((state) => state.menu);
   const treeRef = useRef<HTMLUListElement>(null);
   const onTreeKeyDown = useTreeKeyboard(treeRef);
 
@@ -225,15 +254,35 @@ export function Sidebar() {
         <span className={headerNameClass} title={rootDir}>
           {folderNameOf(rootDir)}
         </span>
-        <button
-          type="button"
-          className={folderButtonClass}
-          aria-label={STRINGS.openFolderButtonLabel}
-          data-testid="open-folder"
-          onClick={() => void openFolderInteractive()}
-        >
-          {STRINGS.openFolderButtonLabel}
-        </button>
+        <div className={headerActionsClass}>
+          <button
+            type="button"
+            className={iconButtonClass}
+            aria-label={STRINGS.newFileButtonLabel}
+            data-testid="new-file"
+            onClick={() => void startCreate("file", null)}
+          >
+            <FilePlusIcon className={iconClass} />
+          </button>
+          <button
+            type="button"
+            className={iconButtonClass}
+            aria-label={STRINGS.newDirButtonLabel}
+            data-testid="new-dir"
+            onClick={() => void startCreate("dir", null)}
+          >
+            <FolderPlusIcon className={iconClass} />
+          </button>
+          <button
+            type="button"
+            className={folderButtonClass}
+            aria-label={STRINGS.openFolderButtonLabel}
+            data-testid="open-folder"
+            onClick={() => void openFolderInteractive()}
+          >
+            {STRINGS.openFolderButtonLabel}
+          </button>
+        </div>
       </div>
       <ul
         ref={treeRef}
@@ -242,11 +291,18 @@ export function Sidebar() {
         aria-label={STRINGS.sidebarTreeLabel}
         data-testid="file-tree"
         onKeyDown={onTreeKeyDown}
+        // 빈 영역 우클릭 — 항목의 onContextMenu는 전파를 멈추므로 여기는 항목 밖에서만 뜬다.
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openEntryMenu({ target: null, x: event.clientX, y: event.clientY });
+        }}
       >
         {fileTree.map((node) => (
           <TreeItem key={node.path} node={node} depth={0} />
         ))}
+        {edit?.mode === "create" && edit.dir === rootDir && <EntryNameInput edit={edit} />}
       </ul>
+      {menu !== null && <EntryContextMenu key={menu.target?.path ?? ""} menu={menu} />}
     </nav>
   );
 }

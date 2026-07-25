@@ -1,6 +1,6 @@
 # 에러 처리와 로깅
 
-norii의 에러 처리·로깅 전략의 단일 출처다. **데이터 유실 방지가 최우선**이므로(→ [파일 생명주기 정책](file-lifecycle.md)), 실패를 삼키지 않고 사용자에게 명확히 전달한다.
+norii의 에러 처리·로깅 전략의 단일 출처다. **데이터 유실 방지가 최우선**이므로(→ [파일 생명주기 정책](file-lifecycle.md)), 실패를 사용자에게 명확히 전달한다.
 
 ## Rust — 타입이 있는 에러
 
@@ -10,6 +10,8 @@ norii의 에러 처리·로깅 전략의 단일 출처다. **데이터 유실 �
 AppError::NotFound       파일 없음
 AppError::Permission     권한 없음
 AppError::Conflict       저장 시 외부 변경 충돌 — 내용 해시 불일치 (→ file-lifecycle.md)
+AppError::AlreadyExists  같은 이름의 항목이 이미 있음 — 생성·이름 변경이 덮어쓰지 않고 멈춘다
+AppError::InvalidName    항목 이름 규칙 위반 (→ rust-commands.md#항목-이름-규칙-create_file--create_dir--rename_entry)
 AppError::DiskFull       디스크 부족
 AppError::Encoding       인코딩 오류 (감지 불가 파일 — → file-lifecycle.md)
 AppError::Io(...)        기타 I/O
@@ -31,6 +33,6 @@ Rust와 프론트 로그를 **`tauri-plugin-log`** 로 통합한다. 하나의 �
 
 ## 원칙
 
-- **실패를 삼키지 않는다.** 특히 저장 실패는 사용자에게 명확히 알리고 재시도 경로를 준다(데이터 유실 직결).
+- **모든 실패는 사용자에게 알린다.** 특히 저장 실패는 재시도 경로까지 준다(데이터 유실 직결).
 - **자동 검증 불가 영역**은 그 이유와 수동 검증 방법을 남긴다(→ [작업 규칙](../rules/project-rules.md)).
 - 로깅·에러 표면은 [보안](security.md)의 신뢰 경계와 민감정보 원칙을 함께 지킨다.
