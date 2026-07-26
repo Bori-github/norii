@@ -31,6 +31,21 @@ connect-src 'self';                     local-first → 외부 연결 없음 (�
 
 파일시스템 접근은 사용자가 다이얼로그로 선택했거나 연 루트 폴더 하위로 제한한다. **단, 파일 I/O는 커스텀 `std::fs` 커맨드라 capabilities가 경로를 자동 제한하지 못한다** — 실제 경로 스코프는 커맨드가 canonicalize + 허용 루트 검증으로 강제하고, capabilities는 커맨드·플러그인 노출을 제한한다. 두 층의 단일 출처는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이다.
 
+#### 세션 파일
+
+지난 세션의 경로가 다음 부팅의 허용 루트가 된다(→ [Rust 커맨드 계약 — 세션](rust-commands.md#세션)). 그래서 `session.json`은 **보안에 관여하는 입력**이며, 신뢰하는 범위를 여기서 못박는다.
+
+```text
+믿는 것      같은 사용자만 앱 config 디렉터리에 쓸 수 있다는 것
+             (macOS: ~/Library/Application Support — 홈 문서 폴더와 달리 TCC 승인이 없다)
+막는 것      norii 자신의 파일 커맨드로 그 파일을 고치는 길 (FileScope의 거부 목록)
+             종류가 어긋난 경로로 허용을 넓히는 길 (탭=파일 · 루트=디렉터리 검사)
+남는 위험    같은 사용자 권한으로 도는 다른 프로세스가 파일을 미리 심어 두는 것 —
+             norii가 가진 TCC 승인 범위 안에서 그 경로가 열린다
+```
+
+마지막 줄은 local-first 단독 사용자 모델에서 수용하는 위험이다 — 같은 사용자 프로세스는 이미 그 파일들을 직접 읽을 수 있다. 무결성을 가정이 아니라 검증으로 바꾸려면 서명(MAC)이 필요하며, 그것은 별도 결정이다.
+
 ### 3. 프리뷰 sanitize
 
 markdown-it이 만든 HTML은 삽입 전 DOMPurify로 정화한다. 마크다운은 원시 HTML(`<details>` 등)을 통과시키므로 필수다. 단일 출처는 [프리뷰 전략 — Sanitize는 필수다](preview-strategy.md#sanitize는-필수다).

@@ -12,6 +12,8 @@ use crate::error::AppError;
 #[derive(Default)]
 pub struct FileScope {
     roots: Mutex<HashSet<PathBuf>>,
+    /// 허용 루트보다 강한 거부 — 앱 자신의 config·data 디렉터리가 들어간다.
+    denied: Mutex<Vec<PathBuf>>,
 }
 
 impl FileScope {
@@ -23,9 +25,32 @@ impl FileScope {
             .insert(canonical_root);
     }
 
+    /// 어떤 허용 루트 아래에 있어도 거부할 디렉터리를 등록한다.
+    ///
+    /// 앱의 config 디렉터리가 그 대상이다: 세션 파일이 다음 부팅의 허용 루트를 정하므로
+    /// (→ .claude/docs/rust-commands.md#권한-capabilities), 그 파일을 파일 커맨드로 고칠 수
+    /// 있으면 웹뷰가 스스로 권한을 넓힐 수 있다. 사용자가 홈 폴더를 열면 config 디렉터리도
+    /// 허용 루트 하위가 되므로, 허용보다 강한 거부가 필요하다.
+    pub fn deny(&self, canonical_dir: PathBuf) {
+        self.denied
+            .lock()
+            .expect("FileScope 락은 포이즌되지 않는다")
+            .push(canonical_dir);
+    }
+
     /// canonicalize된 경로가 허용 루트와 같거나 그 하위인지 확인한다.
     /// canonicalize를 전제하므로 심볼릭 링크·`..`를 통한 스코프 탈출이 차단된다.
     pub fn ensure_allowed(&self, canonical: &Path) -> Result<(), AppError> {
+        let denied = self
+            .denied
+            .lock()
+            .expect("FileScope 락은 포이즌되지 않는다");
+        if denied.iter().any(|dir| canonical.starts_with(dir)) {
+            return Err(AppError::Permission(
+                "앱 자신의 설정 디렉터리는 파일 커맨드로 다룰 수 없습니다".into(),
+            ));
+        }
+        drop(denied);
         let roots = self.roots.lock().expect("FileScope 락은 포이즌되지 않는다");
         if roots.iter().any(|root| canonical.starts_with(root)) {
             Ok(())
@@ -59,6 +84,23 @@ mod tests {
         // 문자열 접두어가 아니라 경로 컴포넌트 기준이다 — /tmp/vault2는 하위가 아니다.
         assert!(matches!(
             scope.ensure_allowed(Path::new("/tmp/vault2/b.md")),
+            Err(AppError::Permission(_))
+        ));
+    }
+
+    // 집행: rust-commands.md#권한-capabilities — 세션 파일이 다음 부팅의 허용 루트를 정한다.
+    // 왜: 사용자가 홈 폴더를 열면 앱 config 디렉터리도 허용 루트 하위가 된다. 그 안의 세션
+    //     파일을 파일 커맨드로 고칠 수 있으면 웹뷰가 스스로 허용 루트를 심을 수 있다.
+    // 보장: 거부 디렉터리 하위는 허용 루트 안에 있어도 거부된다.
+    #[test]
+    fn 거부_디렉터리는_허용_루트보다_강하다() {
+        let scope = FileScope::default();
+        scope.allow(PathBuf::from("/tmp/home"));
+        scope.deny(PathBuf::from("/tmp/home/config"));
+
+        assert!(scope.ensure_allowed(Path::new("/tmp/home/a.md")).is_ok());
+        assert!(matches!(
+            scope.ensure_allowed(Path::new("/tmp/home/config/session.json")),
             Err(AppError::Permission(_))
         ));
     }

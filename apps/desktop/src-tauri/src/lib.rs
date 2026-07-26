@@ -91,6 +91,18 @@ pub fn run() {
                 }
             }
 
+            // 앱 자신의 config 디렉터리는 파일 커맨드가 만질 수 없다 — 그 안의 세션 파일이
+            // 다음 부팅의 허용 루트를 정한다(→ src/scope.rs의 deny).
+            {
+                use tauri::Manager;
+                if let Ok(dir) = app.path().app_config_dir() {
+                    let _ = std::fs::create_dir_all(&dir);
+                    if let Ok(canonical) = std::fs::canonicalize(&dir) {
+                        app.state::<scope::FileScope>().deny(canonical);
+                    }
+                }
+            }
+
             // E2E는 네이티브 다이얼로그를 자동화할 수 없어, webdriver 빌드에 한해 환경변수로
             // 허용 루트를 주입한다(다이얼로그 대체 입구). 일반·릴리스 빌드에는 없는 경로다.
             // 루트가 없으면 만들어 준다 — 테스트가 앱 기동 전에 디렉터리를 준비할 필요가 없게.
