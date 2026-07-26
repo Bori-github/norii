@@ -28,6 +28,7 @@ norii는 가볍고 빠른 로컬 우선(local-first) 마크다운 **소스 뷰**
 - [문서 모델(다중 탭 + 파일 트리)](.claude/docs/document-model.md)
 - [Rust 커맨드 계약(파일 I/O · IPC 경계)](.claude/docs/rust-commands.md)
 - [에디터 전략(CodeMirror 6 · 하이브리드 접기)](.claude/docs/editor-strategy.md)
+- [한글 IME(입력 동작 · 조합 확정 Enter · 검증 층)](.claude/docs/korean-ime.md)
 - [프리뷰 전략(markdown-it · sanitize · 스크롤 동기화)](.claude/docs/preview-strategy.md)
 - [파일 생명주기 정책](.claude/docs/file-lifecycle.md)
 - [코드 품질 전략(oxlint · oxfmt · Vitest · Rust 게이트)](.claude/docs/code-quality.md)

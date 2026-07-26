@@ -5,6 +5,7 @@ import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import type { Extension } from "@codemirror/state";
 import { EditorView, highlightActiveLine, keymap, scrollPastEnd } from "@codemirror/view";
 
+import { compositionEnter } from "./composition-enter";
 import { markdownFolding } from "./folding";
 import { noriiTheme, type EditorColors } from "./theme";
 
@@ -27,6 +28,7 @@ export function noriiEditorExtensions(colors: EditorColors): Extension[] {
     EditorView.lineWrapping,
     scrollPastEnd(),
     ...markdownFolding(),
+    compositionEnter(),
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
   ];
 }

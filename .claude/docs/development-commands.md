@@ -51,7 +51,7 @@ mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 
 
 # 네이티브 검증 (check·CI 미포함 — 실제 OS 입력이라 앱을 최상위로 세운다, macOS 로컬 전용)
 mise run dev-webdriver & # 1) E2E용 앱 실행
-mise run verify-native   # 2) 전체화면 토글 클릭 등 실제 클릭 검증 (실행 전 경고·카운트다운, → testing.md#성숙도-주의)
+mise run verify-native   # 2) 실제 클릭·키 검증 (한글 체크가 있어 입력 소스를 한국어로 둔다, → testing.md#성숙도-주의)
 
 # PR 데모 영상 (check 미포함 — 앱 실행·화면 기록 권한 필요, macOS 전용)
 mise run dev-webdriver &        # 1) E2E용 앱 실행
