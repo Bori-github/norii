@@ -6,6 +6,7 @@ import "@app/index.css";
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
+import { useAutosaveStore } from "@features/save-file";
 import { BLUR_RADIUS_DEFAULT, GLASS_OPACITY_DEFAULT } from "@shared/config";
 
 import { closeSettings, openSettings, useSettingsDialogStore } from "@features/toggle-settings";
@@ -21,6 +22,8 @@ beforeEach(() => {
   useSettingsDialogStore.setState({ open: false });
   useThemeStore.setState({ preference: "system", systemPrefersDark: false });
   useGlassStore.setState({ opacity: null });
+  // 모듈 전역 스토어라 초기화하지 않으면 한 테스트의 "끄기"가 뒤 테스트로 새어 나간다.
+  useAutosaveStore.setState({ enabled: true });
 });
 
 afterEach(() => {
@@ -72,6 +75,19 @@ describe("SettingsDialog", () => {
     expect(useThemeStore.getState().preference).toBe("dark");
   });
 
+  it("자동 저장을 끄면 그 선택이 스토어에 남는다", async () => {
+    const { getByTestId } = render(<SettingsDialog />);
+    openSettings();
+
+    await waitFor(() => {
+      expect(getByTestId("settings-autosave-off")).not.toBeNull();
+    });
+    fireEvent.click(getByTestId("settings-autosave-off"));
+
+    expect(useAutosaveStore.getState().enabled).toBe(false);
+    expect(getByTestId("settings-autosave-off").getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("기본값으로 되돌리면 고른 값들이 함께 풀린다", async () => {
     const { getByTestId } = render(<SettingsDialog />);
     openSettings();
@@ -81,11 +97,13 @@ describe("SettingsDialog", () => {
     });
     fireEvent.click(getByTestId("settings-theme-dark"));
     fireEvent.change(getByTestId("settings-opacity"), { target: { value: "0.2" } });
+    fireEvent.click(getByTestId("settings-autosave-off"));
     fireEvent.click(getByTestId("settings-reset"));
 
     expect(useThemeStore.getState().preference).toBe("system");
     expect(useGlassStore.getState().opacity).toBeNull();
     expect(useGlassStore.getState().blurRadius).toBe(BLUR_RADIUS_DEFAULT);
+    expect(useAutosaveStore.getState().enabled).toBe(true);
   });
 
   it("닫기 버튼이 화면에서 지운다", async () => {

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 
@@ -32,6 +33,21 @@ const TREE_NOTES = path.join(TREE_ROOT, "notes");
 
 let browser: WebdriverIO.Browser;
 
+/** 앱이 세션 파일을 두는 자리 — 식별자는 tauri.conf.json이 소유하므로 거기서 읽는다. */
+async function sessionFile(): Promise<string> {
+  const config = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8")) as {
+    identifier: string;
+  };
+  const home = os.homedir();
+  const base =
+    process.platform === "darwin"
+      ? path.join(home, "Library", "Application Support")
+      : process.platform === "win32"
+        ? (process.env.APPDATA ?? path.join(home, "AppData", "Roaming"))
+        : (process.env.XDG_CONFIG_HOME ?? path.join(home, ".config"));
+  return path.join(base, config.identifier, "session.json");
+}
+
 beforeAll(async () => {
   await mkdir(SCOPE_ROOT, { recursive: true });
   browser = await remote({
@@ -40,7 +56,10 @@ beforeAll(async () => {
     capabilities: {},
     logLevel: "error",
   });
-  // 이전 스펙이 남긴 탭 상태를 지운다 — 세션 복원이 없으므로 리로드가 곧 초기화다.
+  // 이전 실행이 남긴 탭 상태를 지운다. 리로드만으로는 초기화가 아니다 — 부팅이 세션을
+  // 복원하므로(→ .claude/docs/document-model.md#세션-복원) 파일을 먼저 지운다. 앱 실행
+  // 시점이 아니라 매 실행마다 지워야 앞선 실행이 남긴 탭이 시작 상태로 새지 않는다.
+  await rm(await sessionFile(), { force: true });
   await browser.execute(() => {
     location.reload();
     return null;

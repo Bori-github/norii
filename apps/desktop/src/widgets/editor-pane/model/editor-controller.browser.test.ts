@@ -1,6 +1,7 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import {
+  getTabScroll,
   resetTabTextRegistry,
   resetTabViewStates,
   setTabCursor,
@@ -58,6 +59,17 @@ function nextFrame(): Promise<void> {
   });
 }
 
+/**
+ * 되돌린 자리를 기다린다 — 프레임 수를 세지 않고 관측 조건을 본다.
+ * 라인 단위로 되돌리므로 한 줄 높이만큼의 오차를 허용한다.
+ */
+async function waitForScrollNear(target: number): Promise<void> {
+  const lineHeight = scrollDom().querySelector(".cm-line")?.clientHeight ?? 20;
+  await vi.waitFor(() => {
+    expect(Math.abs(scrollDom().scrollTop - target)).toBeLessThan(lineHeight * 1.5);
+  });
+}
+
 function hide(): void {
   if (host) {
     host.style.display = "none";
@@ -100,10 +112,7 @@ it("탭을 다녀오면 읽던 자리로 돌아온다", async () => {
   expect(scrollDom().scrollTop).toBe(0);
 
   editor.showTab("a");
-  await nextFrame();
-  // 라인 단위로 되돌리므로 한 줄 높이만큼의 오차를 허용한다.
-  expect(scrollDom().scrollTop).toBeGreaterThan(left - 30);
-  expect(scrollDom().scrollTop).toBeLessThan(left + 30);
+  await waitForScrollNear(left);
 });
 
 it("편집면이 숨은 동안 옮긴 탭도 다시 보일 때 제 자리에서 시작한다", async () => {
@@ -115,8 +124,10 @@ it("편집면이 숨은 동안 옮긴 탭도 다시 보일 때 제 자리에서 
   await nextFrame();
   scrollDom().scrollTop = 600;
   const left = scrollDom().scrollTop;
-  // scroll 이벤트가 도착할 프레임을 준다 — 사람이 굴린 다음 모드를 바꾸는 순서다.
-  await nextFrame();
+  // 기억이 실제로 남은 뒤에 모드를 바꾼다 — 사람이 굴린 다음 모드를 바꾸는 순서다.
+  await vi.waitFor(() => {
+    expect(getTabScroll("a")).not.toBeNull();
+  });
 
   // 프리뷰 전용 모드 — 편집면은 display: none이라 높이가 0이 된다(→ pages/editor).
   hide();
@@ -130,9 +141,7 @@ it("편집면이 숨은 동안 옮긴 탭도 다시 보일 때 제 자리에서 
   expect(scrollDom().scrollTop).toBe(0);
 
   editor.showTab("a");
-  await nextFrame();
-  expect(scrollDom().scrollTop).toBeGreaterThan(left - 30);
-  expect(scrollDom().scrollTop).toBeLessThan(left + 30);
+  await waitForScrollNear(left);
 });
 
 it("기억한 커서 자리에서 편집을 시작한다", async () => {

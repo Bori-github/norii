@@ -68,6 +68,13 @@ describe("flushUntilClean", () => {
     ).resolves.toBe("confirm");
   });
 
+  it("자동 저장이 꺼져 있으면 플러시 없이 confirm — 저장은 Cmd+S만", async () => {
+    const tabs = [tab({ isDirty: true })];
+    const save = vi.fn(async () => "saved");
+    await expect(flushUntilClean(() => tabs, save, false)).resolves.toBe("confirm");
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it("Untitled dirty가 있으면 플러시 없이 confirm", async () => {
     const tabs = [tab({ filePath: null, isDirty: true })];
     const save = vi.fn(async () => "saved");
