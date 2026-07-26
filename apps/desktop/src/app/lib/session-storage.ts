@@ -1,14 +1,67 @@
-import { getTabScroll, useDocumentStore } from "@entities/document";
+import { getTabScroll, setTabScroll, useDocumentStore } from "@entities/document";
 import { useWorkspaceStore } from "@entities/workspace";
-import { SESSION_SAVE_DEBOUNCE_MS } from "@shared/config";
+import { openFolderAtPath } from "@features/open-folder";
+import { SESSION_RESTORE_TIMEOUT_MS, SESSION_SAVE_DEBOUNCE_MS } from "@shared/config";
 import { ipc } from "@shared/ipc";
 import type { Session } from "@shared/ipc";
 import { logger } from "@shared/lib";
 
 /**
- * 마지막 세션을 파일에 남긴다. 정책은 .claude/docs/document-model.md#세션-복원이 소유한다.
- * 쓰기 실패는 삼킨다 — 세션을 못 남기는 것이 종료를 막을 이유는 아니다.
+ * 마지막 세션을 파일에 남기고 다시 세운다. 정책은
+ * .claude/docs/document-model.md#세션-복원이 소유한다.
+ * 읽기·쓰기 실패는 삼킨다 — 세션 하나 때문에 기동이나 종료를 막지 않는다.
  */
+
+async function restoreSession(): Promise<void> {
+  let session: Session | null;
+  try {
+    session = await ipc.loadSession();
+  } catch {
+    logger.warn("지난 세션을 읽지 못했습니다 — 빈 화면으로 시작합니다");
+    return;
+  }
+  if (!session) {
+    return;
+  }
+
+  // 본문 읽기는 서로 독립이라 함께 나간다 — 창이 보이기 전이므로 직렬로 읽으면 그만큼 늦다.
+  // 탭은 응답 순서가 아니라 저장된 순서로 세운다.
+  const [contents] = await Promise.all([
+    Promise.allSettled(session.tabs.map((tab) => ipc.openFile(tab.path))),
+    session.rootDir === null ? Promise.resolve() : openFolderAtPath(session.rootDir),
+  ]);
+
+  const store = useDocumentStore.getState();
+  let activeTabId: string | null = null;
+  contents.forEach((content, index) => {
+    const tab = session.tabs[index];
+    if (content.status === "rejected" || tab === undefined) {
+      // 파일은 있으나 읽지 못했다(바이너리·권한). 그 탭만 빠지고 나머지는 선다.
+      logger.warn(`세션 복원: 탭을 열지 못했습니다 — ${tab?.path ?? ""}`);
+      return;
+    }
+    const tabId = store.openFileTab(content.value, false);
+    setTabScroll(tabId, { line: tab.scrollLine, fraction: 0 });
+    if (session.active === index) {
+      activeTabId = tabId;
+    }
+  });
+  if (activeTabId !== null) {
+    store.activateTab(activeTabId);
+  }
+}
+
+/** 지난 세션을 세우되 상한 안에 돌아온다(→ design/window-chrome.md#부팅-순서--창은-언제-보이는가). */
+export async function restoreSessionWithin(timeoutMs = SESSION_RESTORE_TIMEOUT_MS): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    restoreSession(),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+  clearTimeout(timer);
+}
 
 function snapshot(): Session {
   const { tabs, activeTabId } = useDocumentStore.getState();

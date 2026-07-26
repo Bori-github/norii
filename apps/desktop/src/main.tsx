@@ -7,6 +7,7 @@ import {
   loadSettingsWithin,
   persistSessionOnChange,
   persistSettingsOnChange,
+  restoreSessionWithin,
   revealWindow,
 } from "@app/index";
 
@@ -21,6 +22,10 @@ import "katex/dist/katex.min.css";
 // 부팅 순서의 단일 출처: .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가
 await loadSettingsWithin();
 persistSettingsOnChange();
+
+// 지난 세션의 탭까지 세운 뒤에 창을 보인다 — 창이 먼저 뜨면 빈 화면이 탭으로 교체되는
+// 것이 보인다. 여기서도 상한을 넘기면 포기한다(창을 끝내 못 보이는 것이 더 나쁘다).
+await restoreSessionWithin();
 persistSessionOnChange();
 
 // 표식(data-theme·data-glass)은 **첫 렌더 전에** 심는다 — 이펙트에서 심으면 한 프레임 동안
