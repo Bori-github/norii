@@ -32,6 +32,8 @@ env = { NORII_E2E_SCOPE_ROOT = "/tmp/norii-e2e" }
 run = """
 PORT=$(node scripts/free-port.mjs 1520)
 echo "dev-webdriver 서버 포트: $PORT"
+# 세션 복원이 시작 상태를 흔들지 않게 지운다 — E2E는 탭 0개에서 출발한다(→ .claude/docs/testing.md).
+rm -f "$HOME/Library/Application Support/com.norii.app/session.json"
 NORII_DEV_PORT=$PORT pnpm --filter desktop tauri dev --features webdriver \
   --config "{\\"build\\":{\\"devUrl\\":\\"http://localhost:$PORT\\"}}"
 """
