@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "@app/index.css";
 
+import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
+import { GLASS_OPACITY_DEFAULT } from "@shared/config";
 
 import {
   closeSettings,
@@ -21,7 +23,8 @@ import { SettingsDialog } from "./settings-dialog";
 
 beforeEach(() => {
   useSettingsDialogStore.setState({ open: false, section: "appearance" });
-  useThemeStore.setState({ preference: "system" });
+  useThemeStore.setState({ preference: "system", systemPrefersDark: false });
+  useGlassStore.setState({ opacity: null });
 });
 
 afterEach(() => {
@@ -46,6 +49,20 @@ describe("SettingsDialog", () => {
     // 창 크기를 실제 앱에 가깝게 두고 찍는다 — 모달은 화면 크기에 비례해 자리를 잡는다.
     await page.viewport(1200, 800);
     await page.screenshot({ path: "__screenshots__/settings-dialog.png" });
+  });
+
+  it("불투명도 슬라이더는 아직 고르지 않았으면 그 테마의 기본값에 선다", async () => {
+    const { getByTestId } = render(<SettingsDialog />);
+    openSettings();
+
+    await waitFor(() => {
+      expect(getByTestId("settings-opacity")).not.toBeNull();
+    });
+    const slider = getByTestId("settings-opacity") as HTMLInputElement;
+    expect(Number(slider.value)).toBe(GLASS_OPACITY_DEFAULT.light);
+
+    fireEvent.change(slider, { target: { value: "0.2" } });
+    expect(useGlassStore.getState().opacity).toBe(0.2);
   });
 
   it("고른 테마가 스토어에 남는다", async () => {

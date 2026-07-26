@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
-import { useThemeStore } from "@entities/theme";
+import { resolveOpacity, useGlassStore } from "@entities/glass";
+import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
-import { STRINGS } from "@shared/config";
+import { BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
+import { hasWindowGlass } from "@shared/lib";
 import { CloseIcon } from "@shared/ui";
 
 import type { SettingsSection } from "../model/settings-dialog-store";
@@ -96,6 +98,26 @@ const rowClass = css({
 const rowTitleClass = css({ fontSize: "sm", fontWeight: "medium" });
 const rowHintClass = css({ marginTop: "1", fontSize: "xs", color: "text.muted" });
 
+const controlClass = css({ display: "flex", alignItems: "center", gap: "3" });
+
+// 값은 슬라이더 옆에 숫자로 둔다 — 손잡이 위치만으로는 지금 값을 말할 수 없다.
+const valueClass = css({
+  minWidth: "10",
+  fontSize: "xs",
+  color: "text.muted",
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+});
+
+// 손잡이·채움은 표시라 액센트를 쓴다 — 글자가 아니므로 비텍스트 기준이 적용된다
+// (→ .claude/docs/design/decisions/color-palette.md).
+const sliderClass = css({
+  width: "40",
+  accentColor: "accent",
+  cursor: "pointer",
+  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
+});
+
 const selectClass = css({
   paddingX: "2",
   paddingY: "1",
@@ -125,7 +147,14 @@ export function SettingsDialog() {
   const setSection = useSettingsDialogStore((state) => state.setSection);
   const preference = useThemeStore((state) => state.preference);
   const setPreference = useThemeStore((state) => state.setPreference);
+  const theme = useResolvedTheme();
+  const opacity = useGlassStore((state) => state.opacity);
+  const blurRadius = useGlassStore((state) => state.blurRadius);
+  const setOpacity = useGlassStore((state) => state.setOpacity);
+  const setBlurRadius = useGlassStore((state) => state.setBlurRadius);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // 아직 고르지 않았으면 슬라이더가 그 테마의 기본 알파에 선다.
+  const resolvedOpacity = resolveOpacity(opacity, theme);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -198,6 +227,50 @@ export function SettingsDialog() {
               ))}
             </select>
           </div>
+
+          <div className={rowClass}>
+            <div>
+              <div className={rowTitleClass}>{STRINGS.settingsOpacityTitle}</div>
+              <div className={rowHintClass}>{STRINGS.settingsOpacityHint}</div>
+            </div>
+            <div className={controlClass}>
+              <input
+                type="range"
+                className={sliderClass}
+                data-testid="settings-opacity"
+                aria-label={STRINGS.settingsOpacityTitle}
+                min={0}
+                max={1}
+                step={0.01}
+                value={resolvedOpacity}
+                onChange={(event) => setOpacity(Number(event.target.value))}
+              />
+              <span className={valueClass}>{Math.round(resolvedOpacity * 100)}%</span>
+            </div>
+          </div>
+
+          {hasWindowGlass && (
+            <div className={rowClass}>
+              <div>
+                <div className={rowTitleClass}>{STRINGS.settingsBlurTitle}</div>
+                <div className={rowHintClass}>{STRINGS.settingsBlurHint}</div>
+              </div>
+              <div className={controlClass}>
+                <input
+                  type="range"
+                  className={sliderClass}
+                  data-testid="settings-blur"
+                  aria-label={STRINGS.settingsBlurTitle}
+                  min={0}
+                  max={BLUR_RADIUS_MAX}
+                  step={1}
+                  value={blurRadius}
+                  onChange={(event) => setBlurRadius(Number(event.target.value))}
+                />
+                <span className={valueClass}>{blurRadius}px</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </dialog>

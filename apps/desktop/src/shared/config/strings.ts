@@ -158,4 +158,10 @@ export const STRINGS = {
   themeSystemLabel: "시스템 설정 따르기",
   themeLightLabel: "라이트",
   themeDarkLabel: "다크",
+
+  // 유리 두 값 — 조절 대상이 무엇인지 설명이 갈라 준다(→ design/decisions/glass.md).
+  settingsOpacityTitle: "유리 불투명도",
+  settingsOpacityHint: "도구 표면이 바탕화면을 얼마나 덮을지 정합니다.",
+  settingsBlurTitle: "흐림 반경",
+  settingsBlurHint: "창 뒤 바탕화면을 얼마나 흐리게 볼지 정합니다.",
 } as const;
