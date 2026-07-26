@@ -9,6 +9,7 @@ mod error;
 mod fs_commands;
 mod mac_geometry;
 mod scope;
+mod session;
 mod standard_window_buttons;
 mod text_encoding;
 mod titlebar_drag;
@@ -34,6 +35,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         dialog_commands::show_save_dialog,
         dialog_commands::show_open_folder_dialog,
         window_glass::set_window_blur_radius,
+        session::load_session,
+        session::save_session,
     ])
 }
 
