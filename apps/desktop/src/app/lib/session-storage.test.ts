@@ -119,6 +119,24 @@ describe("persistSessionOnChange", () => {
     stop();
   });
 
+  it("타이핑 중에는 쓰지 않는다 — 커서·스크롤만 달라진 상태는 구독의 관심이 아니다", async () => {
+    vi.useFakeTimers();
+    const stop = persistSessionOnChange();
+
+    useDocumentStore.setState({ tabs: [tab("t1", "/vault/a.md")], activeTabId: "t1" });
+    await vi.advanceTimersByTimeAsync(SESSION_SAVE_DEBOUNCE_MS);
+    expect(saveSession).toHaveBeenCalledTimes(1);
+
+    // 자동 저장이 한 바퀴 돌면 탭 배열이 새로 만들어져 구독이 깨어난다. 그 사이 커서도 움직인다.
+    setTabCursor("t1", { line: 40, column: 3 });
+    setTabScroll("t1", { line: 38, fraction: 0 });
+    useDocumentStore.setState({ tabs: [{ ...tab("t1", "/vault/a.md"), lastSavedHash: "h2" }] });
+    await vi.advanceTimersByTimeAsync(SESSION_SAVE_DEBOUNCE_MS);
+
+    expect(saveSession).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
   it("같은 상태로는 다시 쓰지 않는다", async () => {
     vi.useFakeTimers();
     const stop = persistSessionOnChange();
@@ -189,6 +207,53 @@ describe("restoreSessionWithin", () => {
     expect(tabs.find((t) => t.id === activeTabId)?.filePath).toBe("/vault/b.md");
   });
 
+  it("저장된 활성 탭을 열지 못하면 남은 첫 탭을 세운다", async () => {
+    openFile.mockImplementation(async (path: string) => {
+      if (path === "/vault/깨진.md") {
+        throw new Error("열 수 없습니다");
+      }
+      return fileContent(path);
+    });
+    loadSession.mockResolvedValue({
+      rootDir: null,
+      tabs: [
+        { path: "/vault/a.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 },
+        { path: "/vault/깨진.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 },
+      ],
+      active: 1,
+    });
+
+    await restoreSessionWithin();
+
+    const { tabs, activeTabId } = useDocumentStore.getState();
+    expect(tabs.find((t) => t.id === activeTabId)?.filePath).toBe("/vault/a.md");
+  });
+
+  it("상한을 넘기면 뒤늦게 도착한 탭을 세우지 않는다", async () => {
+    vi.useFakeTimers();
+    let release: (() => void) | undefined;
+    openFile.mockImplementation(
+      async () =>
+        new Promise((resolve) => {
+          release = () => resolve(fileContent("/vault/느린.md"));
+        }),
+    );
+    loadSession.mockResolvedValue({
+      rootDir: null,
+      tabs: [{ path: "/vault/느린.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 }],
+      active: 0,
+    });
+
+    const pending = restoreSessionWithin();
+    await vi.advanceTimersByTimeAsync(SESSION_RESTORE_TIMEOUT_MS);
+    await pending;
+    release?.();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // 창은 이미 보인다 — 지금 탭을 세우면 사용자가 보는 화면이 뒤늦게 바뀐다.
+    expect(useDocumentStore.getState().tabs).toHaveLength(0);
+  });
+
   it("지난 세션이 없으면 아무 탭도 세우지 않는다", async () => {
     await restoreSessionWithin();
 
@@ -208,7 +273,7 @@ describe("restoreSessionWithin", () => {
 });
 
 describe("flushSession", () => {
-  it("바뀐 것이 없어도 쓴다 — 스크롤은 스토어를 거치지 않는다", async () => {
+  it("구독이 잡지 못하는 자리까지 쓴다 — 스크롤은 스토어를 거치지 않는다", async () => {
     const stop = persistSessionOnChange();
     useDocumentStore.setState({ tabs: [tab("t1", "/vault/a.md")], activeTabId: "t1" });
     setTabScroll("t1", { line: 7, fraction: 0 });
@@ -224,7 +289,14 @@ describe("flushSession", () => {
   });
 
   it("쓰기가 실패해도 종료를 막지 않는다", async () => {
+    const stop = persistSessionOnChange();
+    useDocumentStore.setState({ tabs: [tab("t1", "/vault/a.md")], activeTabId: "t1" });
     saveSession.mockRejectedValueOnce(new Error("디스크 없음"));
+
     await expect(flushSession()).resolves.toBeUndefined();
+
+    // 실패 경로에 실제로 닿았음을 고정한다 — 비교에서 걸러졌으면 통과가 무의미하다.
+    expect(saveSession).toHaveBeenCalledTimes(1);
+    stop();
   });
 });

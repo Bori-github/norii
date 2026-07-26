@@ -13,7 +13,7 @@ import {
   SETTINGS_SAVE_DEBOUNCE_MS,
   SETTINGS_STORE_FILE,
 } from "@shared/config";
-import { logger } from "@shared/lib";
+import { logger, within } from "@shared/lib";
 
 /**
  * 저장된 설정을 읽어 스토어에 넣고, 이후 변화를 파일에 쓴다. 읽기·쓰기 실패는 삼킨다.
@@ -106,14 +106,7 @@ export async function loadSettings(): Promise<void> {
 
 /** 저장값을 읽되 상한 안에 돌아온다(→ .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가). */
 export async function loadSettingsWithin(timeoutMs = SETTINGS_LOAD_TIMEOUT_MS): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  await Promise.race([
-    loadSettings(),
-    new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, timeoutMs);
-    }),
-  ]);
-  clearTimeout(timer);
+  await within(loadSettings(), timeoutMs);
 }
 
 function snapshot(): string {
@@ -144,12 +137,15 @@ async function save(): Promise<void> {
   const { visible } = useSidebarStore.getState();
   const { enabled } = useAutosaveStore.getState();
   try {
-    await opened.set(SETTINGS_KEYS.themePreference, preference);
-    await opened.set(SETTINGS_KEYS.glassOpacity, opacity);
-    await opened.set(SETTINGS_KEYS.blurRadius, blurRadius);
-    await opened.set(SETTINGS_KEYS.viewMode, mode);
-    await opened.set(SETTINGS_KEYS.sidebarVisible, visible);
-    await opened.set(SETTINGS_KEYS.autosaveEnabled, enabled);
+    // 키마다 IPC 왕복이다 — 서로 독립이므로 함께 보내고 한 번만 기다린다.
+    await Promise.all([
+      opened.set(SETTINGS_KEYS.themePreference, preference),
+      opened.set(SETTINGS_KEYS.glassOpacity, opacity),
+      opened.set(SETTINGS_KEYS.blurRadius, blurRadius),
+      opened.set(SETTINGS_KEYS.viewMode, mode),
+      opened.set(SETTINGS_KEYS.sidebarVisible, visible),
+      opened.set(SETTINGS_KEYS.autosaveEnabled, enabled),
+    ]);
     await opened.save();
     written = pending;
   } catch {

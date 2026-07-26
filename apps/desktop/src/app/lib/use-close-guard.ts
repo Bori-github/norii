@@ -3,8 +3,8 @@ import { useEffect } from "react";
 
 import { useDocumentStore } from "@entities/document";
 import { saveTabNow, useAutosaveStore } from "@features/save-file";
-import { STRINGS } from "@shared/config";
-import { logger } from "@shared/lib";
+import { CLOSE_FLUSH_TIMEOUT_MS, STRINGS } from "@shared/config";
+import { logger, within } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
 
 import { flushUntilClean, planCloseDefense } from "./close-defense";
@@ -30,8 +30,15 @@ export function useCloseGuard(): void {
       }
       defending = true;
       try {
-        // 둘 다 확인을 거치지 않는다 — 사용자 결정이 필요한 값이 아니다.
-        await Promise.all([flushSettings(), flushSession()]);
+        // 둘 다 확인을 거치지 않는다 — 사용자 결정이 필요한 값이 아니다. 상한을 두는 이유는
+        // 답이 오지 않는 쓰기가 창을 영원히 붙잡지 못하게 하는 것이다.
+        const written = await within(
+          Promise.all([flushSettings(), flushSession()]),
+          CLOSE_FLUSH_TIMEOUT_MS,
+        );
+        if (!written) {
+          logger.warn("종료 방어: 설정·세션 쓰기가 상한을 넘겼다 — 그대로 종료한다");
+        }
         if (tabsClean) {
           await getCurrentWindow().destroy();
           return;

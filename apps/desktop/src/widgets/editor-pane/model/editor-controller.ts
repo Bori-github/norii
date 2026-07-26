@@ -109,7 +109,9 @@ export function createEditorController(options: Options): EditorController {
       const position = topVisibleLine(view);
       // 자리는 움직일 때마다 기억한다 — 탭을 떠날 때만 기억하면, 편집면이 숨은 뒤
       // (프리뷰 전용 모드) 떠나는 경우 측정이 안 돼 그 사이의 이동이 사라진다.
-      if (activeTabId !== null && isLaidOut()) {
+      // 에코(동기화가 만든 스크롤)는 편집면이 보일 때만 생기므로 높이를 다시 재지 않는다 —
+      // 스크롤 대입 직후의 clientHeight 읽기는 강제 레이아웃이 된다.
+      if (activeTabId !== null && (ignore || isLaidOut())) {
         setTabScroll(activeTabId, position);
       }
       if (ignore) {
@@ -169,7 +171,7 @@ export function createEditorController(options: Options): EditorController {
   }
 
   function applyRememberedScroll(tabId: string): void {
-    if (!view || !isLaidOut()) {
+    if (view === null || !isLaidOut()) {
       return;
     }
     const scroll = getTabScroll(tabId);
