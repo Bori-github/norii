@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import {
   App,
   applyBootFlags,
-  loadSettings,
+  loadSettingsWithin,
   persistSettingsOnChange,
   revealWindow,
 } from "@app/index";
@@ -18,7 +18,7 @@ import "katex/dist/katex.min.css";
 // 엔트리 글루 — 레이어 밖의 유일한 파일. 부트스트랩 책임은 app 레이어가 가진다.
 
 // 부팅 순서의 단일 출처: .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가
-await loadSettings();
+await loadSettingsWithin();
 persistSettingsOnChange();
 
 // 표식(data-theme·data-glass)은 **첫 렌더 전에** 심는다 — 이펙트에서 심으면 한 프레임 동안

@@ -8,6 +8,7 @@ import { logger } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
 
 import { flushUntilClean, planCloseDefense } from "./close-defense";
+import { flushSettings, hasPendingSettingsSave } from "./settings-storage";
 
 // 종료 방어 — 정책의 단일 출처: file-lifecycle.md#종료-방어. 데이터 유실 방지 최우선.
 // 창 닫기 요청을 가로채 저장 대기분을 플러시하고, 플러시로 해소되지 않는 탭
@@ -18,7 +19,8 @@ export function useCloseGuard(): void {
 
     const unlistenPromise = getCurrentWindow().onCloseRequested(async (event) => {
       const plan = planCloseDefense(useDocumentStore.getState().tabs);
-      if (plan.flushTabIds.length === 0 && plan.blockingTabIds.length === 0) {
+      const tabsClean = plan.flushTabIds.length === 0 && plan.blockingTabIds.length === 0;
+      if (tabsClean && !hasPendingSettingsSave()) {
         return; // 저장 대기분 없음 — 그대로 종료.
       }
       // preventDefault는 비동기 작업 전에(동기적으로) 걸어야 한다.
@@ -28,6 +30,12 @@ export function useCloseGuard(): void {
       }
       defending = true;
       try {
+        // 설정은 확인을 거치지 않는다 — 디바운스가 남았을 뿐이라 그대로 쓴다.
+        await flushSettings();
+        if (tabsClean) {
+          await getCurrentWindow().destroy();
+          return;
+        }
         // 재확인 루프 — 저장 왕복 중의 추가 편집(dirty 재발)까지 플러시된 뒤에만 종료한다.
         const outcome = await flushUntilClean(
           () => useDocumentStore.getState().tabs,

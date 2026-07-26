@@ -20,9 +20,19 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
-import { BLUR_RADIUS_DEFAULT, SETTINGS_SAVE_DEBOUNCE_MS } from "@shared/config";
+import {
+  BLUR_RADIUS_DEFAULT,
+  SETTINGS_LOAD_TIMEOUT_MS,
+  SETTINGS_SAVE_DEBOUNCE_MS,
+} from "@shared/config";
 
-import { loadSettings, persistSettingsOnChange } from "./settings-storage";
+import {
+  flushSettings,
+  hasPendingSettingsSave,
+  loadSettings,
+  loadSettingsWithin,
+  persistSettingsOnChange,
+} from "./settings-storage";
 
 // 왜: 저장값은 사용자가 손으로 고칠 수 있는 파일에서 온다. 그대로 믿고 스토어에 넣으면 이상한
 //     값 하나가 화면을 깨뜨리고, 기동 실패로도 이어진다. 반대로 저장이 실패했다고 창을 못 띄우면
@@ -98,6 +108,18 @@ describe("persistSettingsOnChange", () => {
     stop();
   });
 
+  it("저장 대상이 그대로면 쓰지 않는다 — OS 테마가 바뀌어도 파일은 그대로다", async () => {
+    vi.useFakeTimers();
+    stored({});
+    await loadSettings();
+    const stop = persistSettingsOnChange();
+
+    useThemeStore.getState().setSystemPrefersDark(true);
+    await vi.advanceTimersByTimeAsync(SETTINGS_SAVE_DEBOUNCE_MS);
+    expect(storeSave).not.toHaveBeenCalled();
+    stop();
+  });
+
   it("구독을 끊으면 더 이상 저장하지 않는다", async () => {
     vi.useFakeTimers();
     stored({});
@@ -108,5 +130,45 @@ describe("persistSettingsOnChange", () => {
     useThemeStore.getState().setPreference("light");
     await vi.advanceTimersByTimeAsync(SETTINGS_SAVE_DEBOUNCE_MS);
     expect(storeSave).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadSettingsWithin", () => {
+  it("읽기가 끝나지 않아도 상한에서 돌아온다", async () => {
+    vi.useFakeTimers();
+    load.mockReturnValueOnce(new Promise(() => {}));
+
+    const pending = loadSettingsWithin();
+    await vi.advanceTimersByTimeAsync(SETTINGS_LOAD_TIMEOUT_MS);
+
+    await expect(pending).resolves.toBeUndefined();
+  });
+});
+
+describe("flushSettings", () => {
+  it("디바운스가 남아 있으면 지금 쓴다 — 창을 닫아도 마지막 조절이 남는다", async () => {
+    vi.useFakeTimers();
+    stored({});
+    await loadSettings();
+    const stop = persistSettingsOnChange();
+
+    useGlassStore.getState().setBlurRadius(44);
+    expect(hasPendingSettingsSave()).toBe(true);
+
+    await flushSettings();
+    expect(storeSave).toHaveBeenCalledTimes(1);
+    expect(storeSet).toHaveBeenCalledWith("blurRadius", 44);
+    expect(hasPendingSettingsSave()).toBe(false);
+    stop();
+  });
+
+  it("쓸 것이 없으면 아무 일도 하지 않는다", async () => {
+    stored({});
+    await loadSettings();
+    const stop = persistSettingsOnChange();
+
+    await flushSettings();
+    expect(storeSave).not.toHaveBeenCalled();
+    stop();
   });
 });

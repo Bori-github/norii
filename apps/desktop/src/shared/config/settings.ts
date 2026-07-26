@@ -11,3 +11,6 @@ export const SETTINGS_KEYS = {
 
 /** 저장 디바운스(ms) — 슬라이더를 끄는 동안 매 프레임 디스크에 쓰지 않는다. */
 export const SETTINGS_SAVE_DEBOUNCE_MS = 300;
+
+/** 읽기 상한(ms) - 정상 읽기보다 훨씬 길어 답이 오지 않을 때만 걸린다. */
+export const SETTINGS_LOAD_TIMEOUT_MS = 1500;
