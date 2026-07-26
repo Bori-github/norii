@@ -145,8 +145,6 @@ export const STRINGS = {
     encoding: "지원되지 않는 파일 형식입니다.",
     io: "파일 처리 중 오류가 발생했습니다.",
   },
-  themeToDarkLabel: "다크 테마로 전환",
-  themeToLightLabel: "라이트 테마로 전환",
 
   // 설정 화면. 테마의 세 선택지는 "OS를 따른다"가 하나의 선택이라는 규칙을 그대로 보인다
   // (→ .claude/docs/design/design-system.md#테마-라이트다크).

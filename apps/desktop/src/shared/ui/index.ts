@@ -21,7 +21,7 @@ export {
   LightbulbIcon,
   MinusCircleContainedIcon,
   PanelLeftIcon,
-  SlidersIcon,
+  SettingsIcon,
 } from "./icons";
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";

@@ -2,7 +2,6 @@ import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { useEditorStatusStore } from "@features/editor-status";
-import { ThemeToggle } from "@features/switch-theme";
 import { STRINGS } from "@shared/config";
 
 // 상태바는 유리(크롬)다 — 창 가장자리에 닿고 뒤가 바탕화면이다(→ DESIGN.md 표면 표).
@@ -75,7 +74,6 @@ export function StatusBar() {
             {STRINGS.statusLinePrefix} {cursor.line}, {STRINGS.statusColumnPrefix} {cursor.column}
           </span>
         )}
-        <ThemeToggle />
       </span>
     </div>
   );

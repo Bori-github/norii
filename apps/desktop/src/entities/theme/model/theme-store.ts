@@ -60,16 +60,3 @@ export function useResolvedTheme(): ResolvedTheme {
   const systemPrefersDark = useThemeStore((state) => state.systemPrefersDark);
   return resolveTheme(preference, systemPrefersDark);
 }
-
-/**
- * 토글 — 지금 보이는 테마의 반대로 **명시적으로 고정**한다.
- *
- * system 상태에서 토글하면 system을 벗어난다. 그게 사용자의 의도이기 때문이다:
- * "지금 화면이 밝은데 어둡게 하고 싶다"는 요청이지 "OS를 따르되 반대로"가 아니다.
- * system으로 돌아가는 길은 설정 화면이 열어 준다.
- */
-export function toggleTheme(): void {
-  const { preference, systemPrefersDark, setPreference } = useThemeStore.getState();
-  const current = resolveTheme(preference, systemPrefersDark);
-  setPreference(current === "dark" ? "light" : "dark");
-}

@@ -92,6 +92,8 @@ const treeClass = css({
 });
 
 const footerClass = css({
+  display: "flex",
+  justifyContent: "flex-end",
   flexShrink: 0,
   padding: "1",
   borderTop: "1px solid",

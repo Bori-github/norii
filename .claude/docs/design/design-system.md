@@ -102,7 +102,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 
 **설정이 여는 것은 이 셋뿐이고, 색은 열지 않는다.** [대비 게이트](#대비-게이트)는 토큰 값만으로 도는 빌드 타임 검사라, 임의의 색을 받으면 검사가 런타임으로 옮겨간다.
 
-**아직 저장하지 않는다.** 스토어는 매 기동 `system`으로 시작하고, 토글은 그 세션에만 남는다. 영속화는 설정 화면과 함께 들어온다(→ [실제 구현 계획](../implementation-plan.md)) — 그전까지 토글로 고정한 테마에서 `system`으로 돌아가는 길은 재시작뿐이다.
+**아직 저장하지 않는다.** 스토어는 매 기동 `system`으로 시작하고, 고른 값은 그 세션에만 남는다(→ [실제 구현 계획](../implementation-plan.md)).
 
 ```text
 semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.950}' } }
