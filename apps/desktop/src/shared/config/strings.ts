@@ -91,6 +91,8 @@ export const STRINGS = {
   closeUnapprovedBody:
     "이 문서는 저장 형식 변환(인코딩·개행) 승인 전이라 자동 저장되지 않았습니다.\n" +
     "저장하지 않고 닫으면 편집한 내용이 사라집니다.",
+  closeDirtyTitle: "저장되지 않은 문서",
+  closeDirtyBody: "자동 저장이 꺼져 있습니다. 저장하지 않고 닫으면 마지막 편집이 사라집니다.",
   closeDiscardLabel: "저장하지 않고 닫기",
   closeCancelLabel: "취소",
 

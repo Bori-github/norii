@@ -295,6 +295,18 @@ describe("자동 저장 끄기", () => {
     }
   });
 
+  it("꺼져 있으면 dirty 탭 닫기가 저장하지 않고 확인을 받는다", async () => {
+    const id = openTab();
+    useDocumentStore.getState().setDirty(id, true);
+    setAutosaveEnabled(false);
+
+    await requestCloseTab(id);
+
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(useConfirmStore.getState().pending).not.toBeNull();
+    expect(useDocumentStore.getState().tabs).toHaveLength(1);
+  });
+
   it("꺼져 있어도 수동 저장은 된다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);

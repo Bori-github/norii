@@ -28,20 +28,20 @@ function tab(overrides: Partial<Tab>): Tab {
 // 경계: 실제 저장·창 닫기(비동기 흐름·플러시 실패 처리)는 use-close-guard·E2E 소관.
 describe("planCloseDefense", () => {
   it("dirty 탭이 없으면 아무것도 하지 않는다(즉시 종료 허용)", () => {
-    const plan = planCloseDefense([tab({}), tab({ filePath: null, title: "Untitled" })]);
+    const plan = planCloseDefense([tab({}), tab({ filePath: null, title: "Untitled" })], true);
     expect(plan).toEqual({ flushTabIds: [], blockingTabIds: [] });
   });
 
   it("경로 있는 dirty 탭은 플러시 대상이다", () => {
     const dirtyTab = tab({ isDirty: true });
-    const plan = planCloseDefense([dirtyTab, tab({})]);
+    const plan = planCloseDefense([dirtyTab, tab({})], true);
     expect(plan.flushTabIds).toEqual([dirtyTab.id]);
     expect(plan.blockingTabIds).toEqual([]);
   });
 
   it("Untitled dirty 탭은 플러시가 아니라 종료를 막는 탭이다", () => {
     const untitled = tab({ filePath: null, title: "Untitled", isDirty: true });
-    const plan = planCloseDefense([untitled]);
+    const plan = planCloseDefense([untitled], true);
     expect(plan.flushTabIds).toEqual([]);
     expect(plan.blockingTabIds).toEqual([untitled.id]);
   });
@@ -50,7 +50,7 @@ describe("planCloseDefense", () => {
     const pathDirty = tab({ isDirty: true });
     const untitledDirty = tab({ filePath: null, isDirty: true });
     const clean = tab({});
-    const plan = planCloseDefense([pathDirty, untitledDirty, clean]);
+    const plan = planCloseDefense([pathDirty, untitledDirty, clean], true);
     expect(plan.flushTabIds).toEqual([pathDirty.id]);
     expect(plan.blockingTabIds).toEqual([untitledDirty.id]);
   });
@@ -58,15 +58,26 @@ describe("planCloseDefense", () => {
   it("정규화 미승인 dirty 탭은 플러시가 아니라 종료를 막는 탭이다 (무단 변환 방지)", () => {
     const legacyDirty = tab({ sourceEncoding: "euc-kr", isDirty: true });
     const mixedDirty = tab({ eolMixed: true, isDirty: true });
-    const plan = planCloseDefense([legacyDirty, mixedDirty]);
+    const plan = planCloseDefense([legacyDirty, mixedDirty], true);
     expect(plan.flushTabIds).toEqual([]);
     expect(plan.blockingTabIds).toEqual([legacyDirty.id, mixedDirty.id]);
   });
 
   it("승인된 정규화 대상 dirty 탭은 플러시 대상이다", () => {
     const approved = tab({ sourceEncoding: "euc-kr", isDirty: true, normalizationApproved: true });
-    const plan = planCloseDefense([approved]);
+    const plan = planCloseDefense([approved], true);
     expect(plan.flushTabIds).toEqual([approved.id]);
     expect(plan.blockingTabIds).toEqual([]);
+  });
+
+  // 집행: file-lifecycle.md#종료-방어 — "자동 저장이 꺼져 있으면 플러시하지 않는다".
+  // 왜: 끈 사용자에게 종료가 저장을 대신하면 그 설정이 거짓이 되고, 버리려던 편집이 남는다.
+  // 보장: 꺼져 있으면 경로가 있고 승인된 dirty 탭까지 전부 종료를 막는다.
+  it("자동 저장이 꺼져 있으면 dirty 탭 전체가 종료를 막는다", () => {
+    const pathDirty = tab({ isDirty: true });
+    const clean = tab({});
+    const plan = planCloseDefense([pathDirty, clean], false);
+    expect(plan.flushTabIds).toEqual([]);
+    expect(plan.blockingTabIds).toEqual([pathDirty.id]);
   });
 });

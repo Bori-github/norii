@@ -2,7 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
 import { useDocumentStore } from "@entities/document";
-import { saveTabNow } from "@features/save-file";
+import { saveTabNow, useAutosaveStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 import { logger } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
@@ -19,7 +19,8 @@ export function useCloseGuard(): void {
     let defending = false;
 
     const unlistenPromise = getCurrentWindow().onCloseRequested(async (event) => {
-      const plan = planCloseDefense(useDocumentStore.getState().tabs);
+      const autosaveEnabled = useAutosaveStore.getState().enabled;
+      const plan = planCloseDefense(useDocumentStore.getState().tabs, autosaveEnabled);
       const tabsClean = plan.flushTabIds.length === 0 && plan.blockingTabIds.length === 0;
       // 저장할 것이 없어도 막는다 — 세션은 이 시점에만 쓸 수 있고 쓰기는 비동기다.
       // preventDefault는 비동기 작업 전에(동기적으로) 걸어야 한다.
@@ -39,6 +40,7 @@ export function useCloseGuard(): void {
         const outcome = await flushUntilClean(
           () => useDocumentStore.getState().tabs,
           (tabId) => saveTabNow(tabId),
+          autosaveEnabled,
         );
         if (outcome === "close") {
           // 플러시 완료 — 다이얼로그 없이 종료한다(자동 저장 세계의 기본 동작).

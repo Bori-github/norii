@@ -270,6 +270,17 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     });
     return;
   }
+  if (!isAutosaveEnabled()) {
+    // 끈 사용자에게 닫기가 저장을 대신하지 않는다(→ file-lifecycle.md#종료-방어).
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.closeDirtyTitle,
+      body: STRINGS.closeDirtyBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
+    return;
+  }
   if (needsNormalizationApproval(tab)) {
     // 미승인 탭은 플러시하지 않고 반드시 다이얼로그다(→ file-lifecycle.md#종료-방어).
     useConfirmStore.getState().requestConfirm({
