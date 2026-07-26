@@ -3,8 +3,8 @@ import { useEffect } from "react";
 import { useDocumentStore } from "@entities/document";
 import { openFileInteractive } from "@features/open-file";
 import { requestCloseTab, saveTabAs, saveTabNow } from "@features/save-file";
+import { openSettings } from "@features/toggle-settings";
 import { toggleSidebar } from "@features/toggle-sidebar";
-import { openSettings } from "@widgets/settings-dialog";
 import { isPrimaryModifier } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
 

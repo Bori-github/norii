@@ -8,8 +8,8 @@ import { BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
 import { CloseIcon } from "@shared/ui";
 
-import type { SettingsSection } from "../model/settings-dialog-store";
-import { closeSettings, useSettingsDialogStore } from "../model/settings-dialog-store";
+import type { SettingsSection } from "@features/toggle-settings";
+import { closeSettings, useSettingsDialogStore } from "@features/toggle-settings";
 
 // 다이얼로그는 불투명하다 — 투명 창에서 backdrop-filter가 동작하지 않는다는 보고가 있고,
 // 캔버스가 투명하면 흐릴 픽셀 자체가 없다(→ .claude/docs/design/decisions/glass.md).

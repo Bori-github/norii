@@ -8,11 +8,7 @@ import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import { GLASS_OPACITY_DEFAULT } from "@shared/config";
 
-import {
-  closeSettings,
-  openSettings,
-  useSettingsDialogStore,
-} from "../model/settings-dialog-store";
+import { closeSettings, openSettings, useSettingsDialogStore } from "@features/toggle-settings";
 import { SettingsDialog } from "./settings-dialog";
 
 // 왜: 설정은 모달이라 열림/닫힘이 화면에서 실제로 갈려야 한다. jsdom은 <dialog>의 showModal을

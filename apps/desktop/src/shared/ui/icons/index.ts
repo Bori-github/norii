@@ -16,3 +16,4 @@ export { default as InformationCircleContainedIcon } from "./generated/informati
 export { default as LightbulbIcon } from "./generated/lightbulb";
 export { default as MinusCircleContainedIcon } from "./generated/minus-circle-contained";
 export { default as PanelLeftIcon } from "./generated/panel-left";
+export { default as SlidersIcon } from "./generated/sliders";
