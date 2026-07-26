@@ -1,5 +1,7 @@
 import { defineConfig } from "@pandacss/dev";
 
+import { GLASS_OPACITY_DEFAULT } from "./src/shared/config/glass";
+
 // 디자인 시스템 토큰·조건의 단일 출처(→ .claude/docs/design/design-system.md).
 // 컴포넌트는 시맨틱 토큰만 참조하고, 원시값은 이 파일의 토큰 정의 계층에만 둔다.
 //
@@ -136,11 +138,11 @@ export default defineConfig({
             },
 
             // 유리 위에 얹는 틴트 — 순백/순흑에 알파만 얹는다. 창 뒤를 흐리는 것은 OS의 일이다
-            // (→ src-tauri/src/window_glass.rs). 알파 기본값의 하한과 설정 노출은 decisions/glass가 소유한다.
+            // (→ src-tauri/src/window_glass.rs). 설정이 알파를 덮어쓰며, 하한은 없다(→ decisions/glass).
             chrome: {
               value: {
-                base: "rgba(255, 255, 255, var(--norii-glass-opacity, 0.55))",
-                _dark: "rgba(0, 0, 0, var(--norii-glass-opacity, 0.62))",
+                base: `rgba(255, 255, 255, var(--norii-glass-opacity, ${GLASS_OPACITY_DEFAULT.light}))`,
+                _dark: `rgba(0, 0, 0, var(--norii-glass-opacity, ${GLASS_OPACITY_DEFAULT.dark}))`,
               },
             },
 

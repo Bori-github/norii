@@ -5,6 +5,7 @@ import { EditorPage } from "@pages/editor";
 import { exposeE2eApi } from "../lib/expose-e2e-api";
 import { useCloseGuard } from "../lib/use-close-guard";
 import { useFullscreenFlag } from "../lib/use-fullscreen-flag";
+import { useGlassSettings } from "../lib/use-glass-settings";
 import { useGlobalShortcuts } from "../lib/use-global-shortcuts";
 import { useTheme } from "../lib/use-theme";
 import { AppErrorBoundary } from "./error-boundary";
@@ -19,6 +20,7 @@ export function App() {
   useCloseGuard();
   useFullscreenFlag();
   useTheme();
+  useGlassSettings();
   useExternalChanges();
   useTreeWatch();
   return (
