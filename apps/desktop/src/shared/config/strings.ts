@@ -145,6 +145,22 @@ export const STRINGS = {
     encoding: "지원되지 않는 파일 형식입니다.",
     io: "파일 처리 중 오류가 발생했습니다.",
   },
-  themeToDarkLabel: "다크 테마로 전환",
-  themeToLightLabel: "라이트 테마로 전환",
+
+  // 설정 화면. 테마의 세 선택지는 "OS를 따른다"가 하나의 선택이라는 규칙을 그대로 보인다
+  // (→ .claude/docs/design/design-system.md#테마-라이트다크).
+  settingsTitle: "설정",
+  settingsCloseLabel: "설정 닫기",
+  settingsThemeTitle: "테마",
+  settingsThemeHint: "밝은 화면 · 어두운 화면 · 시스템 설정 따라가기",
+  settingsResetLabel: "기본값으로",
+  themeSystemLabel: "시스템",
+  themeLightLabel: "라이트",
+  themeDarkLabel: "다크",
+
+  // 유리 두 값 — 조절 대상이 무엇인지 설명이 갈라 준다(→ design/decisions/glass.md).
+  settingsGlassCaption: "유리 효과",
+  settingsOpacityTitle: "유리 불투명도",
+  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바의 불투명도",
+  settingsBlurTitle: "흐림 반경",
+  settingsBlurHint: "유리 뒤 배경이 번지는 정도",
 } as const;

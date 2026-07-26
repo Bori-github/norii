@@ -4,6 +4,7 @@ import { css } from "styled-system/css";
 import { useWorkspaceStore } from "@entities/workspace";
 import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
+import { SettingsButton } from "@features/toggle-settings";
 import { STRINGS } from "@shared/config";
 import { FilePlusIcon, FolderPlusIcon } from "@shared/ui";
 
@@ -88,6 +89,15 @@ const treeClass = css({
   paddingTop: "1.5",
   // 마지막 줄에서 이름을 고칠 때 툴팁이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
   paddingBottom: "8",
+});
+
+const footerClass = css({
+  display: "flex",
+  justifyContent: "flex-end",
+  flexShrink: 0,
+  padding: "1",
+  borderTop: "1px solid",
+  borderColor: "border",
 });
 
 const emptyClass = css({
@@ -244,6 +254,9 @@ export function Sidebar() {
             {STRINGS.openFolderButtonLabel}
           </button>
         </div>
+        <div className={footerClass}>
+          <SettingsButton />
+        </div>
       </nav>
     );
   }
@@ -303,6 +316,9 @@ export function Sidebar() {
         {edit?.mode === "create" && edit.dir === rootDir && <EntryNameInput edit={edit} />}
       </ul>
       {menu !== null && <EntryContextMenu key={menu.target?.path ?? ""} menu={menu} />}
+      <div className={footerClass}>
+        <SettingsButton />
+      </div>
     </nav>
   );
 }

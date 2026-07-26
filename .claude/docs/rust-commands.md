@@ -186,6 +186,18 @@ async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
 // (open_file의 path)과 같은 표기로 시작하게 한다
 ```
 
+### 창 표면
+
+```rust
+#[tauri::command]
+fn set_window_blur_radius(window: tauri::WebviewWindow, radius: u32);
+// 창 뒤 흐림 반경을 다시 건다 — 설정 화면이 부른다. 허용 범위·기본값은 창 표면 계약이
+// 소유하고(→ design/window-chrome.md#계약--흐림-반경), 범위 밖 값은 그 하한·상한으로 자른다.
+// 자른 값이 지금 걸린 반경과 같으면 OS를 부르지 않는다 — 슬라이더를 끄는 동안 매 프레임
+// 윈도서버 왕복이 나가지 않게 한다.
+// macOS 밖에서는 무동작이다. 흐림 호출이 실패해도 경고 로그만 남기고 성공을 반환한다.
+```
+
 ## 항목 이름 규칙 (create_file · create_dir · rename_entry)
 
 이름은 "한 항목의 이름"이지 경로가 아니다. 아래를 어기면 `AppError::InvalidName`이다.
@@ -232,7 +244,7 @@ trash                삭제를 휴지통 이동으로(delete_entry)
 encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
-plugin-store         설정·세션 상태 저장 (→ document-model.md)
+plugin-store          설정 저장(→ file-lifecycle.md#설정-저장) · 세션 상태(→ document-model.md)
 plugin-window-state  창 크기·위치 저장·복원 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
@@ -245,7 +257,7 @@ plugin-log           통합 로깅 (→ error-handling.md)
 
 ```text
 1. Capabilities (apps/desktop/src-tauri/capabilities/)
-   - 프론트가 부를 수 있는 커맨드 · plugin-dialog 권한을 명시 선언 (plugin-store 권한은 도입 시 추가)
+   - 프론트가 부를 수 있는 커맨드 · plugin-dialog·plugin-store 권한을 명시 선언
    - 불필요한 플러그인·커맨드 노출 차단
 
 2. 커맨드 내부 경로 검증  ← 실제 스코프 강제는 여기 있다
@@ -261,6 +273,6 @@ plugin-log           통합 로깅 (→ error-handling.md)
 
 둘 중 하나만 고치면 링크가 조용히 죽거나(설정만 좁힘) 무의미한 에러 로그가 쌓인다(코드만 넓힘). capabilities는 설정 파일이라 타입체크·린트가 잡아주지 못하므로, **두 목록의 일치를 테스트가 지킨다**(`features/open-link/model/allowlist-drift.test.ts`).
 
-**창 조작 권한** — 종료 방어가 쓰는 `allow-close`·`allow-destroy`, 그리고 테마 동기화가 쓰는 `allow-set-theme`(창의 타이틀바·신호등을 앱 테마에 맞춘다 → [창 표면 계약](design/window-chrome.md#창-테마-동기화)) 셋뿐이다. 모두 `core:default`에 없어 명시 선언한다. **창 드래그 권한은 두지 않는다** — 웹이 드래그를 요청하지 않기 때문이다. 상단은 웹뷰가 가지지만(`titleBarStyle: Overlay`), 그 위에 얹은 네이티브 드래그 띠가 AppKit 경로로 직접 처리한다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠)).
+**창 조작 권한** — 종료 방어가 쓰는 `allow-close`·`allow-destroy`, 테마 동기화가 쓰는 `allow-set-theme`(창의 타이틀바·신호등을 앱 테마에 맞춘다 → [창 표면 계약](design/window-chrome.md#창-테마-동기화)), 저장된 설정을 적용한 뒤 창을 보이는 `allow-show`(→ [창 표면 계약](design/window-chrome.md#부팅-순서--창은-언제-보이는가)) 넷이다. 모두 `core:default`에 없어 명시 선언한다. **창 드래그 권한은 두지 않는다** — 웹이 드래그를 요청하지 않기 때문이다. 상단은 웹뷰가 가지지만(`titleBarStyle: Overlay`), 그 위에 얹은 네이티브 드래그 띠가 AppKit 경로로 직접 처리한다(→ [창 표면 계약](design/window-chrome.md#계약--드래그-띠)).
 
 허용 스코프는 "다이얼로그로 선택한 경로"와 "연 루트 폴더의 하위 트리"이고, 임의 전역 접근은 지양한다. 마크다운 에디터는 임의 경로 파일을 열어야 하므로 이렇게 좁혀 최소 권한을 지키되, **그 강제는 capabilities가 아니라 커맨드 코드**에 있음을 잊지 않는다.

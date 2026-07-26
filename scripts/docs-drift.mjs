@@ -120,6 +120,35 @@ function checkPlatformConstants(problems) {
   return 1;
 }
 
+// 0-2) 흐림 반경 — 슬라이더가 만드는 값의 범위(TS)와 커맨드가 자르는 범위(Rust)가 같아야 한다.
+//
+// 왜: 어긋나면 조용히 깨진다 — TS 상한이 크면 슬라이더 끝이 아무 변화도 못 만들고(Rust가 잘라
+//     같은 값이 되어 OS를 부르지 않는다), 기본값이 다르면 설정을 열자마자 화면과 다른 숫자가 뜬다.
+// 무엇: window_glass.rs의 DEFAULT_BLUR_RADIUS·MAX_BLUR_RADIUS와 shared/config/glass.ts의 짝.
+function checkBlurRadius(problems) {
+  const rust = read("apps/desktop/src-tauri/src/window_glass.rs");
+  const ts = read("apps/desktop/src/shared/config/glass.ts");
+
+  const pairs = [
+    ["DEFAULT_BLUR_RADIUS", "BLUR_RADIUS_DEFAULT"],
+    ["MAX_BLUR_RADIUS", "BLUR_RADIUS_MAX"],
+  ];
+  for (const [rustName, tsName] of pairs) {
+    const rustMatch = new RegExp(`${rustName}:\\s*u32\\s*=\\s*(\\d+)`).exec(rust);
+    const tsMatch = new RegExp(`${tsName}\\s*=\\s*(\\d+)`).exec(ts);
+    if (!rustMatch || !tsMatch) {
+      problems.push(`흐림 반경 상수를 찾지 못했습니다 — ${rustName} 또는 ${tsName}.`);
+      continue;
+    }
+    if (rustMatch[1] !== tsMatch[1]) {
+      problems.push(
+        `흐림 반경이 어긋납니다 — Rust ${rustName}=${rustMatch[1]}, TS ${tsName}=${tsMatch[1]}.`,
+      );
+    }
+  }
+  return pairs.length;
+}
+
 // 1) Rust 커맨드 → rust-commands.md 등재 여부.
 function checkRustCommands(problems) {
   const doc = read(".claude/docs/rust-commands.md");
@@ -241,7 +270,7 @@ function checkTechStackCargo(problems) {
 }
 
 const problems = [];
-const constCount = checkPlatformConstants(problems);
+const constCount = checkPlatformConstants(problems) + checkBlurRadius(problems);
 const rustCount = checkRustCommands(problems);
 const npmCount = checkTechStackNpm(problems);
 const cargoCount = checkTechStackCargo(problems);

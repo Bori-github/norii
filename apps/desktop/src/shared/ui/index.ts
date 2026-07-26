@@ -10,6 +10,8 @@ export {
   AnnotationAlertIcon,
   CheckIcon,
   ChevronRightIcon,
+  CloseIcon,
+  ComputerIcon,
   ColumnVerticalIcon,
   CopyRightIcon,
   EditIcon,
@@ -19,7 +21,10 @@ export {
   InformationCircleContainedIcon,
   LightbulbIcon,
   MinusCircleContainedIcon,
+  MoonIcon,
   PanelLeftIcon,
+  SettingsIcon,
+  SunIcon,
 } from "./icons";
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";

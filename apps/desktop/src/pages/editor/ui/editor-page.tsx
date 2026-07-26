@@ -8,6 +8,7 @@ import { ConfirmDialog, NoticeBanner } from "@shared/ui";
 import { EditorPane } from "@widgets/editor-pane";
 import { NormalizationBanner } from "@widgets/normalization-banner";
 import { PreviewPane } from "@widgets/preview-pane";
+import { SettingsDialog } from "@widgets/settings-dialog";
 import { Sidebar } from "@widgets/sidebar";
 import { StatusBar } from "@widgets/status-bar";
 import { TabBar } from "@widgets/tab-bar";
@@ -79,6 +80,7 @@ export function EditorPage() {
       </div>
       <StatusBar />
       <ConfirmDialog />
+      <SettingsDialog />
     </div>
   );
 }

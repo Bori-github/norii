@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useDocumentStore } from "@entities/document";
 import { openFileInteractive } from "@features/open-file";
 import { requestCloseTab, saveTabAs, saveTabNow } from "@features/save-file";
+import { openSettings } from "@features/toggle-settings";
 import { toggleSidebar } from "@features/toggle-sidebar";
 import { isPrimaryModifier } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
@@ -47,6 +48,10 @@ export function useGlobalShortcuts(): void {
         case "b":
           event.preventDefault();
           toggleSidebar();
+          return;
+        case ",":
+          event.preventDefault();
+          openSettings();
           return;
         case "w":
           event.preventDefault();

@@ -7,9 +7,7 @@ import { create } from "zustand";
 // system을 고른 사용자는 macOS 설정이 바뀌면 앱도 따라 바뀌길 기대한다 — light/dark만 남기면
 // 그 의도가 사라진다.
 //
-// **아직 저장하지 않는다.** 매 기동 system으로 시작하고 토글은 그 세션에만 남는다. 영속화는
-// 설정 화면과 함께 들어온다(→ .claude/docs/design/design-system.md#테마-라이트다크).
-// 그때 이 스토어를 다시 만들 필요는 없다 — 세 번째 선택지가 이미 여기 있다.
+// 고른 값은 저장된다 — 저장 정책은 .claude/docs/file-lifecycle.md#설정-저장이 소유한다.
 
 /** 사용자의 의도. `system`은 "OS 설정을 따른다"이며, 그 자체가 하나의 선택이다. */
 export type ThemePreference = "system" | "light" | "dark";
@@ -59,17 +57,4 @@ export function useResolvedTheme(): ResolvedTheme {
   const preference = useThemeStore((state) => state.preference);
   const systemPrefersDark = useThemeStore((state) => state.systemPrefersDark);
   return resolveTheme(preference, systemPrefersDark);
-}
-
-/**
- * 토글 — 지금 보이는 테마의 반대로 **명시적으로 고정**한다.
- *
- * system 상태에서 토글하면 system을 벗어난다. 그게 사용자의 의도이기 때문이다:
- * "지금 화면이 밝은데 어둡게 하고 싶다"는 요청이지 "OS를 따르되 반대로"가 아니다.
- * system으로 돌아가는 길은 설정 화면이 열어 준다.
- */
-export function toggleTheme(): void {
-  const { preference, systemPrefersDark, setPreference } = useThemeStore.getState();
-  const current = resolveTheme(preference, systemPrefersDark);
-  setPreference(current === "dark" ? "light" : "dark");
 }

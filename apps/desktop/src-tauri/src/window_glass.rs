@@ -9,11 +9,61 @@
 //! 새로 잃는 것은 없다(→ .claude/docs/platform-strategy.md#배포-경로--app-store는-비목표).
 //! 설정값·기본값의 단일 출처는 .claude/docs/design/window-chrome.md다.
 
+use std::sync::Mutex;
+
+use tauri::State;
+
 /// 창 뒤 흐림 반경(px). 0이면 흐림 없음.
 ///
 /// 값의 의미: 창이 투명한 만큼 뒤가 비치고, 그 비친 배경을 이 반경으로 흐린다.
-/// 추후 설정 화면에서 사용자가 조절한다(→ window-chrome.md).
 pub const DEFAULT_BLUR_RADIUS: u32 = 30;
+
+/// 설정 슬라이더의 위쪽 끝(→ window-chrome.md#계약--흐림-반경).
+pub const MAX_BLUR_RADIUS: u32 = 100;
+
+/// 지금 창에 걸린 반경. `setup`이 기본값을 걸므로 그 값으로 시작한다.
+pub struct AppliedBlurRadius(Mutex<u32>);
+
+impl Default for AppliedBlurRadius {
+    fn default() -> Self {
+        Self(Mutex::new(DEFAULT_BLUR_RADIUS))
+    }
+}
+
+/// 요청 반경을 범위 안으로 자르고, 걸린 값과 달라질 때만 새 반경을 돌려준다.
+fn resolve_blur_change(applied: &mut u32, requested: u32) -> Option<u32> {
+    let radius = requested.min(MAX_BLUR_RADIUS);
+    (radius != *applied).then(|| {
+        *applied = radius;
+        radius
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_window_blur_radius(
+    window: tauri::WebviewWindow,
+    applied: State<'_, AppliedBlurRadius>,
+    radius: u32,
+) {
+    let mut applied = applied
+        .0
+        .lock()
+        .expect("AppliedBlurRadius는 포이즌되지 않는다");
+    let previous = *applied;
+    let Some(radius) = resolve_blur_change(&mut applied, radius) else {
+        return;
+    };
+    // AppKit은 메인 스레드 전용이라 창의 스레드로 넘긴다. 넘기지 못했으면 화면은 아직
+    // 이전 반경이므로 기억도 되돌린다 — 안 되돌리면 같은 값 요청이 조용히 무시된다.
+    let target = window.clone();
+    if window
+        .run_on_main_thread(move || apply_window_glass(&target, radius))
+        .is_err()
+    {
+        *applied = previous;
+    }
+}
 
 #[cfg(target_os = "macos")]
 mod platform {
@@ -101,5 +151,46 @@ pub fn apply_window_glass(window: &tauri::WebviewWindow, radius: u32) {
     #[cfg(not(target_os = "macos"))]
     {
         let _ = (window, radius);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // 왜: 설정 슬라이더는 끄는 동안 값을 연달아 보낸다. 그때마다 윈도서버를 부르면 프레임마다
+    //     창 밖 왕복이 생기고, 범위 밖 값은 그대로 비공개 API로 들어간다.
+    // 보장: 커맨드가 OS를 부르는 경우가 "잘린 값이 지금 걸린 값과 다를 때"로 한정된다.
+    // 경계: 흐림이 실제로 걸렸는지는 화면으로만 확인된다(→ window-chrome.md#검증).
+    //     여기서는 호출 여부의 판정만 본다.
+
+    #[test]
+    fn 상한을_넘는_요청은_상한으로_잘린다() {
+        let mut applied = DEFAULT_BLUR_RADIUS;
+        assert_eq!(
+            resolve_blur_change(&mut applied, MAX_BLUR_RADIUS + 1),
+            Some(MAX_BLUR_RADIUS)
+        );
+        assert_eq!(applied, MAX_BLUR_RADIUS);
+    }
+
+    #[test]
+    fn 같은_값이_다시_오면_os를_부르지_않는다() {
+        let mut applied = DEFAULT_BLUR_RADIUS;
+        assert_eq!(resolve_blur_change(&mut applied, DEFAULT_BLUR_RADIUS), None);
+    }
+
+    #[test]
+    fn 자른_뒤_같아지는_요청도_부르지_않는다() {
+        let mut applied = MAX_BLUR_RADIUS;
+        assert_eq!(resolve_blur_change(&mut applied, u32::MAX), None);
+        assert_eq!(applied, MAX_BLUR_RADIUS);
+    }
+
+    #[test]
+    fn 값이_바뀌면_새_반경을_돌려주고_기억한다() {
+        let mut applied = DEFAULT_BLUR_RADIUS;
+        assert_eq!(resolve_blur_change(&mut applied, 0), Some(0));
+        assert_eq!(applied, 0);
     }
 }

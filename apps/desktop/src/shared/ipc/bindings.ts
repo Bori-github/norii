@@ -16,6 +16,7 @@ export const commands = {
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
 	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),
+	setWindowBlurRadius: (radius: number) => __TAURI_INVOKE<void>("set_window_blur_radius", { radius }),
 };
 
 /* Types */
