@@ -3,6 +3,9 @@ import { load } from "@tauri-apps/plugin-store";
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
+import { setViewMode, useViewModeStore, VIEW_MODES } from "@features/switch-view-mode";
+import type { ViewMode } from "@features/switch-view-mode";
+import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
 import {
   SETTINGS_KEYS,
   SETTINGS_LOAD_TIMEOUT_MS,
@@ -19,6 +22,7 @@ import { logger } from "@shared/lib";
 type Store = Awaited<ReturnType<typeof load>>;
 
 const THEME_PREFERENCES = new Set<ThemePreference>(["system", "light", "dark"]);
+const VIEW_MODE_NAMES = new Set<string>(VIEW_MODES);
 
 let store: Store | null = null;
 
@@ -45,16 +49,26 @@ function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function asViewMode(value: unknown): ViewMode | null {
+  return typeof value === "string" && VIEW_MODE_NAMES.has(value) ? (value as ViewMode) : null;
+}
+
+function asBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
 export async function loadSettings(): Promise<void> {
   const opened = await openStore();
   if (!opened) {
     return;
   }
   try {
-    const [theme, opacity, blurRadius] = await Promise.all([
+    const [theme, opacity, blurRadius, viewMode, sidebarVisible] = await Promise.all([
       opened.get(SETTINGS_KEYS.themePreference),
       opened.get(SETTINGS_KEYS.glassOpacity),
       opened.get(SETTINGS_KEYS.blurRadius),
+      opened.get(SETTINGS_KEYS.viewMode),
+      opened.get(SETTINGS_KEYS.sidebarVisible),
     ]);
 
     const preference = asThemePreference(theme);
@@ -69,6 +83,14 @@ export async function loadSettings(): Promise<void> {
     const storedRadius = asNumber(blurRadius);
     if (storedRadius !== null) {
       useGlassStore.getState().setBlurRadius(storedRadius);
+    }
+    const mode = asViewMode(viewMode);
+    if (mode) {
+      setViewMode(mode);
+    }
+    const sidebar = asBoolean(sidebarVisible);
+    if (sidebar !== null) {
+      setSidebarVisible(sidebar);
     }
   } catch {
     logger.warn("설정을 읽지 못했습니다 — 기본값으로 계속합니다");
@@ -90,7 +112,9 @@ export async function loadSettingsWithin(timeoutMs = SETTINGS_LOAD_TIMEOUT_MS): 
 function snapshot(): string {
   const { preference } = useThemeStore.getState();
   const { opacity, blurRadius } = useGlassStore.getState();
-  return JSON.stringify([preference, opacity, blurRadius]);
+  const { mode } = useViewModeStore.getState();
+  const { visible } = useSidebarStore.getState();
+  return JSON.stringify([preference, opacity, blurRadius, mode, visible]);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -108,10 +132,14 @@ async function save(): Promise<void> {
   }
   const { preference } = useThemeStore.getState();
   const { opacity, blurRadius } = useGlassStore.getState();
+  const { mode } = useViewModeStore.getState();
+  const { visible } = useSidebarStore.getState();
   try {
     await opened.set(SETTINGS_KEYS.themePreference, preference);
     await opened.set(SETTINGS_KEYS.glassOpacity, opacity);
     await opened.set(SETTINGS_KEYS.blurRadius, blurRadius);
+    await opened.set(SETTINGS_KEYS.viewMode, mode);
+    await opened.set(SETTINGS_KEYS.sidebarVisible, visible);
     await opened.save();
     written = pending;
   } catch {
@@ -133,16 +161,21 @@ function scheduleSave(): void {
 export function persistSettingsOnChange(): () => void {
   written = snapshot();
 
-  const unsubscribeTheme = useThemeStore.subscribe(scheduleSave);
-  const unsubscribeGlass = useGlassStore.subscribe(scheduleSave);
+  const unsubscribe = [
+    useThemeStore.subscribe(scheduleSave),
+    useGlassStore.subscribe(scheduleSave),
+    useViewModeStore.subscribe(scheduleSave),
+    useSidebarStore.subscribe(scheduleSave),
+  ];
 
   return () => {
     if (saveTimer !== null) {
       clearTimeout(saveTimer);
       saveTimer = null;
     }
-    unsubscribeTheme();
-    unsubscribeGlass();
+    for (const stop of unsubscribe) {
+      stop();
+    }
   };
 }
 

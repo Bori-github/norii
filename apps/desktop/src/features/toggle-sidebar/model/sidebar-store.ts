@@ -11,3 +11,7 @@ export const useSidebarStore = create<SidebarState>(() => ({
 export function toggleSidebar(): void {
   useSidebarStore.setState((state) => ({ visible: !state.visible }));
 }
+
+export function setSidebarVisible(visible: boolean): void {
+  useSidebarStore.setState({ visible });
+}

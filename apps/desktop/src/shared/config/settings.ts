@@ -7,6 +7,8 @@ export const SETTINGS_KEYS = {
   themePreference: "themePreference",
   glassOpacity: "glassOpacity",
   blurRadius: "blurRadius",
+  viewMode: "viewMode",
+  sidebarVisible: "sidebarVisible",
 } as const;
 
 /** 저장 디바운스(ms) — 슬라이더를 끄는 동안 매 프레임 디스크에 쓰지 않는다. */
