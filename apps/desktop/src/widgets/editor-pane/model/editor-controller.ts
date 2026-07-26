@@ -10,8 +10,10 @@ import {
 import {
   clearTabViewState,
   getInitialText,
+  getTabCursor,
   getTabScroll,
   registerTabTextHandle,
+  setTabCursor,
   setTabScroll,
   unregisterTabTextHandle,
 } from "@entities/document";
@@ -50,6 +52,17 @@ interface Options {
   onDocChanged: (tabId: string) => void;
   /** 사용자 스크롤 시 뷰포트 상단의 소스 위치 — 동기화 발행용(에코는 걸러져 있음). */
   onScroll?: (position: ScrollPosition) => void;
+}
+
+/** 기억한 커서 자리를 문서 오프셋으로 옮긴다 — 밖에서 짧아진 문서에도 범위를 넘지 않게 자른다. */
+function withRememberedCursor(tabId: string, state: EditorStateValue): EditorStateValue {
+  const cursor = getTabCursor(tabId);
+  if (!cursor) {
+    return state;
+  }
+  const line = state.doc.line(Math.min(Math.max(cursor.line, 1), state.doc.lines));
+  const head = Math.min(line.from + Math.max(cursor.column, 1) - 1, line.to);
+  return state.update({ selection: { anchor: head } }).state;
 }
 
 export function createEditorController(options: Options): EditorController {
@@ -123,7 +136,12 @@ export function createEditorController(options: Options): EditorController {
         options.onDocChanged(tabId);
         scheduleStats();
       },
-      onSelectionChanged: reportCursor,
+      onSelectionChanged: (position) => {
+        reportCursor(position);
+        // 세션에 남길 자리는 커서가 움직일 때마다 기억한다 — 활성 탭은 떠나지 않아도
+        // 종료 시 기록되어야 한다(→ app/lib/session-storage).
+        setTabCursor(tabId, position);
+      },
     });
   }
 
@@ -167,7 +185,7 @@ export function createEditorController(options: Options): EditorController {
   function ensureState(tabId: string): EditorStateValue {
     let state = states.get(tabId);
     if (!state) {
-      state = makeState(tabId, getInitialText(tabId));
+      state = withRememberedCursor(tabId, makeState(tabId, getInitialText(tabId)));
       states.set(tabId, state);
       // features(저장·충돌 해소)가 스토어 밖 본문에 접근하는 통로(→ entities/document).
       registerTabTextHandle(tabId, {

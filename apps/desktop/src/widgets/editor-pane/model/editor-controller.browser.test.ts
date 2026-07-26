@@ -1,6 +1,12 @@
 import { afterEach, expect, it } from "vitest";
 
-import { resetTabTextRegistry, resetTabViewStates, setTabText } from "@entities/document";
+import {
+  resetTabTextRegistry,
+  resetTabViewStates,
+  setTabCursor,
+  setTabText,
+} from "@entities/document";
+import { useEditorStatusStore } from "@features/editor-status";
 
 import { createEditorController, type EditorController } from "./editor-controller";
 
@@ -8,6 +14,7 @@ import { createEditorController, type EditorController } from "./editor-controll
 //     보존되지만 스크롤 위치는 DOM에 있어 함께 넘어가지 않는다 — 긴 문서 중간을 보다가
 //     다른 탭을 다녀오면 맨 위로 돌아가 읽던 자리를 잃는다.
 // 보장: 떠날 때의 뷰포트 상단 라인을 탭별로 기억하고, 돌아오면 그 자리로 되돌린다.
+//       기억된 커서 자리가 있으면 그 자리에서 편집을 시작한다(지난 세션이 심어 둔 값).
 //       탭이 닫히면 그 기억도 함께 사라진다.
 // 경계: 재시작을 건너 살아남는지는 세션 복원의 몫이다(→ .claude/docs/document-model.md#세션-복원).
 //       라인 단위로 되돌리므로 픽셀이 정확히 같지는 않다 — 폰트·창 폭이 바뀌어도 읽던
@@ -61,6 +68,11 @@ function show(): void {
   if (host) {
     host.style.display = "";
   }
+}
+
+/** 상태바로 나간 커서 자리 — 에디터가 지금 어디에 커서를 두었는지의 관측 지점이다. */
+function reportedCursor(): { line: number; column: number } | null {
+  return useEditorStatusStore.getState().cursor;
 }
 
 function scrollDom(): HTMLElement {
@@ -121,6 +133,29 @@ it("편집면이 숨은 동안 옮긴 탭도 다시 보일 때 제 자리에서 
   await nextFrame();
   expect(scrollDom().scrollTop).toBeGreaterThan(left - 30);
   expect(scrollDom().scrollTop).toBeLessThan(left + 30);
+});
+
+it("기억한 커서 자리에서 편집을 시작한다", async () => {
+  const editor = mount();
+  setTabText("a", longDoc(300));
+  // 지난 세션이 남긴 자리 — 에디터가 서기 전에 심긴다(→ app/lib/session-storage).
+  setTabCursor("a", { line: 12, column: 3 });
+
+  editor.showTab("a");
+  await nextFrame();
+
+  expect(reportedCursor()).toEqual({ line: 12, column: 3 });
+});
+
+it("문서가 밖에서 짧아졌으면 마지막 자리로 자른다", async () => {
+  const editor = mount();
+  setTabText("a", longDoc(5));
+  setTabCursor("a", { line: 900, column: 40 });
+
+  editor.showTab("a");
+  await nextFrame();
+
+  expect(reportedCursor()).toEqual({ line: 5, column: "줄 5".length + 1 });
 });
 
 it("닫힌 탭의 자리는 기억하지 않는다", async () => {

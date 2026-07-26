@@ -19,6 +19,8 @@ const SESSION_FILE: &str = "session.json";
 #[serde(rename_all = "camelCase")]
 pub struct SessionTab {
     pub path: String,
+    pub cursor_line: u32,
+    pub cursor_column: u32,
     pub scroll_line: u32,
 }
 
@@ -136,6 +138,8 @@ mod tests {
     fn tab(path: &str) -> SessionTab {
         SessionTab {
             path: path.to_owned(),
+            cursor_line: 8,
+            cursor_column: 3,
             scroll_line: 40,
         }
     }
@@ -170,6 +174,8 @@ mod tests {
 
         assert_eq!(restored.tabs.len(), 1);
         assert_eq!(restored.active, Some(0));
+        assert_eq!(restored.tabs[0].cursor_line, 8);
+        assert_eq!(restored.tabs[0].cursor_column, 3);
         assert_eq!(restored.tabs[0].scroll_line, 40);
         let canonical = fs::canonicalize(&doc).unwrap();
         assert!(fresh.ensure_allowed(&canonical).is_ok());

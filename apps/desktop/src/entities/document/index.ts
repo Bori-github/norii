@@ -13,10 +13,12 @@ export {
 export type { TabTextHandle } from "./model/text-access";
 export {
   clearTabViewState,
+  getTabCursor,
   getTabScroll,
   resetTabViewStates,
+  setTabCursor,
   setTabScroll,
 } from "./model/tab-view-state";
-export type { TabScroll } from "./model/tab-view-state";
+export type { TabCursor, TabScroll } from "./model/tab-view-state";
 export { needsNormalizationApproval } from "./model/types";
 export type { Tab } from "./model/types";

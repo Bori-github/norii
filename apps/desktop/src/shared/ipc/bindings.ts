@@ -71,6 +71,8 @@ export type Session = {
 
 export type SessionTab = {
 	path: string,
+	cursorLine: number,
+	cursorColumn: number,
 	scrollLine: number,
 };
 

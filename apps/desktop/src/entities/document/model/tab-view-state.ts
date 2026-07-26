@@ -7,7 +7,14 @@ export interface TabScroll {
   fraction: number;
 }
 
+/** 커서 자리 — 1-기반 줄·칸(상태바가 보이는 값과 같다). */
+export interface TabCursor {
+  line: number;
+  column: number;
+}
+
 const scrolls = new Map<string, TabScroll>();
+const cursors = new Map<string, TabCursor>();
 
 export function setTabScroll(tabId: string, scroll: TabScroll): void {
   scrolls.set(tabId, scroll);
@@ -17,11 +24,21 @@ export function getTabScroll(tabId: string): TabScroll | null {
   return scrolls.get(tabId) ?? null;
 }
 
+export function setTabCursor(tabId: string, cursor: TabCursor): void {
+  cursors.set(tabId, cursor);
+}
+
+export function getTabCursor(tabId: string): TabCursor | null {
+  return cursors.get(tabId) ?? null;
+}
+
 export function clearTabViewState(tabId: string): void {
   scrolls.delete(tabId);
+  cursors.delete(tabId);
 }
 
 /** 테스트 전용 — 모듈 전역 레지스트리 초기화(테스트 간 상태 누적 방지). */
 export function resetTabViewStates(): void {
   scrolls.clear();
+  cursors.clear();
 }

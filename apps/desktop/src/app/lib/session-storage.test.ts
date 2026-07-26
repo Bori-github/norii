@@ -18,8 +18,10 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 }));
 
 import {
+  getTabCursor,
   getTabScroll,
   resetTabViewStates,
+  setTabCursor,
   setTabScroll,
   useDocumentStore,
 } from "@entities/document";
@@ -94,7 +96,7 @@ describe("persistSessionOnChange", () => {
     expect(saveSession).toHaveBeenCalledTimes(1);
     expect(saveSession).toHaveBeenCalledWith({
       rootDir: "/vault",
-      tabs: [{ path: "/vault/a.md", scrollLine: 1 }],
+      tabs: [{ path: "/vault/a.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 }],
       active: 0,
     });
     stop();
@@ -106,10 +108,13 @@ describe("persistSessionOnChange", () => {
 
     useDocumentStore.setState({ tabs: [tab("t1", "/vault/a.md")], activeTabId: "t1" });
     setTabScroll("t1", { line: 42, fraction: 0.5 });
+    setTabCursor("t1", { line: 45, column: 9 });
     await vi.advanceTimersByTimeAsync(SESSION_SAVE_DEBOUNCE_MS);
 
     expect(saveSession).toHaveBeenCalledWith(
-      expect.objectContaining({ tabs: [{ path: "/vault/a.md", scrollLine: 42 }] }),
+      expect.objectContaining({
+        tabs: [{ path: "/vault/a.md", cursorLine: 45, cursorColumn: 9, scrollLine: 42 }],
+      }),
     );
     stop();
   });
@@ -145,8 +150,8 @@ describe("restoreSessionWithin", () => {
     loadSession.mockResolvedValue({
       rootDir: "/vault",
       tabs: [
-        { path: "/vault/a.md", scrollLine: 1 },
-        { path: "/vault/b.md", scrollLine: 88 },
+        { path: "/vault/a.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 },
+        { path: "/vault/b.md", cursorLine: 90, cursorColumn: 4, scrollLine: 88 },
       ],
       active: 1,
     });
@@ -157,6 +162,7 @@ describe("restoreSessionWithin", () => {
     expect(tabs.map((t) => t.filePath)).toEqual(["/vault/a.md", "/vault/b.md"]);
     expect(tabs.find((t) => t.id === activeTabId)?.filePath).toBe("/vault/b.md");
     expect(getTabScroll(tabs[1]?.id ?? "")).toEqual({ line: 88, fraction: 0 });
+    expect(getTabCursor(tabs[1]?.id ?? "")).toEqual({ line: 90, column: 4 });
     expect(useWorkspaceStore.getState().rootDir).toBe("/vault");
   });
 
@@ -170,8 +176,8 @@ describe("restoreSessionWithin", () => {
     loadSession.mockResolvedValue({
       rootDir: null,
       tabs: [
-        { path: "/vault/깨진.md", scrollLine: 1 },
-        { path: "/vault/b.md", scrollLine: 1 },
+        { path: "/vault/깨진.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 },
+        { path: "/vault/b.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 },
       ],
       active: 1,
     });
@@ -210,7 +216,9 @@ describe("flushSession", () => {
     await flushSession();
 
     expect(saveSession).toHaveBeenCalledWith(
-      expect.objectContaining({ tabs: [{ path: "/vault/a.md", scrollLine: 7 }] }),
+      expect.objectContaining({
+        tabs: [{ path: "/vault/a.md", cursorLine: 1, cursorColumn: 1, scrollLine: 7 }],
+      }),
     );
     stop();
   });

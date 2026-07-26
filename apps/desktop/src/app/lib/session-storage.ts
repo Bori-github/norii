@@ -1,4 +1,10 @@
-import { getTabScroll, setTabScroll, useDocumentStore } from "@entities/document";
+import {
+  getTabCursor,
+  getTabScroll,
+  setTabCursor,
+  setTabScroll,
+  useDocumentStore,
+} from "@entities/document";
 import { useWorkspaceStore } from "@entities/workspace";
 import { openFolderAtPath } from "@features/open-folder";
 import { SESSION_RESTORE_TIMEOUT_MS, SESSION_SAVE_DEBOUNCE_MS } from "@shared/config";
@@ -42,6 +48,7 @@ async function restoreSession(): Promise<void> {
     }
     const tabId = store.openFileTab(content.value, false);
     setTabScroll(tabId, { line: tab.scrollLine, fraction: 0 });
+    setTabCursor(tabId, { line: tab.cursorLine, column: tab.cursorColumn });
     if (session.active === index) {
       activeTabId = tabId;
     }
@@ -70,11 +77,16 @@ function snapshot(): Session {
   const active = saved.findIndex((tab) => tab.id === activeTabId);
   return {
     rootDir,
-    tabs: saved.map((tab) => ({
-      path: tab.filePath ?? "",
-      // 자리는 스토어 밖에 산다(→ entities/document의 탭별 뷰 위치). 없으면 맨 위다.
-      scrollLine: getTabScroll(tab.id)?.line ?? 1,
-    })),
+    tabs: saved.map((tab) => {
+      // 자리는 스토어 밖에 산다(→ entities/document의 탭별 뷰 위치). 없으면 문서 처음이다.
+      const cursor = getTabCursor(tab.id);
+      return {
+        path: tab.filePath ?? "",
+        cursorLine: cursor?.line ?? 1,
+        cursorColumn: cursor?.column ?? 1,
+        scrollLine: getTabScroll(tab.id)?.line ?? 1,
+      };
+    }),
     active: active === -1 ? null : active,
   };
 }
