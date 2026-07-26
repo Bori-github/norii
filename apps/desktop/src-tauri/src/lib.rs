@@ -33,6 +33,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         dialog_commands::show_open_dialog,
         dialog_commands::show_save_dialog,
         dialog_commands::show_open_folder_dialog,
+        window_glass::set_window_blur_radius,
     ])
 }
 
@@ -58,6 +59,8 @@ pub fn run() {
         .manage(watch::SharedWatcher::default())
         // 트리(폴더) 감시 상태 — watch_tree가 선언적으로 교체한다(→ rust-commands.md).
         .manage(tree_watch::SharedTreeWatcher::default())
+        // 지금 걸린 흐림 반경 — set_window_blur_radius가 같은 값 재요청을 걸러낸다.
+        .manage(window_glass::AppliedBlurRadius::default())
         .invoke_handler(specta_builder().invoke_handler());
 
     // webdriver 피처를 켠 빌드에서만 임베디드 WebDriver 서버(127.0.0.1:4445)를 켠다 — 실앱 E2E용.
