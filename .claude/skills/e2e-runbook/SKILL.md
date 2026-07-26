@@ -33,7 +33,7 @@ mise run e2e               # webdriverio가 그 앱에 붙어 시나리오 실�
 
 - [ ] **정상 케이스만 담지 않는다 — 실패 공간을 먼저 열거하고 시나리오를 도출한다**(→ [testing.md#실패-경로를-먼저-열거한다](../../docs/testing.md)).
 - [ ] **트리거는 WebDriver 키 액션으로 만들지 않는다** — UI 클릭이나 `browser.execute`로 만든다. 단축키도 `browser.execute`로 합성 `KeyboardEvent`를 디스패치해 핸들러 층까지 고정한다. 방법·현재 한계는 [testing.md#성숙도-주의](../../docs/testing.md)가 소유한다.
-- [ ] **텍스트 입력 방식은 [testing.md#성숙도-주의](../../docs/testing.md)를 따른다**(현재 검증된 방법: `element.addValue()`). 한글 조합 이벤트는 미검증 영역.
+- [ ] **텍스트 입력 방식은 [testing.md#성숙도-주의](../../docs/testing.md)를 따른다**(현재 검증된 방법: `element.addValue()`).
 - [ ] **selector는 이름 텍스트로 잡는다**(예: `span=이름`) — 근거는 [testing.md#위험-영역은-실제-앱으로-검증-핵심](../../docs/testing.md)가 소유한다.
 - [ ] **파일을 다루는 시나리오는 E2E 스코프 루트(`NORII_E2E_SCOPE_ROOT`, dev-webdriver가 설정) 안에서만 논다.** 임의 경로를 쓰지 않는다.
 - [ ] **자동화 장벽을 만나면 먼저 훅을 본다.** 네이티브 다이얼로그 등은 "자동화 불가"로 분류하기 전에 E2E 훅(`apps/desktop/src/app/lib/expose-e2e-api.ts`, `window.noriiE2e`)으로 우회 가능한지 확인한다 — 파일·폴더 열기가 이미 이 방식이다(→ [testing.md#위험-영역은-실제-앱으로-검증-핵심](../../docs/testing.md), 예: `apps/desktop/e2e/file-lifecycle.e2e.ts`).
