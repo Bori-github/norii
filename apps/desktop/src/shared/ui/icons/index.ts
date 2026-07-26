@@ -5,6 +5,7 @@ export { default as AlertTriangleIcon } from "./generated/alert-triangle";
 export { default as AnnotationAlertIcon } from "./generated/annotation-alert";
 export { default as CheckIcon } from "./generated/check";
 export { default as ChevronRightIcon } from "./generated/chevron-right";
+export { default as CloseIcon } from "./generated/close";
 export { default as ColumnVerticalIcon } from "./generated/column-vertical";
 export { default as CopyRightIcon } from "./generated/copy-right";
 export { default as EditIcon } from "./generated/edit";

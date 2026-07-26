@@ -147,4 +147,15 @@ export const STRINGS = {
   },
   themeToDarkLabel: "다크 테마로 전환",
   themeToLightLabel: "라이트 테마로 전환",
+
+  // 설정 화면. 테마의 세 선택지는 "OS를 따른다"가 하나의 선택이라는 규칙을 그대로 보인다
+  // (→ .claude/docs/design/design-system.md#테마-라이트다크).
+  settingsTitle: "설정",
+  settingsCloseLabel: "설정 닫기",
+  settingsSectionAppearance: "외형",
+  settingsThemeTitle: "테마",
+  settingsThemeHint: "앱 전체의 밝기를 정합니다.",
+  themeSystemLabel: "시스템 설정 따르기",
+  themeLightLabel: "라이트",
+  themeDarkLabel: "다크",
 } as const;

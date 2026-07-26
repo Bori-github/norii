@@ -10,6 +10,7 @@ export {
   AnnotationAlertIcon,
   CheckIcon,
   ChevronRightIcon,
+  CloseIcon,
   ColumnVerticalIcon,
   CopyRightIcon,
   EditIcon,

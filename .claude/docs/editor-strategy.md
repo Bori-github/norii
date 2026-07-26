@@ -32,6 +32,7 @@ norii의 편집기는 CodeMirror 6 기반 소스 뷰다. 이 문서는 확장 �
 | 파일 열기 | `Cmd+O` | `Ctrl+O` | 전역 keydown 리스너 |
 | 탭 닫기 | `Cmd+W` | `Ctrl+W` | 전역 keydown 리스너 |
 | 사이드바 접기/열기 | `Cmd+B` | `Ctrl+B` | 전역 keydown 리스너 |
+| 설정 열기 | `Cmd+,` | `Ctrl+,` | 전역 keydown 리스너 |
 | 다음/이전 탭 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | 동일 | 전역 keydown 리스너 |
 | 문서 내 검색 | `Cmd+F` | `Ctrl+F` | `@codemirror/search` 기본 |
 | 접기/펼치기 | `Cmd+Alt+[` / `Cmd+Alt+]` | `Ctrl+Shift+[` / `Ctrl+Shift+]` | CM6 기본 `foldKeymap`(폴딩과 함께 등록) |
