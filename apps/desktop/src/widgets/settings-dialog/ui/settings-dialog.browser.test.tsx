@@ -6,7 +6,7 @@ import "@app/index.css";
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
-import { GLASS_OPACITY_DEFAULT } from "@shared/config";
+import { BLUR_RADIUS_DEFAULT, GLASS_OPACITY_DEFAULT } from "@shared/config";
 
 import { closeSettings, openSettings, useSettingsDialogStore } from "@features/toggle-settings";
 import { SettingsDialog } from "./settings-dialog";
@@ -18,7 +18,7 @@ import { SettingsDialog } from "./settings-dialog";
 //     app 레이어의 몫이다(→ .claude/docs/design/design-system.md#테마-라이트다크).
 
 beforeEach(() => {
-  useSettingsDialogStore.setState({ open: false, section: "appearance" });
+  useSettingsDialogStore.setState({ open: false });
   useThemeStore.setState({ preference: "system", systemPrefersDark: false });
   useGlassStore.setState({ opacity: null });
 });
@@ -34,14 +34,14 @@ describe("SettingsDialog", () => {
     expect(queryByTestId("settings-dialog")).toBeNull();
   });
 
-  it("열면 외형 갈래가 선 채로 뜬다", async () => {
+  it("열면 세 항목이 선 채로 뜬다", async () => {
     const { getByTestId } = render(<SettingsDialog />);
     openSettings();
 
     await waitFor(() => {
       expect(getByTestId("settings-dialog")).not.toBeNull();
     });
-    expect(getByTestId("settings-theme")).not.toBeNull();
+    expect(getByTestId("settings-theme-system")).not.toBeNull();
     // 창 크기를 실제 앱에 가깝게 두고 찍는다 — 모달은 화면 크기에 비례해 자리를 잡는다.
     await page.viewport(1200, 800);
     await page.screenshot({ path: "__screenshots__/settings-dialog.png" });
@@ -66,10 +66,26 @@ describe("SettingsDialog", () => {
     openSettings();
 
     await waitFor(() => {
-      expect(getByTestId("settings-theme")).not.toBeNull();
+      expect(getByTestId("settings-theme-dark")).not.toBeNull();
     });
-    fireEvent.change(getByTestId("settings-theme"), { target: { value: "dark" } });
+    fireEvent.click(getByTestId("settings-theme-dark"));
     expect(useThemeStore.getState().preference).toBe("dark");
+  });
+
+  it("기본값으로 되돌리면 고른 값들이 함께 풀린다", async () => {
+    const { getByTestId } = render(<SettingsDialog />);
+    openSettings();
+
+    await waitFor(() => {
+      expect(getByTestId("settings-reset")).not.toBeNull();
+    });
+    fireEvent.click(getByTestId("settings-theme-dark"));
+    fireEvent.change(getByTestId("settings-opacity"), { target: { value: "0.2" } });
+    fireEvent.click(getByTestId("settings-reset"));
+
+    expect(useThemeStore.getState().preference).toBe("system");
+    expect(useGlassStore.getState().opacity).toBeNull();
+    expect(useGlassStore.getState().blurRadius).toBe(BLUR_RADIUS_DEFAULT);
   });
 
   it("닫기 버튼이 화면에서 지운다", async () => {

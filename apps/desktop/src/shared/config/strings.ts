@@ -150,16 +150,17 @@ export const STRINGS = {
   // (→ .claude/docs/design/design-system.md#테마-라이트다크).
   settingsTitle: "설정",
   settingsCloseLabel: "설정 닫기",
-  settingsSectionAppearance: "외형",
   settingsThemeTitle: "테마",
-  settingsThemeHint: "앱 전체의 밝기를 정합니다.",
-  themeSystemLabel: "시스템 설정 따르기",
+  settingsThemeHint: "밝은 화면 · 어두운 화면 · 시스템 설정 따라가기",
+  settingsResetLabel: "기본값으로",
+  themeSystemLabel: "시스템",
   themeLightLabel: "라이트",
   themeDarkLabel: "다크",
 
   // 유리 두 값 — 조절 대상이 무엇인지 설명이 갈라 준다(→ design/decisions/glass.md).
+  settingsGlassCaption: "유리 효과",
   settingsOpacityTitle: "유리 불투명도",
-  settingsOpacityHint: "도구 표면이 바탕화면을 얼마나 덮을지 정합니다.",
+  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바의 불투명도",
   settingsBlurTitle: "흐림 반경",
-  settingsBlurHint: "창 뒤 바탕화면을 얼마나 흐리게 볼지 정합니다.",
+  settingsBlurHint: "유리 뒤 배경이 번지는 정도",
 } as const;

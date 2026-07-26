@@ -122,6 +122,13 @@ export default defineConfig({
         },
       },
 
+      // 다이얼로그 진입 — 상태 변화를 설명하는 모션만 둔다(→ DESIGN.md 모션).
+      keyframes: {
+        dialogIn: {
+          from: { opacity: "0", transform: "translateY(6px) scale(0.99)" },
+        },
+      },
+
       // 시맨틱 토큰 — "이 자리에 쓰는 의미". 라이트=base, 다크=_dark로 매핑.
       // 어느 표면이 어느 토큰을 쓰는지는 DESIGN.md의 표면 표가 단일 출처다.
       semanticTokens: {

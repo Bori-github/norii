@@ -1,23 +1,20 @@
 import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
+import { closeSettings, useSettingsDialogStore } from "@features/toggle-settings";
 import { resolveOpacity, useGlassStore } from "@entities/glass";
 import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
-import { BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
+import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
-import { CloseIcon } from "@shared/ui";
-
-import type { SettingsSection } from "@features/toggle-settings";
-import { closeSettings, useSettingsDialogStore } from "@features/toggle-settings";
+import { CloseIcon, ComputerIcon, MoonIcon, SunIcon } from "@shared/ui";
 
 // 다이얼로그는 불투명하다 — 투명 창에서 backdrop-filter가 동작하지 않는다는 보고가 있고,
 // 캔버스가 투명하면 흐릴 픽셀 자체가 없다(→ .claude/docs/design/decisions/glass.md).
 const dialogClass = css({
   margin: "auto",
   width: "90vw",
-  maxWidth: "3xl",
-  height: "70vh",
+  maxWidth: "md",
   padding: "0",
   overflow: "hidden",
   border: "1px solid",
@@ -26,51 +23,25 @@ const dialogClass = css({
   background: "bg.paper",
   color: "text",
   boxShadow: "lg",
+  animation: "dialogIn 0.16s ease",
+  _motionReduce: { animation: "none" },
   _backdrop: { background: "bg.scrim" },
 });
-
-const layoutClass = css({ display: "flex", height: "full" });
-
-const navClass = css({
-  flexShrink: 0,
-  width: "44",
-  paddingY: "4",
-  paddingX: "2",
-  borderRight: "1px solid",
-  borderColor: "border",
-  overflowY: "auto",
-});
-
-// 고른 갈래와 호버는 같은 상태 배경을 쓰되, 고른 쪽만 굵기로 굳힌다 — 텍스트 선택색(bg.selection)은
-// 사용자가 **고른 글자**의 것이라 여기 쓰지 않는다(→ .claude/docs/design/design-system.md#표면-토큰).
-const navItemClass = css({
-  display: "block",
-  width: "full",
-  paddingX: "3",
-  paddingY: "1.5",
-  border: "none",
-  borderRadius: "sm",
-  background: "transparent",
-  color: "text",
-  fontSize: "sm",
-  textAlign: "left",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  "&[aria-current='true']": { background: "bg.hover", fontWeight: "semibold" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
-});
-
-const panelClass = css({ flex: "1", overflowY: "auto", paddingX: "8", paddingY: "6" });
 
 const headerClass = css({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   gap: "4",
-  marginBottom: "2",
+  paddingX: "4",
+  paddingY: "3",
+  borderBottom: "1px solid",
+  borderColor: "border",
 });
 
-const headerTitleClass = css({ fontSize: "lg", fontWeight: "semibold" });
+const titleClass = css({ fontSize: "md", fontWeight: "semibold" });
+
+const bodyClass = css({ paddingX: "4", paddingBottom: "4", maxHeight: "70vh", overflowY: "auto" });
 
 const closeButtonClass = css({
   display: "flex",
@@ -85,66 +56,113 @@ const closeButtonClass = css({
   "& svg": { width: "4", height: "4" },
 });
 
-// 행 사이에만 선을 둔다 — 첫 행 위에 선이 있으면 제목의 밑줄로 읽힌다.
-const rowClass = css({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "6",
-  paddingY: "4",
-  "& + &": { borderTop: "1px solid", borderColor: "border" },
+const captionClass = css({
+  paddingTop: "4",
+  paddingBottom: "1",
+  fontSize: "xs",
+  fontWeight: "semibold",
+  letterSpacing: "wide",
+  color: "text.muted",
 });
+
+// 컨트롤은 설명 아래 한 줄을 통째로 쓴다 — 슬라이더가 좁으면 끝값을 집기 어렵다.
+const rowClass = css({ display: "flex", flexDirection: "column", gap: "2", paddingY: "3" });
 
 const rowTitleClass = css({ fontSize: "sm", fontWeight: "medium" });
 const rowHintClass = css({ marginTop: "1", fontSize: "xs", color: "text.muted" });
 
-const controlClass = css({ display: "flex", alignItems: "center", gap: "3" });
-
-// 값은 슬라이더 옆에 숫자로 둔다 — 손잡이 위치만으로는 지금 값을 말할 수 없다.
+// 값은 제목 옆에 붙인다. 액센트 색은 쓰지 않는다 — 글자에 쓰면 어느 한 테마에서 AA를 넘지
+// 못한다(→ .claude/docs/design/decisions/color-palette.md).
 const valueClass = css({
-  minWidth: "10",
-  fontSize: "xs",
-  color: "text.muted",
-  textAlign: "right",
+  marginLeft: "1",
+  fontWeight: "semibold",
   fontVariantNumeric: "tabular-nums",
 });
 
-// 손잡이·채움은 표시라 액센트를 쓴다 — 글자가 아니므로 비텍스트 기준이 적용된다
-// (→ .claude/docs/design/decisions/color-palette.md).
-const sliderClass = css({
-  width: "40",
-  accentColor: "accent",
-  cursor: "pointer",
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
-});
+const separatorClass = css({ height: "1px", background: "border" });
 
-const selectClass = css({
-  paddingX: "2",
-  paddingY: "1",
+const segmentClass = css({
+  display: "flex",
+  gap: "0.5",
+  padding: "0.5",
   border: "1px solid",
   borderColor: "border",
   borderRadius: "sm",
-  background: "bg.paper",
-  color: "text",
-  fontSize: "sm",
+  background: "bg.hover",
+});
+
+// 고른 칸은 종이색으로 떠오르고 굵기로 굳는다 — 액센트 글자를 대신하는 표시다.
+const segmentButtonClass = css({
+  display: "flex",
+  flex: "1",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "1.5",
+  paddingY: "1.5",
+  border: "none",
+  borderRadius: "sm",
+  background: "transparent",
+  color: "text.muted",
+  fontSize: "xs",
   cursor: "pointer",
+  "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
+  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  "& svg": { width: "3.5", height: "3.5" },
+});
+
+// 트랙과 손잡이를 직접 그린다 — OS 기본 슬라이더는 굵기·손잡이 크기가 앱 스케일과 어긋난다.
+// 손잡이는 액센트로 채운다: 글자가 아니라 표시라 비텍스트 기준이 적용된다
+// (→ .claude/docs/design/decisions/color-palette.md).
+const sliderClass = css({
+  appearance: "none",
+  width: "full",
+  height: "1",
+  borderRadius: "full",
+  background: "border",
+  outline: "none",
+  cursor: "pointer",
+  "&::-webkit-slider-thumb": {
+    appearance: "none",
+    width: "4",
+    height: "4",
+    borderRadius: "full",
+    background: "accent",
+    // 종이색 테두리가 손잡이를 트랙에서 떼어 놓는다.
+    border: "2px solid",
+    borderColor: "bg.paper",
+    boxShadow: "sm",
+  },
+  "&:focus-visible::-webkit-slider-thumb": {
+    outline: "2px solid",
+    outlineColor: "accent",
+    outlineOffset: "2px",
+  },
+});
+
+const actionsClass = css({ display: "flex", justifyContent: "flex-end", paddingTop: "4" });
+
+const ghostButtonClass = css({
+  paddingX: "3",
+  paddingY: "1.5",
+  border: "1px solid",
+  borderColor: "border",
+  borderRadius: "sm",
+  background: "transparent",
+  color: "text.muted",
+  fontSize: "xs",
+  cursor: "pointer",
+  _hover: { background: "bg.hover", color: "text" },
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-1px" },
 });
 
-const SECTIONS: { id: SettingsSection; label: string }[] = [
-  { id: "appearance", label: STRINGS.settingsSectionAppearance },
-];
-
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: STRINGS.themeSystemLabel },
-  { value: "light", label: STRINGS.themeLightLabel },
-  { value: "dark", label: STRINGS.themeDarkLabel },
+const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof SunIcon }[] = [
+  { value: "light", label: STRINGS.themeLightLabel, Icon: SunIcon },
+  { value: "dark", label: STRINGS.themeDarkLabel, Icon: MoonIcon },
+  { value: "system", label: STRINGS.themeSystemLabel, Icon: ComputerIcon },
 ];
 
 export function SettingsDialog() {
   const open = useSettingsDialogStore((state) => state.open);
-  const section = useSettingsDialogStore((state) => state.section);
-  const setSection = useSettingsDialogStore((state) => state.setSection);
   const preference = useThemeStore((state) => state.preference);
   const setPreference = useThemeStore((state) => state.setPreference);
   const theme = useResolvedTheme();
@@ -168,6 +186,12 @@ export function SettingsDialog() {
     }
   }, [open]);
 
+  function restoreDefaults(): void {
+    setPreference("system");
+    setOpacity(null);
+    setBlurRadius(BLUR_RADIUS_DEFAULT);
+  }
+
   if (!open) {
     return null;
   }
@@ -179,98 +203,98 @@ export function SettingsDialog() {
       aria-label={STRINGS.settingsTitle}
       onCancel={closeSettings} // Esc.
     >
-      <div className={layoutClass}>
-        <nav className={navClass} aria-label={STRINGS.settingsTitle}>
-          {SECTIONS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={navItemClass}
-              aria-current={item.id === section}
-              onClick={() => setSection(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+      <header className={headerClass}>
+        <strong className={titleClass}>{STRINGS.settingsTitle}</strong>
+        <button
+          type="button"
+          className={closeButtonClass}
+          data-testid="settings-close"
+          aria-label={STRINGS.settingsCloseLabel}
+          onClick={closeSettings}
+        >
+          <CloseIcon />
+        </button>
+      </header>
 
-        <div className={panelClass}>
-          <div className={headerClass}>
-            <strong className={headerTitleClass}>{STRINGS.settingsSectionAppearance}</strong>
-            <button
-              type="button"
-              className={closeButtonClass}
-              data-testid="settings-close"
-              aria-label={STRINGS.settingsCloseLabel}
-              onClick={closeSettings}
-            >
-              <CloseIcon />
-            </button>
+      <div className={bodyClass}>
+        <div className={rowClass}>
+          <div>
+            <div className={rowTitleClass}>{STRINGS.settingsThemeTitle}</div>
+            <div className={rowHintClass}>{STRINGS.settingsThemeHint}</div>
           </div>
-
-          <div className={rowClass}>
-            <div>
-              <div className={rowTitleClass}>{STRINGS.settingsThemeTitle}</div>
-              <div className={rowHintClass}>{STRINGS.settingsThemeHint}</div>
-            </div>
-            <select
-              className={selectClass}
-              data-testid="settings-theme"
-              aria-label={STRINGS.settingsThemeTitle}
-              value={preference}
-              onChange={(event) => setPreference(event.target.value as ThemePreference)}
-            >
-              {THEME_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <div className={segmentClass} role="group" aria-label={STRINGS.settingsThemeTitle}>
+            {THEME_OPTIONS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                className={segmentButtonClass}
+                data-testid={`settings-theme-${value}`}
+                aria-pressed={value === preference}
+                onClick={() => setPreference(value)}
+              >
+                <Icon />
+                {label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className={rowClass}>
-            <div>
-              <div className={rowTitleClass}>{STRINGS.settingsOpacityTitle}</div>
-              <div className={rowHintClass}>{STRINGS.settingsOpacityHint}</div>
-            </div>
-            <div className={controlClass}>
-              <input
-                type="range"
-                className={sliderClass}
-                data-testid="settings-opacity"
-                aria-label={STRINGS.settingsOpacityTitle}
-                min={0}
-                max={1}
-                step={0.01}
-                value={resolvedOpacity}
-                onChange={(event) => setOpacity(Number(event.target.value))}
-              />
+        <div className={separatorClass} />
+        <div className={captionClass}>{STRINGS.settingsGlassCaption}</div>
+
+        <div className={rowClass}>
+          <div>
+            <div className={rowTitleClass}>
+              {STRINGS.settingsOpacityTitle}
               <span className={valueClass}>{Math.round(resolvedOpacity * 100)}%</span>
             </div>
+            <div className={rowHintClass}>{STRINGS.settingsOpacityHint}</div>
           </div>
+          <input
+            type="range"
+            className={sliderClass}
+            data-testid="settings-opacity"
+            aria-label={STRINGS.settingsOpacityTitle}
+            min={0}
+            max={1}
+            step={0.01}
+            value={resolvedOpacity}
+            onChange={(event) => setOpacity(Number(event.target.value))}
+          />
+        </div>
 
-          {hasWindowGlass && (
-            <div className={rowClass}>
-              <div>
-                <div className={rowTitleClass}>{STRINGS.settingsBlurTitle}</div>
-                <div className={rowHintClass}>{STRINGS.settingsBlurHint}</div>
-              </div>
-              <div className={controlClass}>
-                <input
-                  type="range"
-                  className={sliderClass}
-                  data-testid="settings-blur"
-                  aria-label={STRINGS.settingsBlurTitle}
-                  min={0}
-                  max={BLUR_RADIUS_MAX}
-                  step={1}
-                  value={blurRadius}
-                  onChange={(event) => setBlurRadius(Number(event.target.value))}
-                />
+        {hasWindowGlass && (
+          <div className={rowClass}>
+            <div>
+              <div className={rowTitleClass}>
+                {STRINGS.settingsBlurTitle}
                 <span className={valueClass}>{blurRadius}px</span>
               </div>
+              <div className={rowHintClass}>{STRINGS.settingsBlurHint}</div>
             </div>
-          )}
+            <input
+              type="range"
+              className={sliderClass}
+              data-testid="settings-blur"
+              aria-label={STRINGS.settingsBlurTitle}
+              min={0}
+              max={BLUR_RADIUS_MAX}
+              step={1}
+              value={blurRadius}
+              onChange={(event) => setBlurRadius(Number(event.target.value))}
+            />
+          </div>
+        )}
+
+        <div className={actionsClass}>
+          <button
+            type="button"
+            className={ghostButtonClass}
+            data-testid="settings-reset"
+            onClick={restoreDefaults}
+          >
+            {STRINGS.settingsResetLabel}
+          </button>
         </div>
       </div>
     </dialog>
