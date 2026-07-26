@@ -3,6 +3,7 @@ import { load } from "@tauri-apps/plugin-store";
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
+import { setAutosaveEnabled, useAutosaveStore } from "@features/save-file";
 import { setViewMode, useViewModeStore, VIEW_MODES } from "@features/switch-view-mode";
 import type { ViewMode } from "@features/switch-view-mode";
 import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
@@ -63,13 +64,15 @@ export async function loadSettings(): Promise<void> {
     return;
   }
   try {
-    const [theme, opacity, blurRadius, viewMode, sidebarVisible] = await Promise.all([
-      opened.get(SETTINGS_KEYS.themePreference),
-      opened.get(SETTINGS_KEYS.glassOpacity),
-      opened.get(SETTINGS_KEYS.blurRadius),
-      opened.get(SETTINGS_KEYS.viewMode),
-      opened.get(SETTINGS_KEYS.sidebarVisible),
-    ]);
+    const [theme, opacity, blurRadius, viewMode, sidebarVisible, autosaveEnabled] =
+      await Promise.all([
+        opened.get(SETTINGS_KEYS.themePreference),
+        opened.get(SETTINGS_KEYS.glassOpacity),
+        opened.get(SETTINGS_KEYS.blurRadius),
+        opened.get(SETTINGS_KEYS.viewMode),
+        opened.get(SETTINGS_KEYS.sidebarVisible),
+        opened.get(SETTINGS_KEYS.autosaveEnabled),
+      ]);
 
     const preference = asThemePreference(theme);
     if (preference) {
@@ -91,6 +94,10 @@ export async function loadSettings(): Promise<void> {
     const sidebar = asBoolean(sidebarVisible);
     if (sidebar !== null) {
       setSidebarVisible(sidebar);
+    }
+    const autosave = asBoolean(autosaveEnabled);
+    if (autosave !== null) {
+      setAutosaveEnabled(autosave);
     }
   } catch {
     logger.warn("설정을 읽지 못했습니다 — 기본값으로 계속합니다");
@@ -114,7 +121,8 @@ function snapshot(): string {
   const { opacity, blurRadius } = useGlassStore.getState();
   const { mode } = useViewModeStore.getState();
   const { visible } = useSidebarStore.getState();
-  return JSON.stringify([preference, opacity, blurRadius, mode, visible]);
+  const { enabled } = useAutosaveStore.getState();
+  return JSON.stringify([preference, opacity, blurRadius, mode, visible, enabled]);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -134,12 +142,14 @@ async function save(): Promise<void> {
   const { opacity, blurRadius } = useGlassStore.getState();
   const { mode } = useViewModeStore.getState();
   const { visible } = useSidebarStore.getState();
+  const { enabled } = useAutosaveStore.getState();
   try {
     await opened.set(SETTINGS_KEYS.themePreference, preference);
     await opened.set(SETTINGS_KEYS.glassOpacity, opacity);
     await opened.set(SETTINGS_KEYS.blurRadius, blurRadius);
     await opened.set(SETTINGS_KEYS.viewMode, mode);
     await opened.set(SETTINGS_KEYS.sidebarVisible, visible);
+    await opened.set(SETTINGS_KEYS.autosaveEnabled, enabled);
     await opened.save();
     written = pending;
   } catch {
@@ -166,6 +176,7 @@ export function persistSettingsOnChange(): () => void {
     useGlassStore.subscribe(scheduleSave),
     useViewModeStore.subscribe(scheduleSave),
     useSidebarStore.subscribe(scheduleSave),
+    useAutosaveStore.subscribe(scheduleSave),
   ];
 
   return () => {

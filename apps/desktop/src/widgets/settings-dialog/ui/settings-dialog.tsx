@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
+import { setAutosaveEnabled, useAutosaveStore } from "@features/save-file";
 import { closeSettings, useSettingsDialogStore } from "@features/toggle-settings";
 import { resolveOpacity, useGlassStore } from "@entities/glass";
 import { useResolvedTheme, useThemeStore } from "@entities/theme";
@@ -161,6 +162,11 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof SunIc
   { value: "system", label: STRINGS.themeSystemLabel, Icon: ComputerIcon },
 ];
 
+const AUTOSAVE_OPTIONS: { value: boolean; label: string }[] = [
+  { value: true, label: STRINGS.settingsAutosaveOnLabel },
+  { value: false, label: STRINGS.settingsAutosaveOffLabel },
+];
+
 export function SettingsDialog() {
   const open = useSettingsDialogStore((state) => state.open);
   const preference = useThemeStore((state) => state.preference);
@@ -170,6 +176,7 @@ export function SettingsDialog() {
   const blurRadius = useGlassStore((state) => state.blurRadius);
   const setOpacity = useGlassStore((state) => state.setOpacity);
   const setBlurRadius = useGlassStore((state) => state.setBlurRadius);
+  const autosaveEnabled = useAutosaveStore((state) => state.enabled);
   const dialogRef = useRef<HTMLDialogElement>(null);
   // 아직 고르지 않았으면 슬라이더가 그 테마의 기본 알파에 선다.
   const resolvedOpacity = resolveOpacity(opacity, theme);
@@ -190,6 +197,7 @@ export function SettingsDialog() {
     setPreference("system");
     setOpacity(null);
     setBlurRadius(BLUR_RADIUS_DEFAULT);
+    setAutosaveEnabled(true);
   }
 
   if (!open) {
@@ -285,6 +293,30 @@ export function SettingsDialog() {
             />
           </div>
         )}
+
+        <div className={separatorClass} />
+        <div className={captionClass}>{STRINGS.settingsSavingCaption}</div>
+
+        <div className={rowClass}>
+          <div>
+            <div className={rowTitleClass}>{STRINGS.settingsAutosaveTitle}</div>
+            <div className={rowHintClass}>{STRINGS.settingsAutosaveHint}</div>
+          </div>
+          <div className={segmentClass} role="group" aria-label={STRINGS.settingsAutosaveTitle}>
+            {AUTOSAVE_OPTIONS.map(({ value, label }) => (
+              <button
+                key={label}
+                type="button"
+                className={segmentButtonClass}
+                data-testid={`settings-autosave-${value ? "on" : "off"}`}
+                aria-pressed={value === autosaveEnabled}
+                onClick={() => setAutosaveEnabled(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className={actionsClass}>
           <button

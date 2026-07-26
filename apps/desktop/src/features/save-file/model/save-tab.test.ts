@@ -35,6 +35,7 @@ import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
 import { AUTOSAVE_DELAY_MS } from "../config";
+import { setAutosaveEnabled } from "./autosave-store";
 import { useConflictStore } from "./conflict-store";
 import {
   approveTabNormalization,
@@ -70,6 +71,7 @@ beforeEach(() => {
   useConfirmStore.setState({ pending: null });
   useNoticeStore.setState({ notices: [] });
   resetTabTextRegistry();
+  setAutosaveEnabled(true);
   saveFile.mockReset();
   openFile.mockReset();
   showSaveDialog.mockReset();
@@ -257,6 +259,53 @@ describe("정규화 승인 게이팅", () => {
 // 보장: 4가지 결말 — 깨끗하면 즉시 닫기, dirty 재발이면 재저장 후 닫기,
 //       Untitled·저장 실패는 확인 요청, 충돌은 탭 유지.
 // 경계: 확인 모달의 실제 표시·버튼은 confirm-store 테스트와 수동/E2E 소관.
+// 집행: file-lifecycle.md#자동-저장 — "끄면 저장은 Cmd+S 수동이다".
+// 왜: 끈 뒤에도 저장이 나가면 설정이 거짓이 되고, 사용자가 버리려던 편집이 디스크에 남는다.
+// 보장: 꺼진 동안 디바운스가 지나도 저장이 나가지 않고, 끄기 전에 걸린 예약도 나가지 않는다.
+//       수동 저장은 설정과 무관하게 그대로 된다.
+// 경계: 끈 상태에서 종료·탭 닫기가 무엇을 묻는지는 종료 방어의 몫이다(→ app/lib/close-defense).
+describe("자동 저장 끄기", () => {
+  it("꺼져 있으면 디바운스가 지나도 저장하지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const id = openTab();
+      useDocumentStore.getState().setDirty(id, true);
+      setAutosaveEnabled(false);
+      noteDocumentChanged(id);
+
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      expect(saveFile).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("예약이 걸린 뒤에 꺼도 그 저장은 나가지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const id = openTab();
+      useDocumentStore.getState().setDirty(id, true);
+      noteDocumentChanged(id);
+      setAutosaveEnabled(false);
+
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      expect(saveFile).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("꺼져 있어도 수동 저장은 된다", async () => {
+    const id = openTab();
+    useDocumentStore.getState().setDirty(id, true);
+    setAutosaveEnabled(false);
+    saveFile.mockResolvedValueOnce({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
+
+    await expect(saveTabNow(id)).resolves.toBe("saved");
+    expect(saveFile).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("requestCloseTab", () => {
   it("깨끗한 탭은 저장 없이 즉시 닫는다", async () => {
     const id = openTab();

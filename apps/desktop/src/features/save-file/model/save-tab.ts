@@ -12,6 +12,7 @@ import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
 
 import { AUTOSAVE_DELAY_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
+import { isAutosaveEnabled } from "./autosave-store";
 import { isTabInConflict, useConflictStore } from "./conflict-store";
 import { isTabFileMissing, useMissingFileStore } from "./missing-file-store";
 import { createSaveQueue } from "./save-queue";
@@ -37,7 +38,7 @@ export const autosave = createAutosaveScheduler({
  */
 export function noteDocumentChanged(tabId: string): void {
   const tab = findTab(tabId);
-  if (!tab || tab.filePath === null || needsNormalizationApproval(tab)) {
+  if (!tab || tab.filePath === null || needsNormalizationApproval(tab) || !isAutosaveEnabled()) {
     return;
   }
   autosave.noteChange(tabId);
@@ -50,7 +51,8 @@ export function approveTabNormalization(tabId: string): void {
     return;
   }
   useDocumentStore.getState().approveNormalization(tabId);
-  if (tab.isDirty) {
+  // 승인은 탭 상태이고 자동 저장 활성은 전역 설정이다 — 승인이 꺼둔 설정을 뒤집지 않는다.
+  if (tab.isDirty && isAutosaveEnabled()) {
     autosave.noteChange(tabId);
   }
 }
@@ -59,10 +61,12 @@ async function autosaveFlush(tabId: string): Promise<void> {
   const tab = findTab(tabId);
   // 충돌 중 일시 중지는 스케줄러가 보장하지만, 예약과 해소가 겹칠 수 있어 여기서도 거른다.
   // 미승인 검사도 마지막 관문으로 반복한다(예약 후 리로드로 승인이 원점 복귀할 수 있다).
+  // 끈 뒤에도 이미 걸린 예약이 남아 있다 — 마지막 관문에서 함께 거른다.
   if (
     !tab ||
     tab.filePath === null ||
     !tab.isDirty ||
+    !isAutosaveEnabled() ||
     isTabInConflict(tabId) ||
     isTabFileMissing(tabId) ||
     needsNormalizationApproval(tab)

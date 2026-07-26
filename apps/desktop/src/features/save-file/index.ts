@@ -1,3 +1,4 @@
+export { setAutosaveEnabled, useAutosaveStore } from "./model/autosave-store";
 export { useExternalChanges } from "./model/external-changes";
 export {
   approveTabNormalization,

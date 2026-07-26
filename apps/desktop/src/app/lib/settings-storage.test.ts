@@ -21,6 +21,7 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import { setViewMode, useViewModeStore } from "@features/switch-view-mode";
+import { setAutosaveEnabled, useAutosaveStore } from "@features/save-file";
 import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
 import {
   BLUR_RADIUS_DEFAULT,
@@ -50,6 +51,7 @@ beforeEach(() => {
   useGlassStore.setState({ opacity: null, blurRadius: BLUR_RADIUS_DEFAULT });
   useViewModeStore.setState({ mode: "split" });
   useSidebarStore.setState({ visible: true });
+  useAutosaveStore.setState({ enabled: true });
 });
 
 afterEach(() => {
@@ -68,6 +70,7 @@ describe("loadSettings", () => {
       blurRadius: 12,
       viewMode: "preview",
       sidebarVisible: false,
+      autosaveEnabled: false,
     });
     await loadSettings();
 
@@ -76,6 +79,7 @@ describe("loadSettings", () => {
     expect(useGlassStore.getState().blurRadius).toBe(12);
     expect(useViewModeStore.getState().mode).toBe("preview");
     expect(useSidebarStore.getState().visible).toBe(false);
+    expect(useAutosaveStore.getState().enabled).toBe(false);
   });
 
   it("모르는 값은 무시하고 기본값을 지킨다", async () => {
@@ -85,6 +89,7 @@ describe("loadSettings", () => {
       blurRadius: null,
       viewMode: "zen",
       sidebarVisible: "접힘",
+      autosaveEnabled: "끔",
     });
     await loadSettings();
 
@@ -93,6 +98,7 @@ describe("loadSettings", () => {
     expect(useGlassStore.getState().blurRadius).toBe(BLUR_RADIUS_DEFAULT);
     expect(useViewModeStore.getState().mode).toBe("split");
     expect(useSidebarStore.getState().visible).toBe(true);
+    expect(useAutosaveStore.getState().enabled).toBe(true);
   });
 
   it("읽기가 실패해도 기본값으로 계속 간다", async () => {
@@ -127,7 +133,7 @@ describe("persistSettingsOnChange", () => {
     stop();
   });
 
-  it("뷰 모드와 사이드바 접힘도 함께 쓴다", async () => {
+  it("뷰 모드·사이드바 접힘·자동 저장도 함께 쓴다", async () => {
     vi.useFakeTimers();
     stored({});
     await loadSettings();
@@ -135,10 +141,12 @@ describe("persistSettingsOnChange", () => {
 
     setViewMode("editor");
     setSidebarVisible(false);
+    setAutosaveEnabled(false);
 
     await vi.advanceTimersByTimeAsync(SETTINGS_SAVE_DEBOUNCE_MS);
     expect(storeSet).toHaveBeenCalledWith("viewMode", "editor");
     expect(storeSet).toHaveBeenCalledWith("sidebarVisible", false);
+    expect(storeSet).toHaveBeenCalledWith("autosaveEnabled", false);
     stop();
   });
 

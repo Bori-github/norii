@@ -163,4 +163,10 @@ export const STRINGS = {
   settingsOpacityHint: "타이틀바·사이드바·탭바·상태바의 불투명도",
   settingsBlurTitle: "흐림 반경",
   settingsBlurHint: "유리 뒤 배경이 번지는 정도",
+
+  settingsSavingCaption: "저장",
+  settingsAutosaveTitle: "자동 저장",
+  settingsAutosaveHint: "입력이 멈추면 저장한다. 끄면 Cmd+S로만 저장된다",
+  settingsAutosaveOnLabel: "켜기",
+  settingsAutosaveOffLabel: "끄기",
 } as const;
