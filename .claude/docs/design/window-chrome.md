@@ -96,6 +96,8 @@ macOS에는 창 뒤를 흐리는 공개 API가 없으므로 윈도서버의 비�
 
 OS 타이틀바와 신호등은 **창의 NSAppearance**를 따르지, 웹 콘텐츠의 테마를 모른다. 앱만 다크로 바꾸면 밝은 타이틀바 아래 어두운 크롬이 붙어 상단이 갈라진다(실측: 단차 146). 그래서 테마가 바뀔 때 `getCurrentWindow().setTheme()`으로 창에도 같은 테마를 알린다 — 권한 `core:window:allow-set-theme`가 이 때문에 필요하다.
 
+**`system`을 고른 동안은 창에 테마를 못 박지 않는다(`setTheme(null)`).** 창 외관을 고정하면 웹뷰가 OS에 묻는 값(`prefers-color-scheme`)이 그 고정값으로 뒤집히고, 그 뒤로는 고정값이 OS 값 행세를 한다 — 다크를 한 번 고른 사용자가 다시 `system`으로 돌아와도 다크에 갇힌다(실측).
+
 ## 폴백 — macOS 밖
 
 `window_glass::apply_window_glass`는 macOS 밖에서 아무 일도 하지 않고, 창은 불투명하게 뜬다. 웹 쪽은 캔버스를 불투명으로 칠해 **인앱 글라스로 자연 후퇴**한다(→ [유리](decisions/glass.md)).

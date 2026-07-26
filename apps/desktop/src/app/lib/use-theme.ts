@@ -16,6 +16,7 @@ import { logger } from "@shared/lib";
  */
 export function useTheme(): void {
   const setSystemPrefersDark = useThemeStore((state) => state.setSystemPrefersDark);
+  const preference = useThemeStore((state) => state.preference);
   const theme = useResolvedTheme();
 
   // OS 설정을 읽고, 이후 변경도 따라간다 — preference가 system일 때만 화면에 반영된다.
@@ -36,10 +37,13 @@ export function useTheme(): void {
     // 창(NSAppearance)에도 같은 테마를 알린다 — macOS의 타이틀바·신호등은 **OS 테마**를 따르므로,
     // 앱만 다크로 바꾸면 밝은 타이틀바 아래 어두운 크롬이 붙어 상단이 갈라진다(실측: 단차 146).
     // 창 테마를 맞추면 타이틀바·유리가 함께 따라온다.
+    //
+    // 단 `system`일 때는 창을 OS에 맡긴다(null). 못 박으면 웹뷰가 OS에 묻는 값이 그 값으로
+    // 뒤집혀, 다크를 한 번 고른 사용자가 다시 system을 골라도 다크에 갇힌다(실측).
     void getCurrentWindow()
-      .setTheme(theme)
+      .setTheme(preference === "system" ? null : theme)
       .catch(() => {
         logger.error("창 테마를 적용하지 못했습니다");
       });
-  }, [theme]);
+  }, [theme, preference]);
 }
