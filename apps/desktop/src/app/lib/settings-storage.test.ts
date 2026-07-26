@@ -30,7 +30,6 @@ import {
 
 import {
   flushSettings,
-  hasPendingSettingsSave,
   loadSettings,
   loadSettingsWithin,
   persistSettingsOnChange,
@@ -188,12 +187,10 @@ describe("flushSettings", () => {
     const stop = persistSettingsOnChange();
 
     useGlassStore.getState().setBlurRadius(44);
-    expect(hasPendingSettingsSave()).toBe(true);
 
     await flushSettings();
     expect(storeSave).toHaveBeenCalledTimes(1);
     expect(storeSet).toHaveBeenCalledWith("blurRadius", 44);
-    expect(hasPendingSettingsSave()).toBe(false);
     stop();
   });
 

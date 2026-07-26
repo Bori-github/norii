@@ -19,7 +19,6 @@ const SESSION_FILE: &str = "session.json";
 #[serde(rename_all = "camelCase")]
 pub struct SessionTab {
     pub path: String,
-    pub cursor: u32,
     pub scroll_line: u32,
 }
 
@@ -137,7 +136,6 @@ mod tests {
     fn tab(path: &str) -> SessionTab {
         SessionTab {
             path: path.to_owned(),
-            cursor: 12,
             scroll_line: 40,
         }
     }
@@ -152,7 +150,7 @@ mod tests {
     // 집행: rust-commands.md#세션 — 저장한 세션이 그대로 돌아오고, 그 경로가 허용된다.
     // 왜: 새 세션의 스코프는 비어 있다(dialog·폴더 열기만 채운다) — 이 등록이 없으면
     //     복원한 탭을 열자마자 Permission으로 거부된다.
-    // 보장: 왕복이 탭 목록·활성 탭·커서·스크롤을 보존하고, 루트와 탭 경로가 허용된다.
+    // 보장: 왕복이 탭 목록·활성 탭·탭별 자리를 보존하고, 루트와 탭 경로가 허용된다.
     // 경계: 프론트가 그 값으로 무엇을 하는지는 세션 복원 배선의 몫이다.
     #[test]
     fn 저장한_세션이_그대로_돌아오고_경로가_허용된다() {
@@ -172,7 +170,6 @@ mod tests {
 
         assert_eq!(restored.tabs.len(), 1);
         assert_eq!(restored.active, Some(0));
-        assert_eq!(restored.tabs[0].cursor, 12);
         assert_eq!(restored.tabs[0].scroll_line, 40);
         let canonical = fs::canonicalize(&doc).unwrap();
         assert!(fresh.ensure_allowed(&canonical).is_ok());

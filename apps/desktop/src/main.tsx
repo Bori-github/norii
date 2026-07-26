@@ -5,6 +5,7 @@ import {
   App,
   applyBootFlags,
   loadSettingsWithin,
+  persistSessionOnChange,
   persistSettingsOnChange,
   revealWindow,
 } from "@app/index";
@@ -20,6 +21,7 @@ import "katex/dist/katex.min.css";
 // 부팅 순서의 단일 출처: .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가
 await loadSettingsWithin();
 persistSettingsOnChange();
+persistSessionOnChange();
 
 // 표식(data-theme·data-glass)은 **첫 렌더 전에** 심는다 — 이펙트에서 심으면 한 프레임 동안
 // 다크 사용자가 밝은 화면을, 유리 사용자가 불투명 캔버스를 본다(→ app/lib/apply-boot-flags.ts).

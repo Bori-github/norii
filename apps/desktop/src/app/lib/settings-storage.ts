@@ -179,11 +179,6 @@ export function persistSettingsOnChange(): () => void {
   };
 }
 
-/** 아직 쓰지 않은 변경이 남아 있는가. */
-export function hasPendingSettingsSave(): boolean {
-  return saveTimer !== null;
-}
-
 /** 대기 중인 저장을 지금 쓴다(→ .claude/docs/file-lifecycle.md#설정-저장). */
 export async function flushSettings(): Promise<void> {
   if (saveTimer === null) {

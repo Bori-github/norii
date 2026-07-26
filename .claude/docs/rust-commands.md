@@ -221,8 +221,7 @@ struct Session {
 
 struct SessionTab {
   path: String,               // canonical 경로 — 탭 신원 규칙과 같다(→ open_file)
-  cursor: u32,                // 커서 오프셋(문서 처음부터의 문자 수)
-  scroll_line: u32,           // 뷰포트 상단 라인(1-기반)
+  scroll_line: u32,           // 뷰포트 상단 라인(1-기반). 1이면 맨 위
 }
 ```
 
