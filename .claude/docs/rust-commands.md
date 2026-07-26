@@ -186,6 +186,18 @@ async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
 // (open_file의 path)과 같은 표기로 시작하게 한다
 ```
 
+### 창 표면
+
+```rust
+#[tauri::command]
+fn set_window_blur_radius(window: tauri::WebviewWindow, radius: u32);
+// 창 뒤 흐림 반경을 다시 건다 — 설정 화면이 부른다. 허용 범위·기본값은 창 표면 계약이
+// 소유하고(→ design/window-chrome.md#계약--흐림-반경), 범위 밖 값은 그 하한·상한으로 자른다.
+// 자른 값이 지금 걸린 반경과 같으면 OS를 부르지 않는다 — 슬라이더를 끄는 동안 매 프레임
+// 윈도서버 왕복이 나가지 않게 한다.
+// macOS 밖에서는 무동작이다. 흐림 호출이 실패해도 경고 로그만 남기고 성공을 반환한다.
+```
+
 ## 항목 이름 규칙 (create_file · create_dir · rename_entry)
 
 이름은 "한 항목의 이름"이지 경로가 아니다. 아래를 어기면 `AppError::InvalidName`이다.
