@@ -5,8 +5,7 @@ import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, GLASS_OPACITY_DEFAULT } from "@sh
 // 유리 값의 단일 소유자 — entities가 갖고 app이 화면·창에 적용한다
 // (→ .claude/docs/frontend-architecture.md).
 //
-// **아직 저장하지 않는다.** 매 기동 기본값으로 시작하고 조절은 그 세션에만 남는다
-// (→ .claude/docs/implementation-plan.md).
+// 고른 값은 저장된다 — 저장 정책은 .claude/docs/file-lifecycle.md#설정-저장이 소유한다.
 
 /** 알파 기본값이 갈리는 축. 테마 이름을 다시 정의하지 않으려고 기본값의 키를 쓴다. */
 export type GlassTheme = keyof typeof GLASS_OPACITY_DEFAULT;
