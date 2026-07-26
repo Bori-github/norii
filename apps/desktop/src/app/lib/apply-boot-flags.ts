@@ -1,9 +1,10 @@
 import { hasWindowGlass } from "@shared/lib";
 
+import { useGlassStore } from "@entities/glass";
 import { resolveTheme, useThemeStore } from "@entities/theme";
 
 /**
- * 첫 페인트 전에 루트의 표식(`data-theme`·`data-glass`)을 심는다.
+ * 첫 페인트 전에 루트의 표식(`data-theme`·`data-glass`)과 고른 유리 알파를 심는다.
  *
  * 왜 훅이 아니라 부팅 단계인가: 이펙트에서 심으면 **React가 한 번 그린 뒤에** 속성이 붙는다.
  * 그 한 프레임 동안 다크 사용자는 밝은 화면을, 유리 사용자는 불투명 캔버스를 본다 —
@@ -21,5 +22,10 @@ export function applyBootFlags(): void {
 
   if (hasWindowGlass) {
     document.documentElement.dataset.glass = "on";
+  }
+
+  const { opacity } = useGlassStore.getState();
+  if (opacity !== null) {
+    document.documentElement.style.setProperty("--norii-glass-opacity", String(opacity));
   }
 }

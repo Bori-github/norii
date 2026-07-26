@@ -1,0 +1,115 @@
+import { load } from "@tauri-apps/plugin-store";
+
+import { useGlassStore } from "@entities/glass";
+import { useThemeStore } from "@entities/theme";
+import type { ThemePreference } from "@entities/theme";
+import { SETTINGS_KEYS, SETTINGS_SAVE_DEBOUNCE_MS, SETTINGS_STORE_FILE } from "@shared/config";
+import { logger } from "@shared/lib";
+
+/**
+ * 저장된 설정을 읽어 스토어에 넣고, 이후 변화를 파일에 쓴다. 읽기·쓰기 실패는 삼킨다.
+ * 저장 정책은 .claude/docs/file-lifecycle.md#설정-저장이 소유한다.
+ */
+
+type Store = Awaited<ReturnType<typeof load>>;
+
+const THEME_PREFERENCES = new Set<ThemePreference>(["system", "light", "dark"]);
+
+let store: Store | null = null;
+
+async function openStore(): Promise<Store | null> {
+  if (store) {
+    return store;
+  }
+  try {
+    store = await load(SETTINGS_STORE_FILE, { autoSave: false });
+    return store;
+  } catch {
+    logger.warn("설정 저장소를 열지 못했습니다 — 기본값으로 계속합니다");
+    return null;
+  }
+}
+
+function asThemePreference(value: unknown): ThemePreference | null {
+  return typeof value === "string" && THEME_PREFERENCES.has(value as ThemePreference)
+    ? (value as ThemePreference)
+    : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export async function loadSettings(): Promise<void> {
+  const opened = await openStore();
+  if (!opened) {
+    return;
+  }
+  try {
+    const [theme, opacity, blurRadius] = await Promise.all([
+      opened.get(SETTINGS_KEYS.themePreference),
+      opened.get(SETTINGS_KEYS.glassOpacity),
+      opened.get(SETTINGS_KEYS.blurRadius),
+    ]);
+
+    const preference = asThemePreference(theme);
+    if (preference) {
+      useThemeStore.getState().setPreference(preference);
+    }
+    // 범위 자르기는 스토어가 이미 한다 — 여기서 두 번째 규칙을 만들지 않는다.
+    const storedOpacity = asNumber(opacity);
+    if (storedOpacity !== null) {
+      useGlassStore.getState().setOpacity(storedOpacity);
+    }
+    const storedRadius = asNumber(blurRadius);
+    if (storedRadius !== null) {
+      useGlassStore.getState().setBlurRadius(storedRadius);
+    }
+  } catch {
+    logger.warn("설정을 읽지 못했습니다 — 기본값으로 계속합니다");
+  }
+}
+
+/** 값이 바뀔 때 저장한다. 반환값을 부르면 구독을 끊는다. */
+export function persistSettingsOnChange(): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleSave(): void {
+    if (timer !== null) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      timer = null;
+      void save();
+    }, SETTINGS_SAVE_DEBOUNCE_MS);
+  }
+
+  async function save(): Promise<void> {
+    const opened = await openStore();
+    if (!opened) {
+      return;
+    }
+    const { preference } = useThemeStore.getState();
+    const { opacity, blurRadius } = useGlassStore.getState();
+    try {
+      await opened.set(SETTINGS_KEYS.themePreference, preference);
+      await opened.set(SETTINGS_KEYS.glassOpacity, opacity);
+      await opened.set(SETTINGS_KEYS.blurRadius, blurRadius);
+      await opened.save();
+    } catch {
+      logger.warn("설정을 저장하지 못했습니다");
+    }
+  }
+
+  const unsubscribeTheme = useThemeStore.subscribe(scheduleSave);
+  const unsubscribeGlass = useGlassStore.subscribe(scheduleSave);
+
+  return () => {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    unsubscribeTheme();
+    unsubscribeGlass();
+  };
+}

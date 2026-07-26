@@ -1,7 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { App, applyBootFlags } from "@app/index";
+import {
+  App,
+  applyBootFlags,
+  loadSettings,
+  persistSettingsOnChange,
+  revealWindow,
+} from "@app/index";
 
 // Panda 전역 스타일(리셋·토큰·globalCss) 진입 — 부트스트랩 시 한 번 로드한다.
 import "@app/index.css";
@@ -10,6 +16,10 @@ import "@app/index.css";
 import "katex/dist/katex.min.css";
 
 // 엔트리 글루 — 레이어 밖의 유일한 파일. 부트스트랩 책임은 app 레이어가 가진다.
+
+// 부팅 순서의 단일 출처: .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가
+await loadSettings();
+persistSettingsOnChange();
 
 // 표식(data-theme·data-glass)은 **첫 렌더 전에** 심는다 — 이펙트에서 심으면 한 프레임 동안
 // 다크 사용자가 밝은 화면을, 유리 사용자가 불투명 캔버스를 본다(→ app/lib/apply-boot-flags.ts).
@@ -25,3 +35,5 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 );
+
+revealWindow();

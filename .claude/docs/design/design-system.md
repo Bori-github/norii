@@ -102,7 +102,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 
 **설정이 여는 것은 이 셋뿐이고, 색은 열지 않는다.** [대비 게이트](#대비-게이트)는 토큰 값만으로 도는 빌드 타임 검사라, 임의의 색을 받으면 검사가 런타임으로 옮겨간다.
 
-**아직 저장하지 않는다.** 스토어는 매 기동 `system`으로 시작하고, 고른 값은 그 세션에만 남는다(→ [실제 구현 계획](../implementation-plan.md)).
+**고른 값은 저장된다.** 저장이 없으면 매 기동 `system`으로 시작한다. 저장 정책은 [파일 생명주기 정책](../file-lifecycle.md#설정-저장), 읽는 시점은 [창 표면 계약](window-chrome.md#부팅-순서--창은-언제-보이는가)이 소유한다.
 
 ```text
 semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.950}' } }
