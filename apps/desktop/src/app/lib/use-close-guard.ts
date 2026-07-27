@@ -19,7 +19,7 @@ export function useCloseGuard(): void {
     let defending = false;
 
     const unlistenPromise = getCurrentWindow().onCloseRequested(async (event) => {
-      const autosaveEnabled = useAutosaveStore.getState().enabled;
+      const autosaveEnabled = useAutosaveStore.getState().intervalMs !== null;
       const plan = planCloseDefense(useDocumentStore.getState().tabs, autosaveEnabled);
       const tabsClean = plan.flushTabIds.length === 0 && plan.blockingTabIds.length === 0;
       // 저장할 것이 없어도 막는다 — 세션은 이 시점에만 쓸 수 있고 쓰기는 비동기다.

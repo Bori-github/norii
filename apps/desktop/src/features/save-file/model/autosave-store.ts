@@ -1,17 +1,25 @@
 import { create } from "zustand";
 
-// 자동 저장 켜짐 여부 — 정책의 단일 출처: .claude/docs/file-lifecycle.md#자동-저장.
+import { AUTOSAVE_INTERVAL_DEFAULT_MS, type AutosaveInterval } from "../config";
+
+// 자동 저장 간격 — 정책의 단일 출처: .claude/docs/file-lifecycle.md#자동-저장.
 
 interface AutosaveState {
-  enabled: boolean;
+  intervalMs: AutosaveInterval;
 }
 
-export const useAutosaveStore = create<AutosaveState>(() => ({ enabled: true }));
+export const useAutosaveStore = create<AutosaveState>(() => ({
+  intervalMs: AUTOSAVE_INTERVAL_DEFAULT_MS,
+}));
 
-export function setAutosaveEnabled(enabled: boolean): void {
-  useAutosaveStore.setState({ enabled });
+export function setAutosaveInterval(intervalMs: AutosaveInterval): void {
+  useAutosaveStore.setState({ intervalMs });
+}
+
+export function autosaveIntervalMs(): AutosaveInterval {
+  return useAutosaveStore.getState().intervalMs;
 }
 
 export function isAutosaveEnabled(): boolean {
-  return useAutosaveStore.getState().enabled;
+  return autosaveIntervalMs() !== null;
 }

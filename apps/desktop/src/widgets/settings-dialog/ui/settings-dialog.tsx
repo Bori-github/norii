@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { css } from "styled-system/css";
 
-import { setAutosaveEnabled, useAutosaveStore } from "@features/save-file";
+import {
+  AUTOSAVE_INTERVAL_DEFAULT_MS,
+  setAutosaveInterval,
+  useAutosaveStore,
+} from "@features/save-file";
+import type { AutosaveInterval } from "@features/save-file";
 import { closeSettings, useSettingsDialogStore } from "@features/toggle-settings";
 import { resolveOpacity, useGlassStore } from "@entities/glass";
 import { useResolvedTheme, useThemeStore } from "@entities/theme";
@@ -106,6 +111,15 @@ const captionClass = css({
 // 컨트롤은 설명 아래 한 줄을 통째로 쓴다 — 슬라이더가 좁으면 끝값을 집기 어렵다.
 const rowClass = css({ display: "flex", flexDirection: "column", gap: "2", paddingY: "3" });
 
+// 좁은 컨트롤은 설명 오른쪽에 둔다 — 슬라이더와 달리 폭을 쓰지 않는다.
+const rowInlineClass = css({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "4",
+  paddingY: "3",
+});
+
 const rowTitleClass = css({ fontSize: "sm", fontWeight: "medium" });
 const rowHintClass = css({ marginTop: "1", fontSize: "xs", color: "text.muted" });
 
@@ -146,6 +160,48 @@ const segmentButtonClass = css({
   "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
   "& svg": { width: "3.5", height: "3.5" },
+});
+
+// OS 기본 모양을 끄고 화살표를 직접 그린다 — 켜 두면 배경·테두리가 다이얼로그와 따로 논다.
+// 화살표는 감싼 요소의 ::after다: select 안에는 자식을 둘 수 없고, 배경 이미지로 그리면
+// 색을 토큰이 아니라 파일 안에 박게 된다.
+const selectWrapClass = css({
+  position: "relative",
+  display: "inline-flex",
+  _after: {
+    content: '""',
+    position: "absolute",
+    top: "50%",
+    right: "3",
+    width: "6px",
+    height: "6px",
+    borderRightWidth: "1.5px",
+    borderRightStyle: "solid",
+    borderRightColor: "text.muted",
+    borderBottomWidth: "1.5px",
+    borderBottomStyle: "solid",
+    borderBottomColor: "text.muted",
+    transform: "translateY(-70%) rotate(45deg)",
+    pointerEvents: "none",
+  },
+});
+
+const selectClass = css({
+  appearance: "none",
+  minWidth: "32",
+  paddingLeft: "2.5",
+  paddingRight: "7",
+  paddingY: "1.5",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "border",
+  borderRadius: "sm",
+  background: "bg.hover",
+  color: "text",
+  fontFamily: "ui",
+  fontSize: "xs",
+  cursor: "pointer",
+  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-1px" },
 });
 
 // 트랙과 손잡이를 직접 그린다 — OS 기본 슬라이더는 굵기·손잡이 크기가 앱 스케일과 어긋난다.
@@ -214,10 +270,27 @@ const SECTIONS = [
 
 type SectionId = (typeof SECTIONS)[number]["id"];
 
-const AUTOSAVE_OPTIONS: { value: boolean; label: string }[] = [
-  { value: true, label: STRINGS.settingsAutosaveOnLabel },
-  { value: false, label: STRINGS.settingsAutosaveOffLabel },
+/** 간격 칸 — 값과 순서는 features/save-file/config.ts가 소유한다. */
+const AUTOSAVE_OPTIONS: { value: AutosaveInterval; id: string; label: string }[] = [
+  { value: null, id: "off", label: STRINGS.settingsAutosaveOffLabel },
+  { value: 5000, id: "5s", label: STRINGS.settingsAutosave5sLabel },
+  { value: 10_000, id: "10s", label: STRINGS.settingsAutosave10sLabel },
+  { value: 30_000, id: "30s", label: STRINGS.settingsAutosave30sLabel },
+  { value: 60_000, id: "60s", label: STRINGS.settingsAutosave60sLabel },
 ];
+
+function autosaveOptionId(interval: AutosaveInterval): string {
+  return AUTOSAVE_OPTIONS.find(({ value }) => value === interval)?.id ?? "off";
+}
+
+function autosaveIntervalOf(id: string): AutosaveInterval {
+  return AUTOSAVE_OPTIONS.find((option) => option.id === id)?.value ?? null;
+}
+
+function autosaveHint(interval: AutosaveInterval): string {
+  const option = AUTOSAVE_OPTIONS.find(({ value }) => value === interval);
+  return STRINGS.settingsAutosaveHint(interval === null ? null : (option?.label ?? null));
+}
 
 export function SettingsDialog() {
   const open = useSettingsDialogStore((state) => state.open);
@@ -228,7 +301,7 @@ export function SettingsDialog() {
   const blurRadius = useGlassStore((state) => state.blurRadius);
   const setOpacity = useGlassStore((state) => state.setOpacity);
   const setBlurRadius = useGlassStore((state) => state.setBlurRadius);
-  const autosaveEnabled = useAutosaveStore((state) => state.enabled);
+  const autosaveInterval = useAutosaveStore((state) => state.intervalMs);
   const [section, setSection] = useState<SectionId>("general");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const resolvedOpacity = resolveOpacity(opacity, theme);
@@ -264,7 +337,7 @@ export function SettingsDialog() {
     setPreference("system");
     setOpacity(null);
     setBlurRadius(BLUR_RADIUS_DEFAULT);
-    setAutosaveEnabled(true);
+    setAutosaveInterval(AUTOSAVE_INTERVAL_DEFAULT_MS);
   }
 
   if (!open) {
@@ -324,24 +397,27 @@ export function SettingsDialog() {
           aria-labelledby="settings-tab-general"
           hidden={section !== "general"}
         >
-          <div className={rowClass}>
+          <div className={rowInlineClass}>
             <div>
               <div className={rowTitleClass}>{STRINGS.settingsAutosaveTitle}</div>
-              <div className={rowHintClass}>{STRINGS.settingsAutosaveHint}</div>
+              <div className={rowHintClass}>{autosaveHint(autosaveInterval)}</div>
             </div>
-            <div className={segmentClass} role="group" aria-label={STRINGS.settingsAutosaveTitle}>
-              {AUTOSAVE_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={label}
-                  type="button"
-                  className={segmentButtonClass}
-                  data-testid={`settings-autosave-${value ? "on" : "off"}`}
-                  aria-pressed={value === autosaveEnabled}
-                  onClick={() => setAutosaveEnabled(value)}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className={selectWrapClass}>
+              <select
+                className={selectClass}
+                data-testid="settings-autosave"
+                aria-label={STRINGS.settingsAutosaveTitle}
+                value={autosaveOptionId(autosaveInterval)}
+                onChange={(event) => {
+                  setAutosaveInterval(autosaveIntervalOf(event.target.value));
+                }}
+              >
+                {AUTOSAVE_OPTIONS.map(({ id, label }) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

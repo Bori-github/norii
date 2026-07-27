@@ -34,8 +34,8 @@ import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
-import { AUTOSAVE_DELAY_MS } from "../config";
-import { setAutosaveEnabled } from "./autosave-store";
+import { AUTOSAVE_INTERVAL_DEFAULT_MS } from "../config";
+import { setAutosaveInterval } from "./autosave-store";
 import { useConflictStore } from "./conflict-store";
 import {
   approveTabNormalization,
@@ -71,7 +71,7 @@ beforeEach(() => {
   useConfirmStore.setState({ pending: null });
   useNoticeStore.setState({ notices: [] });
   resetTabTextRegistry();
-  setAutosaveEnabled(true);
+  setAutosaveInterval(AUTOSAVE_INTERVAL_DEFAULT_MS);
   saveFile.mockReset();
   openFile.mockReset();
   showSaveDialog.mockReset();
@@ -161,7 +161,7 @@ describe("정규화 승인 게이팅", () => {
       useDocumentStore.getState().setDirty(id, true);
       noteDocumentChanged(id);
 
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS * 2);
       expect(saveFile).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -245,7 +245,7 @@ describe("정규화 승인 게이팅", () => {
       approveTabNormalization(id);
       saveFile.mockResolvedValueOnce({ path: "/vault/legacy.md", mtime: 2_000, hash: "hash-2" });
 
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS * 2);
       expect(saveFile).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
@@ -261,7 +261,7 @@ describe("정규화 승인 게이팅", () => {
 // 경계: 확인 모달의 실제 표시·버튼은 confirm-store 테스트와 수동/E2E 소관.
 // 집행: file-lifecycle.md#자동-저장 — "끄면 저장은 Cmd+S 수동이다".
 // 왜: 끈 뒤에도 저장이 나가면 설정이 거짓이 되고, 사용자가 버리려던 편집이 디스크에 남는다.
-// 보장: 꺼진 동안 디바운스가 지나도 저장이 나가지 않고, 끄기 전에 걸린 예약도 나가지 않는다.
+// 보장: 꺼진 동안 간격이 지나도 저장이 나가지 않고, 끄기 전에 잡혀 있던 예약도 나가지 않는다.
 //       수동 저장은 설정과 무관하게 그대로 된다.
 // 경계: 끈 상태에서 종료·탭 닫기가 무엇을 묻는지는 종료 방어의 몫이다(→ app/lib/close-defense).
 describe("자동 저장 끄기", () => {
@@ -270,10 +270,10 @@ describe("자동 저장 끄기", () => {
     try {
       const id = openTab();
       useDocumentStore.getState().setDirty(id, true);
-      setAutosaveEnabled(false);
+      setAutosaveInterval(null);
       noteDocumentChanged(id);
 
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS * 2);
       expect(saveFile).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -286,9 +286,9 @@ describe("자동 저장 끄기", () => {
       const id = openTab();
       useDocumentStore.getState().setDirty(id, true);
       noteDocumentChanged(id);
-      setAutosaveEnabled(false);
+      setAutosaveInterval(null);
 
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS * 2);
       expect(saveFile).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -298,7 +298,7 @@ describe("자동 저장 끄기", () => {
   it("꺼져 있으면 dirty 탭 닫기가 저장하지 않고 확인을 받는다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    setAutosaveEnabled(false);
+    setAutosaveInterval(null);
 
     await requestCloseTab(id);
 
@@ -310,7 +310,7 @@ describe("자동 저장 끄기", () => {
   it("꺼져 있어도 수동 저장은 된다", async () => {
     const id = openTab();
     useDocumentStore.getState().setDirty(id, true);
-    setAutosaveEnabled(false);
+    setAutosaveInterval(null);
     saveFile.mockResolvedValueOnce({ path: "/vault/doc.md", mtime: 2_000, hash: "hash-2" });
 
     await expect(saveTabNow(id)).resolves.toBe("saved");

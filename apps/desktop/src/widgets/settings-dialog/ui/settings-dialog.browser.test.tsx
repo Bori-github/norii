@@ -6,7 +6,7 @@ import "@app/index.css";
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
-import { useAutosaveStore } from "@features/save-file";
+import { AUTOSAVE_INTERVAL_DEFAULT_MS, useAutosaveStore } from "@features/save-file";
 import { BLUR_RADIUS_DEFAULT, GLASS_OPACITY_DEFAULT } from "@shared/config";
 
 import { closeSettings, openSettings, useSettingsDialogStore } from "@features/toggle-settings";
@@ -24,7 +24,7 @@ beforeEach(() => {
   useThemeStore.setState({ preference: "system", systemPrefersDark: false });
   useGlassStore.setState({ opacity: null });
   // 모듈 전역 스토어라 초기화하지 않으면 한 테스트의 "끄기"가 뒤 테스트로 새어 나간다.
-  useAutosaveStore.setState({ enabled: true });
+  useAutosaveStore.setState({ intervalMs: AUTOSAVE_INTERVAL_DEFAULT_MS });
 });
 
 afterEach(() => {
@@ -45,7 +45,7 @@ describe("SettingsDialog", () => {
     await waitFor(() => {
       expect(getByTestId("settings-dialog")).not.toBeNull();
     });
-    expect(getByTestId("settings-autosave-on").checkVisibility()).toBe(true);
+    expect(getByTestId("settings-autosave").checkVisibility()).toBe(true);
     // 창 크기를 실제 앱에 가깝게 두고 찍는다 — 모달은 화면 크기에 비례해 자리를 잡는다.
     await page.viewport(1200, 800);
     await page.screenshot({ path: "__screenshots__/settings-dialog.png" });
@@ -83,13 +83,13 @@ describe("SettingsDialog", () => {
     await waitFor(() => {
       expect(getByTestId("settings-nav-general")).not.toBeNull();
     });
-    expect(getByTestId("settings-autosave-on").checkVisibility()).toBe(true);
+    expect(getByTestId("settings-autosave").checkVisibility()).toBe(true);
     expect(getByTestId("settings-theme-system").checkVisibility()).toBe(false);
 
     fireEvent.click(getByTestId("settings-nav-appearance"));
 
     expect(getByTestId("settings-theme-system").checkVisibility()).toBe(true);
-    expect(getByTestId("settings-autosave-on").checkVisibility()).toBe(false);
+    expect(getByTestId("settings-autosave").checkVisibility()).toBe(false);
     await page.viewport(1200, 800);
     await page.screenshot({ path: "__screenshots__/settings-dialog-appearance.png" });
   });
@@ -118,18 +118,41 @@ describe("SettingsDialog", () => {
     expect(general.getAttribute("aria-selected")).toBe("true");
   });
 
-  it("자동 저장을 끄면 그 선택이 스토어에 남는다", async () => {
+  // 왜: 고른 항목과 스토어 값이 어긋나면 사용자는 자기가 고른 간격이 무엇인지 화면에서 알 수 없다.
+  // 경계: 목록에 무엇이 있는지는 config.ts가 정한다 — 여기선 고르기가 값에 닿는지만 본다.
+  it("고른 간격이 스토어에 남고 그 항목이 선택된 채로 있다", async () => {
     const { getByTestId } = render(<SettingsDialog />);
     openSettings();
 
     await waitFor(() => {
       expect(getByTestId("settings-nav-general")).not.toBeNull();
     });
-    fireEvent.click(getByTestId("settings-nav-general"));
-    fireEvent.click(getByTestId("settings-autosave-off"));
+    const select = getByTestId("settings-autosave") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "30s" } });
 
-    expect(useAutosaveStore.getState().enabled).toBe(false);
-    expect(getByTestId("settings-autosave-off").getAttribute("aria-pressed")).toBe("true");
+    expect(useAutosaveStore.getState().intervalMs).toBe(30_000);
+    expect(select.value).toBe("30s");
+  });
+
+  // 왜: 설명이 고른 값을 따라가지 않으면 5초를 골라 놓고 "1분마다"를 읽게 된다. 끄기는 저장
+  //     방법 자체가 바뀌므로(⌘S) 그 문장이 나오지 않으면 저장할 방법을 화면에서 알 수 없다.
+  it("설명이 고른 값을 따라가고, 끄기면 수동 저장을 알린다", async () => {
+    const { getByTestId, getByText, queryByText } = render(<SettingsDialog />);
+    openSettings();
+
+    await waitFor(() => {
+      expect(getByTestId("settings-autosave")).not.toBeNull();
+    });
+    expect(getByText("5초마다 문서를 자동으로 저장합니다.")).not.toBeNull();
+
+    fireEvent.change(getByTestId("settings-autosave"), { target: { value: "60s" } });
+    expect(getByText("1분마다 문서를 자동으로 저장합니다.")).not.toBeNull();
+
+    fireEvent.change(getByTestId("settings-autosave"), { target: { value: "off" } });
+
+    expect(useAutosaveStore.getState().intervalMs).toBeNull();
+    expect(getByText("자동 저장이 꺼져 있습니다. ⌘S로 직접 저장하세요.")).not.toBeNull();
+    expect(queryByText("1분마다 문서를 자동으로 저장합니다.")).toBeNull();
   });
 
   it("기본값으로를 누르면 고른 값이 모두 기본값으로 돌아간다", async () => {
@@ -142,13 +165,13 @@ describe("SettingsDialog", () => {
     fireEvent.click(getByTestId("settings-theme-dark"));
     fireEvent.change(getByTestId("settings-opacity"), { target: { value: "0.2" } });
     fireEvent.click(getByTestId("settings-nav-general"));
-    fireEvent.click(getByTestId("settings-autosave-off"));
+    fireEvent.change(getByTestId("settings-autosave"), { target: { value: "off" } });
     fireEvent.click(getByTestId("settings-reset"));
 
     expect(useThemeStore.getState().preference).toBe("system");
     expect(useGlassStore.getState().opacity).toBeNull();
     expect(useGlassStore.getState().blurRadius).toBe(BLUR_RADIUS_DEFAULT);
-    expect(useAutosaveStore.getState().enabled).toBe(true);
+    expect(useAutosaveStore.getState().intervalMs).toBe(AUTOSAVE_INTERVAL_DEFAULT_MS);
   });
 
   it("닫기 버튼을 누르면 화면에서 사라진다", async () => {

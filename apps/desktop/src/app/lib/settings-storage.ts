@@ -3,7 +3,7 @@ import { load } from "@tauri-apps/plugin-store";
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
-import { setAutosaveEnabled, useAutosaveStore } from "@features/save-file";
+import { isAutosaveInterval, setAutosaveInterval, useAutosaveStore } from "@features/save-file";
 import { setViewMode, useViewModeStore, VIEW_MODES } from "@features/switch-view-mode";
 import type { ViewMode } from "@features/switch-view-mode";
 import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
@@ -64,14 +64,14 @@ export async function loadSettings(): Promise<void> {
     return;
   }
   try {
-    const [theme, opacity, blurRadius, viewMode, sidebarVisible, autosaveEnabled] =
+    const [theme, opacity, blurRadius, viewMode, sidebarVisible, autosaveInterval] =
       await Promise.all([
         opened.get(SETTINGS_KEYS.themePreference),
         opened.get(SETTINGS_KEYS.glassOpacity),
         opened.get(SETTINGS_KEYS.blurRadius),
         opened.get(SETTINGS_KEYS.viewMode),
         opened.get(SETTINGS_KEYS.sidebarVisible),
-        opened.get(SETTINGS_KEYS.autosaveEnabled),
+        opened.get(SETTINGS_KEYS.autosaveIntervalMs),
       ]);
 
     const preference = asThemePreference(theme);
@@ -95,9 +95,8 @@ export async function loadSettings(): Promise<void> {
     if (sidebar !== null) {
       setSidebarVisible(sidebar);
     }
-    const autosave = asBoolean(autosaveEnabled);
-    if (autosave !== null) {
-      setAutosaveEnabled(autosave);
+    if (isAutosaveInterval(autosaveInterval)) {
+      setAutosaveInterval(autosaveInterval);
     }
   } catch {
     logger.warn("설정을 읽지 못했습니다 — 기본값으로 계속합니다");
@@ -114,8 +113,8 @@ function snapshot(): string {
   const { opacity, blurRadius } = useGlassStore.getState();
   const { mode } = useViewModeStore.getState();
   const { visible } = useSidebarStore.getState();
-  const { enabled } = useAutosaveStore.getState();
-  return JSON.stringify([preference, opacity, blurRadius, mode, visible, enabled]);
+  const { intervalMs } = useAutosaveStore.getState();
+  return JSON.stringify([preference, opacity, blurRadius, mode, visible, intervalMs]);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -135,7 +134,7 @@ async function save(): Promise<void> {
   const { opacity, blurRadius } = useGlassStore.getState();
   const { mode } = useViewModeStore.getState();
   const { visible } = useSidebarStore.getState();
-  const { enabled } = useAutosaveStore.getState();
+  const { intervalMs } = useAutosaveStore.getState();
   try {
     // 키마다 IPC 왕복이다 — 서로 독립이므로 함께 보내고 한 번만 기다린다.
     await Promise.all([
@@ -144,7 +143,7 @@ async function save(): Promise<void> {
       opened.set(SETTINGS_KEYS.blurRadius, blurRadius),
       opened.set(SETTINGS_KEYS.viewMode, mode),
       opened.set(SETTINGS_KEYS.sidebarVisible, visible),
-      opened.set(SETTINGS_KEYS.autosaveEnabled, enabled),
+      opened.set(SETTINGS_KEYS.autosaveIntervalMs, intervalMs),
     ]);
     await opened.save();
     written = pending;

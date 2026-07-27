@@ -157,7 +157,7 @@ export const STRINGS = {
   settingsSectionAppearance: "외형",
   settingsSectionGeneral: "일반",
   settingsThemeTitle: "테마",
-  settingsThemeHint: "밝은 화면 · 어두운 화면 · 시스템 설정 따라가기",
+  settingsThemeHint: "밝은 화면과 어두운 화면 중에 고르거나 시스템 설정을 따릅니다.",
   settingsResetLabel: "기본값으로",
   themeSystemLabel: "시스템",
   themeLightLabel: "라이트",
@@ -166,12 +166,20 @@ export const STRINGS = {
   // 유리 두 값 — 조절 대상이 무엇인지 설명이 갈라 준다(→ design/decisions/glass.md).
   settingsGlassCaption: "유리 효과",
   settingsOpacityTitle: "유리 불투명도",
-  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바의 불투명도",
+  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바가 얼마나 비칠지 정합니다.",
   settingsBlurTitle: "흐림 반경",
-  settingsBlurHint: "유리 뒤 배경이 번지는 정도",
+  settingsBlurHint: "유리 뒤 배경이 번지는 정도를 정합니다.",
 
   settingsAutosaveTitle: "자동 저장",
-  settingsAutosaveHint: "입력이 멈추면 자동 저장 · 끄면 ⌘S로만",
-  settingsAutosaveOnLabel: "켜기",
+  // 고른 값에 따라 갈린다 — 끄기를 고르면 저장 방법이 바뀌므로 그것을 알린다.
+  settingsAutosaveHint: (interval: string | null) =>
+    interval === null
+      ? "자동 저장이 꺼져 있습니다. ⌘S로 직접 저장하세요."
+      : `${interval}마다 문서를 자동으로 저장합니다.`,
+  // 간격 칸 — 값은 features/save-file/config.ts가 소유한다.
   settingsAutosaveOffLabel: "끄기",
+  settingsAutosave5sLabel: "5초",
+  settingsAutosave10sLabel: "10초",
+  settingsAutosave30sLabel: "30초",
+  settingsAutosave60sLabel: "1분",
 } as const;

@@ -1,9 +1,9 @@
-// 자동 저장 디바운스 스케줄러 — 정책의 단일 출처: file-lifecycle.md#자동-저장.
-// 타이핑이 멈추고 delayMs 후 flush(tabId)를 부른다. 충돌 중에는 pause로 멈추고,
+// 자동 저장 스케줄러 — 정책의 단일 출처: file-lifecycle.md#자동-저장.
+// 첫 변경 뒤 intervalMs()에 flush(tabId)를 부른다. 충돌 중에는 pause로 멈추고,
 // 해소 시 resume이 밀린 변경을 다시 예약한다.
 
 export interface AutosaveScheduler {
-  /** 문서가 바뀌었다 — 디바운스 타이머를 (재)시작한다. */
+  /** 문서가 바뀌었다 — 이 탭의 타이머가 없으면 시작한다. 이미 돌고 있으면 그대로 둔다. */
   noteChange(tabId: string): void;
   /** 충돌 등으로 이 탭의 자동 저장을 멈춘다. 변경은 기억해 뒀다 resume에서 예약한다. */
   pause(tabId: string): void;
@@ -16,11 +16,12 @@ export interface AutosaveScheduler {
 }
 
 interface Options {
-  delayMs: number;
+  /** 예약할 때마다 읽는다 — 설정에서 간격을 바꾸면 다음 예약부터 그 값이 쓰인다. */
+  intervalMs: () => number;
   flush: (tabId: string) => void;
 }
 
-export function createAutosaveScheduler({ delayMs, flush }: Options): AutosaveScheduler {
+export function createAutosaveScheduler({ intervalMs, flush }: Options): AutosaveScheduler {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const paused = new Set<string>();
   const pendingWhilePaused = new Set<string>();
@@ -40,7 +41,7 @@ export function createAutosaveScheduler({ delayMs, flush }: Options): AutosaveSc
       setTimeout(() => {
         timers.delete(tabId);
         flush(tabId);
-      }, delayMs),
+      }, intervalMs()),
     );
   }
 
@@ -48,6 +49,9 @@ export function createAutosaveScheduler({ delayMs, flush }: Options): AutosaveSc
     noteChange(tabId) {
       if (paused.has(tabId)) {
         pendingWhilePaused.add(tabId);
+        return;
+      }
+      if (timers.has(tabId)) {
         return;
       }
       schedule(tabId);
