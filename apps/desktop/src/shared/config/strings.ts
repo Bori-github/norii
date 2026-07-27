@@ -178,8 +178,6 @@ export const STRINGS = {
       : `${interval}마다 문서를 자동으로 저장합니다.`,
   // 간격 칸 — 값은 features/save-file/config.ts가 소유한다.
   settingsAutosaveOffLabel: "끄기",
-  settingsAutosave5sLabel: "5초",
-  settingsAutosave10sLabel: "10초",
-  settingsAutosave30sLabel: "30초",
-  settingsAutosave60sLabel: "1분",
+  durationSecondsLabel: (seconds: number) => `${String(seconds)}초`,
+  durationMinutesLabel: (minutes: number) => `${String(minutes)}분`,
 } as const;

@@ -3,6 +3,7 @@ import { css } from "styled-system/css";
 
 import {
   AUTOSAVE_INTERVAL_DEFAULT_MS,
+  AUTOSAVE_INTERVALS_MS,
   setAutosaveInterval,
   useAutosaveStore,
 } from "@features/save-file";
@@ -111,7 +112,7 @@ const captionClass = css({
 // 컨트롤은 설명 아래 한 줄을 통째로 쓴다 — 슬라이더가 좁으면 끝값을 집기 어렵다.
 const rowClass = css({ display: "flex", flexDirection: "column", gap: "2", paddingY: "3" });
 
-// 좁은 컨트롤은 설명 오른쪽에 둔다 — 슬라이더와 달리 폭을 쓰지 않는다.
+// 폭을 쓰지 않는 컨트롤은 설명 오른쪽에 둔다.
 const rowInlineClass = css({
   display: "flex",
   alignItems: "center",
@@ -142,8 +143,7 @@ const segmentClass = css({
   background: "bg.hover",
 });
 
-// 고른 칸은 배경과 굵기로 표시한다 — 액센트는 글자에 쓰지 않는다
-// (→ .claude/docs/design/decisions/color-palette.md).
+// 액센트는 글자에 쓰지 않는다(→ .claude/docs/design/decisions/color-palette.md).
 const segmentButtonClass = css({
   display: "flex",
   flex: "1",
@@ -162,9 +162,6 @@ const segmentButtonClass = css({
   "& svg": { width: "3.5", height: "3.5" },
 });
 
-// OS 기본 모양을 끄고 화살표를 직접 그린다 — 켜 두면 배경·테두리가 다이얼로그와 따로 논다.
-// 화살표는 감싼 요소의 ::after다: select 안에는 자식을 둘 수 없고, 배경 이미지로 그리면
-// 색을 토큰이 아니라 파일 안에 박게 된다.
 const selectWrapClass = css({
   position: "relative",
   display: "inline-flex",
@@ -270,26 +267,33 @@ const SECTIONS = [
 
 type SectionId = (typeof SECTIONS)[number]["id"];
 
-/** 간격 칸 — 값과 순서는 features/save-file/config.ts가 소유한다. */
-const AUTOSAVE_OPTIONS: { value: AutosaveInterval; id: string; label: string }[] = [
-  { value: null, id: "off", label: STRINGS.settingsAutosaveOffLabel },
-  { value: 5000, id: "5s", label: STRINGS.settingsAutosave5sLabel },
-  { value: 10_000, id: "10s", label: STRINGS.settingsAutosave10sLabel },
-  { value: 30_000, id: "30s", label: STRINGS.settingsAutosave30sLabel },
-  { value: 60_000, id: "60s", label: STRINGS.settingsAutosave60sLabel },
-];
-
+// select 값은 문자열이라 간격으로 되돌릴 id가 필요하다.
 function autosaveOptionId(interval: AutosaveInterval): string {
-  return AUTOSAVE_OPTIONS.find(({ value }) => value === interval)?.id ?? "off";
+  return interval === null ? "off" : `${String(interval / 1000)}s`;
 }
+
+function autosaveLabel(interval: AutosaveInterval): string {
+  if (interval === null) {
+    return STRINGS.settingsAutosaveOffLabel;
+  }
+  const seconds = interval / 1000;
+  return seconds % 60 === 0
+    ? STRINGS.durationMinutesLabel(seconds / 60)
+    : STRINGS.durationSecondsLabel(seconds);
+}
+
+const AUTOSAVE_OPTIONS = AUTOSAVE_INTERVALS_MS.map((value) => ({
+  value,
+  id: autosaveOptionId(value),
+  label: autosaveLabel(value),
+}));
 
 function autosaveIntervalOf(id: string): AutosaveInterval {
   return AUTOSAVE_OPTIONS.find((option) => option.id === id)?.value ?? null;
 }
 
 function autosaveHint(interval: AutosaveInterval): string {
-  const option = AUTOSAVE_OPTIONS.find(({ value }) => value === interval);
-  return STRINGS.settingsAutosaveHint(interval === null ? null : (option?.label ?? null));
+  return STRINGS.settingsAutosaveHint(interval === null ? null : autosaveLabel(interval));
 }
 
 export function SettingsDialog() {

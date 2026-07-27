@@ -6,7 +6,11 @@ import "@app/index.css";
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
-import { AUTOSAVE_INTERVAL_DEFAULT_MS, useAutosaveStore } from "@features/save-file";
+import {
+  AUTOSAVE_INTERVAL_DEFAULT_MS,
+  AUTOSAVE_INTERVALS_MS,
+  useAutosaveStore,
+} from "@features/save-file";
 import { BLUR_RADIUS_DEFAULT, GLASS_OPACITY_DEFAULT } from "@shared/config";
 
 import { closeSettings, openSettings, useSettingsDialogStore } from "@features/toggle-settings";
@@ -116,6 +120,27 @@ describe("SettingsDialog", () => {
     // 끝에서 한 번 더 누르면 처음으로 돈다.
     fireEvent.keyDown(appearance, { key: "ArrowDown" });
     expect(general.getAttribute("aria-selected")).toBe("true");
+  });
+
+  // 집행: file-lifecycle.md#자동-저장 — 고를 수 있는 값은 config.ts가 소유한다.
+  // 왜: 화면이 값 목록을 따로 적으면 config에 간격을 더해도 select에 나타나지 않고, 저장 파일
+  //     검사만 그 값을 유효로 받아 화면에 없는 설정이 존재하게 된다.
+  // 경계: 라벨 문구는 보지 않는다 — 값에서 만들어지므로 문구는 strings가 소유한다.
+  it("고를 수 있는 간격은 설정 목록과 같다", async () => {
+    const { getByTestId } = render(<SettingsDialog />);
+    openSettings();
+
+    await waitFor(() => {
+      expect(getByTestId("settings-autosave")).not.toBeNull();
+    });
+    const select = getByTestId("settings-autosave") as HTMLSelectElement;
+    const shown = [...select.options].map((option) => option.value);
+
+    expect(shown).toEqual(
+      AUTOSAVE_INTERVALS_MS.map((interval) =>
+        interval === null ? "off" : `${String(interval / 1000)}s`,
+      ),
+    );
   });
 
   // 왜: 고른 항목과 스토어 값이 어긋나면 사용자는 자기가 고른 간격이 무엇인지 화면에서 알 수 없다.
