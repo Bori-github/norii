@@ -102,6 +102,25 @@ async function openFolderInApp(root: string): Promise<void> {
   );
 }
 
+// WebDriver의 선택은 이 WebKit 드라이버에서 React의 onChange를 호출하지 않는다(합성 keydown과
+// 같은 한계 → 파일 머리).
+async function selectOption(testId: string, value: string): Promise<void> {
+  await browser.execute(
+    (id: string, next: string) => {
+      const element = document.querySelector(`[data-testid="${id}"]`) as HTMLSelectElement | null;
+      if (!element) {
+        return null;
+      }
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+      setter?.call(element, next);
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return null;
+    },
+    testId,
+    value,
+  );
+}
+
 async function typeIntoEditor(text: string): Promise<void> {
   const content = await browser.$(".cm-content");
   await content.waitForExist({ timeout: 10_000 });
@@ -170,9 +189,9 @@ it("스모크 — 실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다
   expect(await emptyState.isExisting()).toBe(true);
 });
 
-// 집행: implementation-plan.md 산출물 — "파일을 열고 고치면 자동 저장".
+// 집행: file-lifecycle.md#자동-저장 — 저장 대기가 생긴 시점부터 고른 간격에 저장한다.
 // 왜: 열기 → 편집 → 자동 저장 → 디스크 반영이 앱의 존재 이유다. 이 왕복이 깨지면 전부 무의미하다.
-// 보장: 실제 Rust 커맨드로 연 파일이 편집 후 디바운스(2초) 자동 저장으로 디스크에 반영되고,
+// 보장: 실제 Rust 커맨드로 연 파일이 편집 후 자동 저장으로 디스크에 반영되고,
 //       원본 내용이 보존되며 dirty 표시가 해제된다.
 it("파일 왕복 — 열기, 편집, 자동 저장이 실제 디스크에 반영된다", async () => {
   const filePath = path.join(SCOPE_ROOT, "roundtrip.md");
@@ -181,7 +200,7 @@ it("파일 왕복 — 열기, 편집, 자동 저장이 실제 디스크에 반�
   await openInApp(filePath);
   await typeIntoEditor("자동 저장 검증 문장. ");
 
-  // 자동 저장은 타이핑 멈춤 2초 후 — 여유를 두고 디스크를 폴링한다.
+  // 기본 간격은 5초다 — 여유를 두고 디스크를 폴링한다.
   await browser.waitUntil(
     async () => (await readFile(filePath, "utf8")).includes("자동 저장 검증 문장"),
     { timeout: 15_000, interval: 500, timeoutMsg: "자동 저장이 디스크에 반영되지 않았다" },
@@ -211,8 +230,7 @@ const EUC_KR_SAMPLE = Buffer.from([
   0x0a,
 ]);
 
-// 집행: implementation-plan.md 산출물 — "EUC-KR 문서를 열어 승인 후 저장" +
-//       file-lifecycle.md#인코딩-정책(변환·원본 불변)·#자동-저장(정규화 승인).
+// 집행: file-lifecycle.md#인코딩-정책(변환·원본 불변) · #자동-저장(정규화 승인).
 // 왜: 레거시 한글 문서의 열기→승인→UTF-8 저장이 파일 강건성의 대표 사용자 시나리오다.
 //     승인 전 원본 불변이 깨지면 "저장 전까지 파일은 바뀌지 않는다" 안전망 전체가 무의미하다.
 // 보장: EUC-KR 파일이 변환되어 열리고 배너가 뜨며, 승인 전엔 원본 바이트가 그대로다.
@@ -312,7 +330,7 @@ it("외부 변경 충돌 — 자동 저장이 덮어쓰지 않고 배너로 선�
 
   await openInApp(filePath);
   await typeIntoEditor("내 편집 ");
-  // 자동 저장 디바운스(2초) 안에 외부 프로세스가 같은 파일을 수정한다.
+  // 자동 저장이 나가기 전에 외부 프로세스가 같은 파일을 수정한다.
   await writeFile(filePath, "# 외부 수정본\n", "utf8");
 
   const banner = await browser.$('[data-testid="conflict-banner"]');
@@ -387,7 +405,7 @@ it("비활성 탭 충돌 — ⚠ 배지가 뜨고 전환하면 충돌 배너가 
   await typeIntoEditor("편집 중 "); // dirty 상태로 만든다 — 외부 수정이 오면 충돌이다.
   await openInApp(activePath); // 다른 탭을 활성화 — 배지 대상 탭은 비활성이 된다.
 
-  // 자동 저장 디바운스(2초) 안에 외부 수정 — 어느 경로로든(watch 이벤트·저장 해시 검사) 충돌.
+  // 자동 저장이 나가기 전에 외부 수정 — 어느 경로로든(watch 이벤트·저장 해시 검사) 충돌.
   await writeFile(inactivePath, "# 외부에서 고침\n", "utf8");
 
   const badge = await browser.$('[data-testid="tab-warning"]');
@@ -671,9 +689,89 @@ it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크
   });
 });
 
+// 집행: design/decisions/settings-screen.md — 왼쪽 메뉴가 분류를 가른다.
+//       file-lifecycle.md#자동-저장 — 간격은 설정 화면에서 고른다.
+// 왜: 브라우저 테스트는 다이얼로그를 단독으로 띄운다. 실제 앱에서 버튼으로 열리는지,
+//     고른 간격이 저장 파일까지 내려가는지는 거기서 확인되지 않는다.
+// 보장: 버튼으로 열리고, 메뉴가 패널을 바꾸고, 고른 간격이 앱 설정 파일에 남는다.
+// 경계: 값이 실제 저장 시점을 바꾸는지는 위 자동 저장 시나리오가 본다.
+it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 설정 파일에 남는다", async () => {
+  const openSettings = await browser.$('[data-testid="open-settings"]');
+  // 리로드 직후에는 아직 없을 수 있다.
+  await openSettings.waitForExist({ timeout: 10_000 });
+  await openSettings.click();
+  await (await browser.$('[data-testid="settings-dialog"]')).waitForExist({ timeout: 10_000 });
+
+  // 여는 분류는 일반이다.
+  expect(await (await browser.$('[data-testid="settings-autosave"]')).isDisplayed()).toBe(true);
+  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(
+    false,
+  );
+
+  await (await browser.$('[data-testid="settings-nav-appearance"]')).click();
+  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(true);
+
+  await (await browser.$('[data-testid="settings-nav-general"]')).click();
+  await selectOption("settings-autosave", "30s");
+
+  await browser.waitUntil(
+    async () => {
+      const raw = await readFile(await appConfigFile("settings.json"), "utf8").catch(() => "");
+      return raw.includes('"autosaveIntervalMs": 30000');
+    },
+    { timeout: 10_000, interval: 300, timeoutMsg: "고른 간격이 설정 파일에 남지 않았다" },
+  );
+
+  // 뒤 시나리오가 기다리는 시간 안에 저장이 나가도록 기본값으로 되돌린다.
+  await selectOption("settings-autosave", "5s");
+  await (await browser.$('[data-testid="settings-close"]')).click();
+});
+
+// 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.
+// 왜: 세션 파일에 쓰는 것과 그것으로 화면을 되살리는 것은 다른 일이다. 단위 테스트는 앞만 본다.
+// 보장: 탭 둘을 연 뒤 웹뷰를 다시 띄우면 두 탭이 그대로 돌아오고 활성 탭이 유지된다.
+// 경계: 창 크기·위치는 plugin-window-state 소관이라 여기서 보지 않는다.
+it("세션 복원 — 다시 띄우면 열려 있던 탭이 돌아온다", async () => {
+  const first = path.join(SCOPE_ROOT, "session-a.md");
+  const second = path.join(SCOPE_ROOT, "session-b.md");
+  await writeFile(first, "# 세션 가\n", "utf8");
+  await writeFile(second, "# 세션 나\n", "utf8");
+
+  await openInApp(first);
+  await openInApp(second);
+  // $$의 length는 Promise다(ChainablePromiseArray).
+  await browser.waitUntil(async () => (await browser.$$('[data-testid="tab"]').length) >= 2, {
+    timeout: 10_000,
+    timeoutMsg: "탭 두 개가 열리지 않았다",
+  });
+
+  // 세션 쓰기는 디바운스된다.
+  await browser.waitUntil(
+    async () => {
+      const raw = await readFile(await appConfigFile("session.json"), "utf8").catch(() => "");
+      return raw.includes("session-a.md") && raw.includes("session-b.md");
+    },
+    { timeout: 10_000, interval: 300, timeoutMsg: "세션 파일에 두 탭이 남지 않았다" },
+  );
+
+  await browser.execute(() => {
+    location.reload();
+    return null;
+  });
+
+  await browser.waitUntil(
+    async () => {
+      const bar = await browser.$('[data-testid="tab-bar"]');
+      const text = await bar.getText().catch(() => "");
+      return text.includes("session-a") && text.includes("session-b");
+    },
+    { timeout: 20_000, interval: 500, timeoutMsg: "다시 띄운 뒤 탭이 돌아오지 않았다" },
+  );
+});
+
 // 집행: file-lifecycle.md#종료-방어 — "종료 시 저장 대기 탭은 플러시. 데이터 유실 방지 최우선".
-// 왜: 자동 저장 디바운스(2초)가 남기는 유일한 유실 창이 "타이핑 직후 즉시 종료"다.
-// 보장: 편집 직후(디바운스 완료 전) 창을 닫아도 편집분이 디스크에 남는다.
+// 왜: 자동 저장 예약이 만료되기 전에 창을 닫는 것이 유일한 유실 창이다.
+// 보장: 편집 직후(예약 만료 전) 창을 닫아도 편집분이 디스크에 남는다.
 // 경계: Untitled dirty의 확인 배너 경로는 세션이 함께 죽어 자동화가 어렵다 — 수동 검증 대상.
 // 주의: 이 테스트는 앱을 실제로 종료시킨다 — 반드시 마지막 테스트여야 한다.
 it("종료 방어 — 편집 직후 창을 닫아도 저장 대기분이 디스크에 남는다 (앱 종료)", async () => {
@@ -683,7 +781,7 @@ it("종료 방어 — 편집 직후 창을 닫아도 저장 대기분이 디스�
   await openInApp(filePath);
   await typeIntoEditor("유실되면 안 되는 문장. ");
 
-  // 디바운스(2초)를 기다리지 않고 즉시 닫는다 — 종료 방어가 플러시해야 하는 바로 그 창이다.
+  // 예약 만료를 기다리지 않고 즉시 닫는다 — 종료 방어가 플러시해야 하는 바로 그 창이다.
   await browser.execute(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).noriiE2e.closeWindow();
