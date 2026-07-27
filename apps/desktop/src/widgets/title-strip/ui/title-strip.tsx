@@ -12,8 +12,9 @@ const titleStripClass = css({
   alignItems: "center",
   flexShrink: 0,
   background: "bg.chrome",
-  borderBottom: "1px solid",
-  borderColor: "border",
+  borderBottomWidth: "1px",
+  borderBottomStyle: "solid",
+  borderBottomColor: "border",
   minHeight: "7",
   _glass: { position: "relative", height: "36px", minHeight: "36px" },
 });

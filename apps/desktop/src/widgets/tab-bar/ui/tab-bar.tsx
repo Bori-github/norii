@@ -14,8 +14,9 @@ const barClass = css({
   minWidth: 0,
   overflowX: "auto",
   background: "bg.chrome",
-  borderBottom: "1px solid",
-  borderColor: "border",
+  borderBottomWidth: "1px",
+  borderBottomStyle: "solid",
+  borderBottomColor: "border",
   minHeight: "9",
 });
 
@@ -29,8 +30,9 @@ const tabClass = css({
   fontSize: "sm",
   color: "text",
   cursor: "pointer",
-  borderRight: "1px solid",
-  borderColor: "border",
+  borderRightWidth: "1px",
+  borderRightStyle: "solid",
+  borderRightColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },

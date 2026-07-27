@@ -14,8 +14,9 @@ const barClass = css({
   minHeight: "6",
   fontSize: "xs",
   background: "bg.chrome",
-  borderTop: "1px solid",
-  borderColor: "border",
+  borderTopWidth: "1px",
+  borderTopStyle: "solid",
+  borderTopColor: "border",
 });
 
 const fileClass = css({

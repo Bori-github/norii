@@ -16,8 +16,9 @@ const barClass = css({
   paddingX: "28",
   fontSize: "sm",
   background: "bg.paper",
-  borderBottom: "1px solid",
-  borderColor: "border",
+  borderBottomWidth: "1px",
+  borderBottomStyle: "solid",
+  borderBottomColor: "border",
 });
 
 const titleClass = css({
@@ -32,7 +33,8 @@ const buttonsClass = css({
   position: "absolute",
   right: "2",
   display: "inline-flex",
-  border: "1px solid",
+  borderWidth: "1px",
+  borderStyle: "solid",
   borderColor: "border",
   borderRadius: "md",
   overflow: "hidden",
@@ -50,7 +52,7 @@ const buttonClass = css({
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
   "&[aria-pressed='true']": { background: "bg.hover", color: "text" },
   "& svg": { width: "4", height: "4" },
-  "& + &": { borderLeft: "1px solid", borderColor: "border" },
+  "& + &": { borderLeftWidth: "1px", borderLeftStyle: "solid", borderLeftColor: "border" },
 });
 
 const MODES: { mode: ViewMode; label: string; Icon: typeof EditIcon }[] = [

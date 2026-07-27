@@ -26,8 +26,9 @@ const sidebarClass = css({
   flexShrink: 0,
   minHeight: 0,
   background: "bg.chrome",
-  borderRight: "1px solid",
-  borderColor: "border",
+  borderRightWidth: "1px",
+  borderRightStyle: "solid",
+  borderRightColor: "border",
 });
 
 const headerClass = css({
@@ -96,8 +97,9 @@ const footerClass = css({
   justifyContent: "flex-end",
   flexShrink: 0,
   padding: "1",
-  borderTop: "1px solid",
-  borderColor: "border",
+  borderTopWidth: "1px",
+  borderTopStyle: "solid",
+  borderTopColor: "border",
 });
 
 const emptyClass = css({
@@ -114,7 +116,8 @@ const emptyClass = css({
 });
 
 const emptyButtonClass = css({
-  border: "1px solid",
+  borderWidth: "1px",
+  borderStyle: "solid",
   borderColor: "border",
   background: "transparent",
   color: "text",
