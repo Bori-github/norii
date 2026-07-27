@@ -58,7 +58,7 @@ export function createAutosaveScheduler({ intervalMs, flush }: Options): Autosav
     },
     pause(tabId) {
       paused.add(tabId);
-      // 이미 예약된 플러시도 멈춘다 — 충돌 다이얼로그가 디바운스마다 반복되는 것을 막는다.
+      // 이미 예약된 플러시도 멈춘다 — 충돌 다이얼로그가 저장할 때마다 반복되는 것을 막는다.
       if (timers.has(tabId)) {
         pendingWhilePaused.add(tabId);
         clearTimer(tabId);

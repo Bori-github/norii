@@ -154,7 +154,7 @@ describe("정규화 승인 게이팅", () => {
       .openFileTab(fileContent({ path: "/vault/legacy.md", encoding: "euc-kr" }));
   }
 
-  it("미승인 탭은 디바운스가 지나도 자동 저장되지 않는다", async () => {
+  it("미승인 탭은 간격이 지나도 자동 저장되지 않는다", async () => {
     vi.useFakeTimers();
     try {
       const id = openLegacyTab();

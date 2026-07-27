@@ -4,7 +4,7 @@ import { createSaveQueue } from "./save-queue";
 
 // 집행: file-lifecycle.md#외부-변경-처리 — "저장이 진행 중인 경로"가 존재한다는 전제,
 //       그리고 VS Code saveSequentializer와 같은 전략(저장 직렬화).
-// 왜: 자동 저장 디바운스와 Cmd+S가 겹치면 같은 탭의 저장 두 개가 동시에 달릴 수 있다.
+// 왜: 자동 저장 예약과 Cmd+S가 겹치면 같은 탭의 저장 두 개가 동시에 달릴 수 있다.
 //     Rust 전역 잠금이 데이터 경쟁은 막지만, 프론트가 직렬화하지 않으면 뒤 저장이
 //     앞 저장의 새 해시(lastSavedHash)를 모른 채 낡은 expectedHash로 나가 가짜 충돌이 뜬다.
 // 보장: 같은 탭 키의 작업은 완료 순서가 제출 순서와 같고, 앞 작업의 실패가 뒤를 막지 않는다.
