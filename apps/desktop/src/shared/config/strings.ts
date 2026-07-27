@@ -168,7 +168,7 @@ export const STRINGS = {
 
   settingsSavingCaption: "저장",
   settingsAutosaveTitle: "자동 저장",
-  settingsAutosaveHint: "입력이 멈추면 저장한다. 끄면 Cmd+S로만 저장된다",
+  settingsAutosaveHint: "입력이 멈추면 자동 저장 · 끄면 ⌘S로만",
   settingsAutosaveOnLabel: "켜기",
   settingsAutosaveOffLabel: "끄기",
 } as const;
