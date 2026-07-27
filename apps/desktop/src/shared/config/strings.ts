@@ -152,6 +152,10 @@ export const STRINGS = {
   // (→ .claude/docs/design/design-system.md#테마-라이트다크).
   settingsTitle: "설정",
   settingsCloseLabel: "설정 닫기",
+  // 왼쪽 메뉴 (→ .claude/docs/design/decisions/settings-screen.md).
+  settingsNavLabel: "설정 분류",
+  settingsSectionAppearance: "외형",
+  settingsSectionGeneral: "일반",
   settingsThemeTitle: "테마",
   settingsThemeHint: "밝은 화면 · 어두운 화면 · 시스템 설정 따라가기",
   settingsResetLabel: "기본값으로",
@@ -166,7 +170,6 @@ export const STRINGS = {
   settingsBlurTitle: "흐림 반경",
   settingsBlurHint: "유리 뒤 배경이 번지는 정도",
 
-  settingsSavingCaption: "저장",
   settingsAutosaveTitle: "자동 저장",
   settingsAutosaveHint: "입력이 멈추면 자동 저장 · 끄면 ⌘S로만",
   settingsAutosaveOnLabel: "켜기",

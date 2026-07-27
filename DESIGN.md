@@ -85,6 +85,7 @@ norii는 가볍고 빠른 로컬 우선 마크다운 소스 에디터다(→ [AG
 | [유리](.claude/docs/design/decisions/glass.md)                | 유리는 OS가 만들고, 틴트는 색이 아니라 불투명도다 (App Store 포기) |
 | [컬러 팔레트](.claude/docs/design/decisions/color-palette.md) | 팔레트는 글레이셔, 액센트는 테마 공통 한 색이고 글자로 쓰지 않는다 |
 | [타이포](.claude/docs/design/decisions/typography.md)         | 고정 크기는 UI 셋뿐, 프리뷰 글자는 본문에 대한 배수다              |
+| [설정 화면](.claude/docs/design/decisions/settings-screen.md) | 설정 창은 왼쪽 메뉴로 분류를 가른다                                |
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.
 
