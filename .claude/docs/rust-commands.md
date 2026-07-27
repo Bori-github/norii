@@ -163,7 +163,7 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 //   변경을 놓쳤는지 특정할 수 없으므로, 프론트는 읽어 둔 모든 레벨을 다시 읽어 병합한다
 //   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
 // 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
-//   열기가 새 감시를 세운다.
+//   열기가 새 감시를 등록한다.
 ```
 
 ### 다이얼로그
@@ -197,6 +197,49 @@ fn set_window_blur_radius(window: tauri::WebviewWindow, radius: u32);
 // 윈도서버 왕복이 나가지 않게 한다.
 // macOS 밖에서는 무동작이다. 흐림 호출이 실패해도 경고 로그만 남기고 성공을 반환한다.
 ```
+
+### 세션
+
+```rust
+#[tauri::command]
+fn load_session() -> Result<Option<Session>, AppError>;
+// 지난 세션을 읽고, 그 안의 경로(루트 폴더·탭)를 허용 루트로 등록한다 — 재시작 뒤에도
+// 다이얼로그 없이 그 파일을 열 수 있게 하는 유일한 통로다(→ 권한).
+// 파일이 없거나 JSON이 깨졌으면 None — 손으로 고칠 수 있는 파일이라 읽기 실패는 오류가 아니다.
+// 지금 없는 경로(밖에서 지웠거나 옮긴 파일)는 아래 표의 종류와 어긋난 경로와 함께
+//   결과에서 빠지고 허용되지도 않는다.
+// 활성 탭이 걸러지면 active는 빈다 — 프론트가 남은 첫 탭을 활성으로 만든다(→ document-model.md#세션-복원).
+
+#[tauri::command]
+fn save_session(session: Session) -> Result<(), AppError>;
+// 지금 세션을 덮어쓴다(원자적 쓰기). 이미 허용된 경로만 기록한다 — 웹뷰가 넘긴 경로가
+// 다음 부팅의 허용 루트가 되는 길을 막는다.
+
+struct Session {
+  root_dir: Option<String>,   // 사이드바 루트. 없으면 폴더를 열지 않은 세션
+  tabs: Vec<SessionTab>,      // 경로 있는 탭만 — Untitled는 복원 대상이 아니다
+  active: Option<u32>,        // 활성 탭의 tabs 인덱스
+}
+
+struct SessionTab {
+  path: String,               // canonical 경로 — 탭 신원 규칙과 같다(→ open_file)
+  cursor_line: u32,           // 커서 줄(1-기반)
+  cursor_column: u32,         // 커서 칸(1-기반) — 1·1이면 문서 처음
+  scroll_line: u32,           // 뷰포트 상단 라인(1-기반). 1이면 맨 위
+}
+```
+
+**경로 자리마다 종류가 정해져 있다.** 허용은 하위 트리 전체를 열기 때문이다 — 탭 자리에 디렉터리가 오면 문서 하나가 아니라 그 폴더 전체가 열린다.
+
+```text
+자리            종류        허용하면 열리는 범위
+root_dir        디렉터리    그 폴더 아래 전부
+tabs[].path     파일        그 파일 하나
+```
+
+`canonicalize` 후의 실제 종류로 판정한다 — 문서처럼 보이지만 디렉터리를 가리키는 심볼릭 링크도 탭 자리에서 거부된다.
+
+저장 위치는 앱 config 디렉터리의 `session.json`이다. 복원 시점·복원 대상의 정책은 [문서 모델 — 세션 복원](document-model.md#세션-복원)이 소유한다.
 
 ## 항목 이름 규칙 (create_file · create_dir · rename_entry)
 
@@ -244,7 +287,7 @@ trash                삭제를 휴지통 이동으로(delete_entry)
 encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
-plugin-store          설정 저장(→ file-lifecycle.md#설정-저장) · 세션 상태(→ document-model.md)
+plugin-store         설정 저장(→ file-lifecycle.md#설정-저장)
 plugin-window-state  창 크기·위치 저장·복원 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
@@ -262,10 +305,14 @@ plugin-log           통합 로깅 (→ error-handling.md)
 
 2. 커맨드 내부 경로 검증  ← 실제 스코프 강제는 여기 있다
    - open/save/read_dir는 요청 경로를 canonicalize(정규화)한 뒤
-   - Rust가 보유한 "허용 루트 목록"(다이얼로그 선택분 · 연 루트 폴더)의
-     하위인지 확인, 아니면 AppError로 거부
+   - Rust가 보유한 "허용 루트 목록"(다이얼로그 선택분 · 연 루트 폴더 ·
+     load_session이 읽은 지난 세션의 경로)의 하위인지 확인, 아니면 AppError로 거부
    - canonicalize로 심볼릭 링크를 통한 스코프 탈출도 차단
 ```
+
+**허용 루트는 웹뷰가 선언하지 못한다.** 세 입구(다이얼로그 · 폴더 열기 · `load_session`) 모두 경로가 Rust 쪽에서 온다 — 다이얼로그는 OS가, 세션은 Rust가 직접 읽은 자기 파일이 준다. 세션 파일에 기록되는 경로도 그때 이미 허용된 것만이라(→ `save_session`), 웹뷰가 임의 경로를 넣어 다음 부팅에서 권한을 얻는 길이 없다.
+
+**그래서 앱 자신의 config 디렉터리는 파일 커맨드가 만질 수 없다.** 사용자가 홈 폴더를 열면 그 디렉터리도 허용 루트 하위가 된다 — 세션 파일을 `save_file`로 고칠 수 있으면 웹뷰가 임의 경로를 다음 부팅의 허용 루트로 심을 수 있다. 그 디렉터리는 허용보다 강한 거부 목록에 들어간다(`FileScope::deny`, setup에서 등록). 세션 파일을 신뢰하는 범위는 [보안 — 세션 파일](security.md#세션-파일)이 소유한다.
 
 **외부 링크 권한** — 프리뷰의 링크를 OS 기본 브라우저로 넘기기 위해 `opener:allow-open-url`만 연다(`opener:default`가 함께 주는 파일·경로 열기 권한은 두지 않는다 — 문서가 로컬 파일을 열게 할 이유가 없다). **허용 스킴 집합은 [보안 — 외부 링크](security.md#4-외부-링크-프리뷰에서-문서-밖으로-나가는-유일한-통로)** 를 단일 출처로 둔다.
 

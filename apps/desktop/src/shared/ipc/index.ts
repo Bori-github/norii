@@ -1,6 +1,6 @@
 // Public API — Tauri IPC의 단일 진입점. invoke를 컴포넌트 곳곳에 흩뿌리지 않는다
 // (→ .claude/docs/frontend-architecture.md#tauri-ipc의-자리).
-import type { Eol } from "./bindings";
+import type { Eol, Session } from "./bindings";
 import { commands } from "./bindings";
 import { unwrapIpcResult } from "./unwrap";
 
@@ -33,8 +33,18 @@ export const ipc = {
   showOpenFolderDialog: () => unwrapIpcResult(commands.showOpenFolderDialog()),
   // 결과를 돌려주지 않는다 — 흐림이 걸렸는지는 화면으로만 확인된다(→ design/window-chrome.md#검증).
   setWindowBlurRadius: (radius: number) => commands.setWindowBlurRadius(radius),
+  loadSession: () => unwrapIpcResult(commands.loadSession()),
+  saveSession: (session: Session) => unwrapIpcResult(commands.saveSession(session)),
 };
 
 export { IpcError, isIpcError } from "./ipc-error";
 export type { IpcErrorKind } from "./ipc-error";
-export type { AppError, Eol, FileContent, SaveResult, TreeNode } from "./bindings";
+export type {
+  AppError,
+  Eol,
+  FileContent,
+  SaveResult,
+  Session,
+  SessionTab,
+  TreeNode,
+} from "./bindings";

@@ -45,6 +45,7 @@ mise run rust-test       # cargo test
 
 # 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
 mise run dev-webdriver & # 1) webdriver 피처를 켠 개발 빌드 앱 (임베디드 WebDriver가 127.0.0.1:4445에 기동)
+                         #    띄우기 전에 앱의 설정·세션 파일을 지운다 — 남아 있던 설정이 결과를 바꾼다
 mise run e2e             # 2) webdriverio가 그 앱에 붙어 스모크 실행 (→ testing.md)
 # dev와 dev-webdriver는 동시에 띄울 수 있다 — 각자 빈 포트를 잡는다(1420~ / 1520~).
 # E2E를 돌리려고 개발 중인 앱을 끌 필요가 없다.

@@ -17,6 +17,12 @@ export const commands = {
 	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
 	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),
 	setWindowBlurRadius: (radius: number) => __TAURI_INVOKE<void>("set_window_blur_radius", { radius }),
+	loadSession: () => typedError<{
+	rootDir: string | null,
+	tabs: SessionTab[],
+	active: number | null,
+} | null, AppError>(__TAURI_INVOKE("load_session")),
+	saveSession: (session: Session) => typedError<null, AppError>(__TAURI_INVOKE("save_session", { session })),
 };
 
 /* Types */
@@ -55,6 +61,19 @@ export type SaveResult = {
 	/**  ms 단위라 2^53 안에 들므로 TS number로 내보낸다(specta는 u64를 기본 금지). */
 	mtime: number,
 	hash: string,
+};
+
+export type Session = {
+	rootDir: string | null,
+	tabs: SessionTab[],
+	active: number | null,
+};
+
+export type SessionTab = {
+	path: string,
+	cursorLine: number,
+	cursorColumn: number,
+	scrollLine: number,
 };
 
 /**  read_dir 항목(→ rust-commands.md). */

@@ -187,7 +187,7 @@ pub(crate) fn resolve_save_target(path: &Path) -> Result<PathBuf, AppError> {
 
 /// 원자적 쓰기 — 같은 디렉터리의 임시 파일에 쓰고 원본 권한을 복사한 뒤 rename으로 교체한다
 /// (→ file-lifecycle.md#저장-원자성과-충돌-검사).
-fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
+pub(crate) fn atomic_write(target: &Path, bytes: &[u8]) -> Result<(), AppError> {
     let dir = target
         .parent()
         .ok_or_else(|| AppError::NotFound("저장 경로에 부모 디렉터리가 없습니다".into()))?;

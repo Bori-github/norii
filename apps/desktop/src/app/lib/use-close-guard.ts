@@ -2,13 +2,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
 import { useDocumentStore } from "@entities/document";
-import { saveTabNow } from "@features/save-file";
-import { STRINGS } from "@shared/config";
-import { logger } from "@shared/lib";
+import { saveTabNow, useAutosaveStore } from "@features/save-file";
+import { CLOSE_FLUSH_TIMEOUT_MS, STRINGS } from "@shared/config";
+import { logger, within } from "@shared/lib";
 import { useConfirmStore } from "@shared/ui";
 
 import { flushUntilClean, planCloseDefense } from "./close-defense";
-import { flushSettings, hasPendingSettingsSave } from "./settings-storage";
+import { flushSession } from "./session-storage";
+import { flushSettings } from "./settings-storage";
 
 // 종료 방어 — 정책의 단일 출처: file-lifecycle.md#종료-방어. 데이터 유실 방지 최우선.
 // 창 닫기 요청을 가로채 저장 대기분을 플러시하고, 플러시로 해소되지 않는 탭
@@ -18,11 +19,10 @@ export function useCloseGuard(): void {
     let defending = false;
 
     const unlistenPromise = getCurrentWindow().onCloseRequested(async (event) => {
-      const plan = planCloseDefense(useDocumentStore.getState().tabs);
+      const autosaveEnabled = useAutosaveStore.getState().intervalMs !== null;
+      const plan = planCloseDefense(useDocumentStore.getState().tabs, autosaveEnabled);
       const tabsClean = plan.flushTabIds.length === 0 && plan.blockingTabIds.length === 0;
-      if (tabsClean && !hasPendingSettingsSave()) {
-        return; // 저장 대기분 없음 — 그대로 종료.
-      }
+      // 저장할 것이 없어도 막는다 — 세션은 이 시점에만 쓸 수 있고 쓰기는 비동기다.
       // preventDefault는 비동기 작업 전에(동기적으로) 걸어야 한다.
       event.preventDefault();
       if (defending) {
@@ -30,8 +30,15 @@ export function useCloseGuard(): void {
       }
       defending = true;
       try {
-        // 설정은 확인을 거치지 않는다 — 디바운스가 남았을 뿐이라 그대로 쓴다.
-        await flushSettings();
+        // 둘 다 확인을 거치지 않는다 — 사용자 결정이 필요한 값이 아니다. 상한을 두는 이유는
+        // 답이 오지 않는 쓰기가 창을 영원히 붙잡지 못하게 하는 것이다.
+        const written = await within(
+          Promise.all([flushSettings(), flushSession()]),
+          CLOSE_FLUSH_TIMEOUT_MS,
+        );
+        if (!written) {
+          logger.warn("종료 방어: 설정·세션 쓰기가 상한을 넘겼다 — 그대로 종료한다");
+        }
         if (tabsClean) {
           await getCurrentWindow().destroy();
           return;
@@ -40,6 +47,7 @@ export function useCloseGuard(): void {
         const outcome = await flushUntilClean(
           () => useDocumentStore.getState().tabs,
           (tabId) => saveTabNow(tabId),
+          autosaveEnabled,
         );
         if (outcome === "close") {
           // 플러시 완료 — 다이얼로그 없이 종료한다(자동 저장 세계의 기본 동작).

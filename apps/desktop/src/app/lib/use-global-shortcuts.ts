@@ -31,7 +31,7 @@ export function useGlobalShortcuts(): void {
       const activeTabId = useDocumentStore.getState().activeTabId;
       switch (event.key.toLowerCase()) {
         case "s":
-          // Cmd+S 즉시 저장(디바운스 대기 없음) · Cmd+Shift+S 다른 이름으로 저장.
+          // Cmd+S 즉시 저장(예약을 기다리지 않는다) · Cmd+Shift+S 다른 이름으로 저장.
           event.preventDefault();
           if (activeTabId !== null) {
             void (event.shiftKey ? saveTabAs(activeTabId) : saveTabNow(activeTabId));

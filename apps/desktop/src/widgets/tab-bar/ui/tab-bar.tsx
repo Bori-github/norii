@@ -14,8 +14,9 @@ const barClass = css({
   minWidth: 0,
   overflowX: "auto",
   background: "bg.chrome",
-  borderBottom: "1px solid",
-  borderColor: "border",
+  borderBottomWidth: "1px",
+  borderBottomStyle: "solid",
+  borderBottomColor: "border",
   minHeight: "9",
 });
 
@@ -29,8 +30,9 @@ const tabClass = css({
   fontSize: "sm",
   color: "text",
   cursor: "pointer",
-  borderRight: "1px solid",
-  borderColor: "border",
+  borderRightWidth: "1px",
+  borderRightStyle: "solid",
+  borderRightColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
   _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
@@ -112,7 +114,7 @@ export function TabBar() {
     }
   }
 
-  // 문서가 없어도 탭바는 자리를 지킨다 — "새 탭" 하나가 서고, 그 내용이 빈 상태 안내다
+  // 문서가 없어도 탭바는 자리를 지킨다 — "새 탭" 하나가 남고, 그 내용이 빈 상태 안내다
   // (→ document-model.md#빈-탭--탭바는-비지-않는다). 스토어에 빈 문서를 만들지는 않는다.
   if (tabs.length === 0) {
     return (

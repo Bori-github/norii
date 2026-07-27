@@ -13,14 +13,15 @@ export interface CloseDefensePlan {
   blockingTabIds: string[];
 }
 
-export function planCloseDefense(tabs: Tab[]): CloseDefensePlan {
+export function planCloseDefense(tabs: Tab[], autosaveEnabled: boolean): CloseDefensePlan {
   const flushTabIds: string[] = [];
   const blockingTabIds: string[] = [];
   for (const tab of tabs) {
     if (!tab.isDirty) {
       continue;
     }
-    if (tab.filePath === null || needsNormalizationApproval(tab)) {
+    // 자동 저장을 끈 사용자에게 종료가 저장을 대신하지 않는다(→ file-lifecycle.md#종료-방어).
+    if (!autosaveEnabled || tab.filePath === null || needsNormalizationApproval(tab)) {
       blockingTabIds.push(tab.id);
     } else {
       flushTabIds.push(tab.id);
@@ -40,12 +41,13 @@ export type CloseFlushOutcome = "close" | "confirm";
 export async function flushUntilClean(
   getTabs: () => Tab[],
   save: (tabId: string) => Promise<string>,
+  autosaveEnabled: boolean,
   maxAttempts = 3,
 ): Promise<CloseFlushOutcome> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const plan = planCloseDefense(getTabs());
+    const plan = planCloseDefense(getTabs(), autosaveEnabled);
     if (plan.blockingTabIds.length > 0) {
-      return "confirm"; // Untitled dirty — 플러시로 해소 불가.
+      return "confirm"; // Untitled dirty·미승인·자동 저장 off — 플러시로 해소 불가.
     }
     if (plan.flushTabIds.length === 0) {
       return "close"; // 저장 대기분 없음 — 다이얼로그 없이 종료.

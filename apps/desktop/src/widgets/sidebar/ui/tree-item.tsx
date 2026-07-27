@@ -69,8 +69,9 @@ const groupClass = css({
   margin: 0,
   padding: 0,
   marginLeft: "21px",
-  borderLeft: "1px solid",
-  borderColor: "border.muted",
+  borderLeftWidth: "1px",
+  borderLeftStyle: "solid",
+  borderLeftColor: "border.muted",
 });
 
 // memo — 스토어의 참조 보존(무변경 병합이 기존 노드를 재사용)과 짝을 이룬다.

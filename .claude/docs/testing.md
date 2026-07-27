@@ -95,6 +95,8 @@ norii에서 가장 위험하고 고유한 것 — **한글 IME**와 **데이터 
 
 실제 앱 E2E는 **각 플랫폼 러너에서 그 플랫폼의 실제 웹뷰로** 실행한다 — mac 러너 = 실제 WKWebView, Windows = WebView2, Linux = WebKitGTK. 운영과 동일한 렌더·IPC를 CI가 재현한다(→ [플랫폼 전략](platform-strategy.md)).
 
+**E2E 앱은 탭 0개에서 출발한다.** 세션 복원은 지난 탭을 되살리므로(→ [문서 모델](document-model.md#세션-복원)) 스위트가 시작할 때 세션 파일을 지우고 리로드한다 — 개발자가 손으로 열어 둔 탭도, 앞선 실행이 남긴 탭도 시나리오의 시작 상태를 바꾸지 못한다. 앱 실행 시점이 아니라 **매 실행마다** 지운다: 같은 앱에 스위트를 다시 돌리는 것이 정상 흐름이다.
+
 ## 성숙도 주의
 
 **확인된 한계·우회(0.2.1 실측)**: 이 플러그인은 WebDriver 키 액션의 **수정자 키(Meta/Ctrl)를 매핑하지 않고**, `browser.keys()`의 일반 텍스트도 CM6에 닿지 않는다(**`element.addValue()`만** insertText로 전달됨). 동작 트리거는 dev 전용 훅(`window.noriiE2e`)·UI 클릭으로 구성한다. **단축키는 핸들러 층까지 E2E로 고정한다** — 앱 전역 핸들러(window keydown capture)가 `isTrusted`를 안 보므로 `browser.execute`로 **합성 `KeyboardEvent`를 디스패치**하면 핸들러+동작이 발동한다(frontmost 불필요 → CI 가능). 실제 OS 키가 그 핸들러로 라우팅되는지(메뉴 가로채기 등)만 수동이다 — `mise run dev`에서 실제 키보드로 [단축키 계약](editor-strategy.md#단축키-계약) 표를 확인한다.

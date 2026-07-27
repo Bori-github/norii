@@ -16,6 +16,19 @@ export function topVisibleLine(view: EditorView): { line: number; fraction: numb
   return { line, fraction };
 }
 
+/**
+ * 그 라인을 뷰포트 상단으로 옮긴다 — 높이 측정이 끝난 뒤에 적용한다.
+ * `setState` 직후처럼 새 문서의 높이가 아직 재지지 않은 시점에도 쓸 수 있다.
+ */
+export function scrollToLine(view: EditorView, line: number, fraction = 0): void {
+  view.requestMeasure({
+    read: (measured) => lineScrollTop(measured, line, fraction),
+    write: (top, measured) => {
+      measured.scrollDOM.scrollTop = top;
+    },
+  });
+}
+
 /** 해당 라인이 뷰포트 상단에 오는 scrollTop 목표값. 라인은 문서 범위로 클램프한다. */
 export function lineScrollTop(view: EditorView, line: number, fraction = 0): number {
   const clamped = clamp(Math.floor(line), 1, view.state.doc.lines);

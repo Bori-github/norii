@@ -38,7 +38,7 @@ norii의 편집기는 CodeMirror 6 기반 소스 뷰다. 이 문서는 확장 �
 | 접기/펼치기 | `Cmd+Alt+[` / `Cmd+Alt+]` | `Ctrl+Shift+[` / `Ctrl+Shift+]` | CM6 기본 `foldKeymap`(폴딩과 함께 등록) |
 | undo/redo | `Cmd+Z` / `Cmd+Shift+Z` | `Ctrl+Z` / `Ctrl+Y` | CM6 기본 `historyKeymap` |
 
-CM6가 기본 제공하는 키맵(`defaultKeymap`의 표준 편집 조작 · history · search, 폴딩 도입 시 fold)은 그대로 채택한다. 앱 전역 동작(저장·파일·탭)은 CM6 키맵이 **아니라 window keydown 리스너(capture)** 로 처리한다 — CM6 키맵은 에디터가 포커스를 가질 때만 듣지만, 이 동작들은 에디터 밖에 포커스가 있어도 발동해야 한다. capture 단계라 CM6·브라우저 기본 동작보다 먼저 가로채고, OS별 modifier 분기도 여기서 한다. 표에 없는 단축키를 추가할 때는 이 표를 먼저 갱신한다. 저장(`Cmd+S`)은 자동 저장의 디바운스를 기다리지 않는 **즉시 저장**이다(→ [파일 생명주기 정책 — 자동 저장](file-lifecycle.md#자동-저장)).
+CM6가 기본 제공하는 키맵(`defaultKeymap`의 표준 편집 조작 · history · search, 폴딩 도입 시 fold)은 그대로 채택한다. 앱 전역 동작(저장·파일·탭)은 CM6 키맵이 **아니라 window keydown 리스너(capture)** 로 처리한다 — CM6 키맵은 에디터가 포커스를 가질 때만 듣지만, 이 동작들은 에디터 밖에 포커스가 있어도 발동해야 한다. capture 단계라 CM6·브라우저 기본 동작보다 먼저 가로채고, OS별 modifier 분기도 여기서 한다. 표에 없는 단축키를 추가할 때는 이 표를 먼저 갱신한다. 저장(`Cmd+S`)은 자동 저장의 예약을 기다리지 않는 **즉시 저장**이다(→ [파일 생명주기 정책 — 자동 저장](file-lifecycle.md#자동-저장)).
 
 ## 하이브리드 접기 (아웃라이너 대체)
 

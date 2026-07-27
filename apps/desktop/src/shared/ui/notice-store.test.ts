@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { useNoticeStore } from "./notice-store";
 
-// 왜: 자동 저장이 반복 실패하면 같은 메시지가 디바운스마다 오는데, 중복 억제가 없으면
+// 왜: 자동 저장이 반복 실패하면 같은 메시지가 저장할 때마다 오는데, 중복 억제가 없으면
 //     배너가 무한히 쌓인다. 또 중복 시 반환 id가 실제 알림을 가리키지 않으면
 //     dismissNotice(id)가 조용한 no-op이 되는 함정이 생긴다.
 // 보장: 같은 메시지는 한 번만 쌓이고, 반환 id는 항상 실존 알림을 가리킨다.

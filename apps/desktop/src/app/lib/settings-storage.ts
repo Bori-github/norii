@@ -3,13 +3,17 @@ import { load } from "@tauri-apps/plugin-store";
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
+import { isAutosaveInterval, setAutosaveInterval, useAutosaveStore } from "@features/save-file";
+import { setViewMode, useViewModeStore, VIEW_MODES } from "@features/switch-view-mode";
+import type { ViewMode } from "@features/switch-view-mode";
+import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
 import {
   SETTINGS_KEYS,
   SETTINGS_LOAD_TIMEOUT_MS,
   SETTINGS_SAVE_DEBOUNCE_MS,
   SETTINGS_STORE_FILE,
 } from "@shared/config";
-import { logger } from "@shared/lib";
+import { logger, within } from "@shared/lib";
 
 /**
  * 저장된 설정을 읽어 스토어에 넣고, 이후 변화를 파일에 쓴다. 읽기·쓰기 실패는 삼킨다.
@@ -19,6 +23,7 @@ import { logger } from "@shared/lib";
 type Store = Awaited<ReturnType<typeof load>>;
 
 const THEME_PREFERENCES = new Set<ThemePreference>(["system", "light", "dark"]);
+const VIEW_MODE_NAMES = new Set<string>(VIEW_MODES);
 
 let store: Store | null = null;
 
@@ -45,17 +50,29 @@ function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function asViewMode(value: unknown): ViewMode | null {
+  return typeof value === "string" && VIEW_MODE_NAMES.has(value) ? (value as ViewMode) : null;
+}
+
+function asBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
 export async function loadSettings(): Promise<void> {
   const opened = await openStore();
   if (!opened) {
     return;
   }
   try {
-    const [theme, opacity, blurRadius] = await Promise.all([
-      opened.get(SETTINGS_KEYS.themePreference),
-      opened.get(SETTINGS_KEYS.glassOpacity),
-      opened.get(SETTINGS_KEYS.blurRadius),
-    ]);
+    const [theme, opacity, blurRadius, viewMode, sidebarVisible, autosaveInterval] =
+      await Promise.all([
+        opened.get(SETTINGS_KEYS.themePreference),
+        opened.get(SETTINGS_KEYS.glassOpacity),
+        opened.get(SETTINGS_KEYS.blurRadius),
+        opened.get(SETTINGS_KEYS.viewMode),
+        opened.get(SETTINGS_KEYS.sidebarVisible),
+        opened.get(SETTINGS_KEYS.autosaveIntervalMs),
+      ]);
 
     const preference = asThemePreference(theme);
     if (preference) {
@@ -70,6 +87,17 @@ export async function loadSettings(): Promise<void> {
     if (storedRadius !== null) {
       useGlassStore.getState().setBlurRadius(storedRadius);
     }
+    const mode = asViewMode(viewMode);
+    if (mode) {
+      setViewMode(mode);
+    }
+    const sidebar = asBoolean(sidebarVisible);
+    if (sidebar !== null) {
+      setSidebarVisible(sidebar);
+    }
+    if (isAutosaveInterval(autosaveInterval)) {
+      setAutosaveInterval(autosaveInterval);
+    }
   } catch {
     logger.warn("설정을 읽지 못했습니다 — 기본값으로 계속합니다");
   }
@@ -77,20 +105,16 @@ export async function loadSettings(): Promise<void> {
 
 /** 저장값을 읽되 상한 안에 돌아온다(→ .claude/docs/design/window-chrome.md#부팅-순서--창은-언제-보이는가). */
 export async function loadSettingsWithin(timeoutMs = SETTINGS_LOAD_TIMEOUT_MS): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  await Promise.race([
-    loadSettings(),
-    new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, timeoutMs);
-    }),
-  ]);
-  clearTimeout(timer);
+  await within(loadSettings(), timeoutMs);
 }
 
 function snapshot(): string {
   const { preference } = useThemeStore.getState();
   const { opacity, blurRadius } = useGlassStore.getState();
-  return JSON.stringify([preference, opacity, blurRadius]);
+  const { mode } = useViewModeStore.getState();
+  const { visible } = useSidebarStore.getState();
+  const { intervalMs } = useAutosaveStore.getState();
+  return JSON.stringify([preference, opacity, blurRadius, mode, visible, intervalMs]);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -108,10 +132,19 @@ async function save(): Promise<void> {
   }
   const { preference } = useThemeStore.getState();
   const { opacity, blurRadius } = useGlassStore.getState();
+  const { mode } = useViewModeStore.getState();
+  const { visible } = useSidebarStore.getState();
+  const { intervalMs } = useAutosaveStore.getState();
   try {
-    await opened.set(SETTINGS_KEYS.themePreference, preference);
-    await opened.set(SETTINGS_KEYS.glassOpacity, opacity);
-    await opened.set(SETTINGS_KEYS.blurRadius, blurRadius);
+    // 키마다 IPC 왕복이다 — 서로 독립이므로 함께 보내고 한 번만 기다린다.
+    await Promise.all([
+      opened.set(SETTINGS_KEYS.themePreference, preference),
+      opened.set(SETTINGS_KEYS.glassOpacity, opacity),
+      opened.set(SETTINGS_KEYS.blurRadius, blurRadius),
+      opened.set(SETTINGS_KEYS.viewMode, mode),
+      opened.set(SETTINGS_KEYS.sidebarVisible, visible),
+      opened.set(SETTINGS_KEYS.autosaveIntervalMs, intervalMs),
+    ]);
     await opened.save();
     written = pending;
   } catch {
@@ -133,22 +166,23 @@ function scheduleSave(): void {
 export function persistSettingsOnChange(): () => void {
   written = snapshot();
 
-  const unsubscribeTheme = useThemeStore.subscribe(scheduleSave);
-  const unsubscribeGlass = useGlassStore.subscribe(scheduleSave);
+  const unsubscribe = [
+    useThemeStore.subscribe(scheduleSave),
+    useGlassStore.subscribe(scheduleSave),
+    useViewModeStore.subscribe(scheduleSave),
+    useSidebarStore.subscribe(scheduleSave),
+    useAutosaveStore.subscribe(scheduleSave),
+  ];
 
   return () => {
     if (saveTimer !== null) {
       clearTimeout(saveTimer);
       saveTimer = null;
     }
-    unsubscribeTheme();
-    unsubscribeGlass();
+    for (const stop of unsubscribe) {
+      stop();
+    }
   };
-}
-
-/** 아직 쓰지 않은 변경이 남아 있는가. */
-export function hasPendingSettingsSave(): boolean {
-  return saveTimer !== null;
 }
 
 /** 대기 중인 저장을 지금 쓴다(→ .claude/docs/file-lifecycle.md#설정-저장). */

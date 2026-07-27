@@ -32,7 +32,7 @@ describe("flushUntilClean", () => {
       tabs = tabs.map((t) => (t.id === tabId ? { ...t, isDirty: false } : t));
       return "saved";
     });
-    await expect(flushUntilClean(() => tabs, save)).resolves.toBe("close");
+    await expect(flushUntilClean(() => tabs, save, true)).resolves.toBe("close");
     expect(save).toHaveBeenCalledTimes(1);
   });
 
@@ -46,7 +46,7 @@ describe("flushUntilClean", () => {
       tabs = [{ ...target, isDirty: round < 2 }];
       return "saved";
     });
-    await expect(flushUntilClean(() => tabs, save)).resolves.toBe("close");
+    await expect(flushUntilClean(() => tabs, save, true)).resolves.toBe("close");
     expect(save).toHaveBeenCalledTimes(2);
   });
 
@@ -56,27 +56,36 @@ describe("flushUntilClean", () => {
       flushUntilClean(
         () => tabs,
         async () => "error",
+        true,
       ),
     ).resolves.toBe("confirm");
     await expect(
       flushUntilClean(
         () => tabs,
         async () => "conflict",
+        true,
       ),
     ).resolves.toBe("confirm");
+  });
+
+  it("자동 저장이 꺼져 있으면 플러시 없이 confirm — 저장은 Cmd+S만", async () => {
+    const tabs = [tab({ isDirty: true })];
+    const save = vi.fn(async () => "saved");
+    await expect(flushUntilClean(() => tabs, save, false)).resolves.toBe("confirm");
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("Untitled dirty가 있으면 플러시 없이 confirm", async () => {
     const tabs = [tab({ filePath: null, isDirty: true })];
     const save = vi.fn(async () => "saved");
-    await expect(flushUntilClean(() => tabs, save)).resolves.toBe("confirm");
+    await expect(flushUntilClean(() => tabs, save, true)).resolves.toBe("confirm");
     expect(save).not.toHaveBeenCalled();
   });
 
   it("상한까지 dirty가 계속 재발하면 confirm — 입력이 이어지는 중", async () => {
     const tabs = [tab({ isDirty: true })];
     const save = vi.fn(async () => "saved"); // dirty는 계속 true
-    await expect(flushUntilClean(() => tabs, save, 3)).resolves.toBe("confirm");
+    await expect(flushUntilClean(() => tabs, save, true, 3)).resolves.toBe("confirm");
     expect(save).toHaveBeenCalledTimes(3);
   });
 });

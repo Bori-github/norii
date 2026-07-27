@@ -10,8 +10,9 @@ import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
 
-import { AUTOSAVE_DELAY_MS } from "../config";
+import { AUTOSAVE_INTERVAL_DEFAULT_MS } from "../config";
 import { createAutosaveScheduler } from "./autosave-scheduler";
+import { autosaveIntervalMs, isAutosaveEnabled } from "./autosave-store";
 import { isTabInConflict, useConflictStore } from "./conflict-store";
 import { isTabFileMissing, useMissingFileStore } from "./missing-file-store";
 import { createSaveQueue } from "./save-queue";
@@ -25,7 +26,7 @@ export const saveQueue = createSaveQueue();
 
 /** feature 내부 공유(외부 변경 처리의 일시 중지·재개) — Public API에는 노출하지 않는다. */
 export const autosave = createAutosaveScheduler({
-  delayMs: AUTOSAVE_DELAY_MS,
+  intervalMs: () => autosaveIntervalMs() ?? AUTOSAVE_INTERVAL_DEFAULT_MS,
   flush: (tabId) => {
     void autosaveFlush(tabId);
   },
@@ -37,7 +38,7 @@ export const autosave = createAutosaveScheduler({
  */
 export function noteDocumentChanged(tabId: string): void {
   const tab = findTab(tabId);
-  if (!tab || tab.filePath === null || needsNormalizationApproval(tab)) {
+  if (!tab || tab.filePath === null || needsNormalizationApproval(tab) || !isAutosaveEnabled()) {
     return;
   }
   autosave.noteChange(tabId);
@@ -50,7 +51,8 @@ export function approveTabNormalization(tabId: string): void {
     return;
   }
   useDocumentStore.getState().approveNormalization(tabId);
-  if (tab.isDirty) {
+  // 승인은 탭 상태이고 자동 저장 활성은 전역 설정이다 — 승인이 꺼둔 설정을 뒤집지 않는다.
+  if (tab.isDirty && isAutosaveEnabled()) {
     autosave.noteChange(tabId);
   }
 }
@@ -59,10 +61,12 @@ async function autosaveFlush(tabId: string): Promise<void> {
   const tab = findTab(tabId);
   // 충돌 중 일시 중지는 스케줄러가 보장하지만, 예약과 해소가 겹칠 수 있어 여기서도 거른다.
   // 미승인 검사도 마지막 관문으로 반복한다(예약 후 리로드로 승인이 원점 복귀할 수 있다).
+  // 끈 뒤에도 타이머는 남아 있다 — 저장 직전에 여기서 거른다.
   if (
     !tab ||
     tab.filePath === null ||
     !tab.isDirty ||
+    !isAutosaveEnabled() ||
     isTabInConflict(tabId) ||
     isTabFileMissing(tabId) ||
     needsNormalizationApproval(tab)
@@ -260,6 +264,17 @@ export async function requestCloseTab(tabId: string): Promise<void> {
     useConfirmStore.getState().requestConfirm({
       title: STRINGS.closeDirtyUntitledTitle,
       body: STRINGS.closeDirtyUntitledBody,
+      confirmLabel: STRINGS.closeDiscardLabel,
+      cancelLabel: STRINGS.closeCancelLabel,
+      onConfirm: () => cleanupAndRemove(tabId),
+    });
+    return;
+  }
+  if (!isAutosaveEnabled()) {
+    // 끈 사용자에게 닫기가 저장을 대신하지 않는다(→ file-lifecycle.md#종료-방어).
+    useConfirmStore.getState().requestConfirm({
+      title: STRINGS.closeDirtyTitle,
+      body: STRINGS.closeDirtyBody,
       confirmLabel: STRINGS.closeDiscardLabel,
       cancelLabel: STRINGS.closeCancelLabel,
       onConfirm: () => cleanupAndRemove(tabId),

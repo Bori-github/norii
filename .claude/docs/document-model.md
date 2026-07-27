@@ -77,11 +77,16 @@ interface WorkspaceState {
 파일 열기: 이미 열린 파일이면 해당 탭 활성화(중복 탭 금지), 아니면 새 탭.
            "이미 열림" 판정은 open_file이 반환한 canonical 경로로 한다 — 같은 파일을
            별칭(/tmp↔/private/tmp·대소문자·NFC/NFD)으로 열어도 기존 탭에 합류한다
-탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패는 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일 규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
+탭 닫기:   정규화 승인 불필요/승인된 경로 탭은 플러시 후 닫기, Untitled·미승인·저장 실패·
+           자동 저장이 꺼진 dirty 탭은 확인 다이얼로그 (→ file-lifecycle.md 종료 방어와 동일
+           규칙. 다이얼로그는 인앱 모달 — 이유는 같은 문서)
 이름 변경: 사이드바에서 이름을 바꾸면 그 파일의 탭이 새 경로를 가리키고 제목도 바뀐다.
            폴더 이름을 바꾸면 그 아래 파일의 탭도 함께 옮겨진다. 앱 밖에서 바꾼 이름은
            옛 경로의 삭제로 보여 file-removed 경로를 탄다(→ file-lifecycle.md#외부-변경-처리)
 활성 탭:   activeTabId. 에디터/프리뷰는 활성 탭 문서를 표시
+탭 전환:   문서·커서·undo는 탭별 EditorState가 보존하고, 스크롤 위치는 탭별로 기억한
+           상단 라인으로 되돌린다 — 돌아오면 읽던 자리에서 이어진다. 기억은 탭이
+           닫힐 때 사라진다
 ```
 
 ### 빈 탭 — 탭바는 비지 않는다
@@ -99,4 +104,19 @@ interface WorkspaceState {
 
 ## 세션 복원
 
-마지막에 열려 있던 탭 목록·활성 탭·루트 폴더는 `plugin-store`(JSON)에, 창 크기·위치는 `plugin-window-state`에 저장하고 재시작 시 복원한다(→ [Rust 커맨드 계약](rust-commands.md#구현-크레이트플러그인)). 커서 위치까지 복원할지는 열린 결정이다(→ [실제 구현 계획](implementation-plan.md)). 이 상태는 `.md`가 아니라 앱 config에 저장한다(→ [파일 생명주기 정책](file-lifecycle.md)).
+마지막 세션을 재시작 때 되살린다. 저장 자리는 셋이다.
+
+```text
+탭 목록·활성 탭·루트 폴더·탭별 자리   session.json — Rust가 소유(→ rust-commands.md#세션)
+창 크기·위치                        plugin-window-state
+뷰 모드·사이드바 접힘                설정 파일(→ file-lifecycle.md#설정-저장)
+```
+
+**탭 경로가 Rust 파일에 사는 이유는 경로 스코프다**(→ [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)). 세 자리 모두 `.md`가 아니라 앱 config다(→ [파일 생명주기 정책](file-lifecycle.md#앱-상태는-md에-넣지-않는다)).
+
+```text
+쓰는 시점    탭·루트가 바뀔 때 디바운스 + 창을 닫기 전(→ file-lifecycle.md#종료-방어)
+읽는 시점    창을 보이기 전(→ design/window-chrome.md#부팅-순서--창은-언제-보이는가)
+빠지는 것    트리 펼침 상태 · 세션 파일이 걸러내는 것들(→ rust-commands.md#세션)
+활성 탭      저장된 활성 탭이 걸러졌으면 남은 첫 탭을 활성으로 만든다
+```

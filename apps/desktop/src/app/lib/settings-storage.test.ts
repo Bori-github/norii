@@ -20,6 +20,13 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 
 import { useGlassStore } from "@entities/glass";
 import { useThemeStore } from "@entities/theme";
+import { setViewMode, useViewModeStore } from "@features/switch-view-mode";
+import {
+  AUTOSAVE_INTERVAL_DEFAULT_MS,
+  setAutosaveInterval,
+  useAutosaveStore,
+} from "@features/save-file";
+import { setSidebarVisible, useSidebarStore } from "@features/toggle-sidebar";
 import {
   BLUR_RADIUS_DEFAULT,
   SETTINGS_LOAD_TIMEOUT_MS,
@@ -28,7 +35,6 @@ import {
 
 import {
   flushSettings,
-  hasPendingSettingsSave,
   loadSettings,
   loadSettingsWithin,
   persistSettingsOnChange,
@@ -47,6 +53,9 @@ beforeEach(() => {
   storeGet.mockReset();
   useThemeStore.setState({ preference: "system" });
   useGlassStore.setState({ opacity: null, blurRadius: BLUR_RADIUS_DEFAULT });
+  useViewModeStore.setState({ mode: "split" });
+  useSidebarStore.setState({ visible: true });
+  useAutosaveStore.setState({ intervalMs: AUTOSAVE_INTERVAL_DEFAULT_MS });
 });
 
 afterEach(() => {
@@ -59,21 +68,41 @@ function stored(values: Record<string, unknown>): void {
 
 describe("loadSettings", () => {
   it("저장된 값을 스토어에 넣는다", async () => {
-    stored({ themePreference: "dark", glassOpacity: 0.3, blurRadius: 12 });
+    stored({
+      themePreference: "dark",
+      glassOpacity: 0.3,
+      blurRadius: 12,
+      viewMode: "preview",
+      sidebarVisible: false,
+      autosaveIntervalMs: 30_000,
+    });
     await loadSettings();
 
     expect(useThemeStore.getState().preference).toBe("dark");
     expect(useGlassStore.getState().opacity).toBe(0.3);
     expect(useGlassStore.getState().blurRadius).toBe(12);
+    expect(useViewModeStore.getState().mode).toBe("preview");
+    expect(useSidebarStore.getState().visible).toBe(false);
+    expect(useAutosaveStore.getState().intervalMs).toBe(30_000);
   });
 
   it("모르는 값은 무시하고 기본값을 지킨다", async () => {
-    stored({ themePreference: "sepia", glassOpacity: "밝게", blurRadius: null });
+    stored({
+      themePreference: "sepia",
+      glassOpacity: "밝게",
+      blurRadius: null,
+      viewMode: "zen",
+      sidebarVisible: "접힘",
+      autosaveIntervalMs: 7000,
+    });
     await loadSettings();
 
     expect(useThemeStore.getState().preference).toBe("system");
     expect(useGlassStore.getState().opacity).toBeNull();
     expect(useGlassStore.getState().blurRadius).toBe(BLUR_RADIUS_DEFAULT);
+    expect(useViewModeStore.getState().mode).toBe("split");
+    expect(useSidebarStore.getState().visible).toBe(true);
+    expect(useAutosaveStore.getState().intervalMs).toBe(AUTOSAVE_INTERVAL_DEFAULT_MS);
   });
 
   it("읽기가 실패해도 기본값으로 계속 간다", async () => {
@@ -105,6 +134,23 @@ describe("persistSettingsOnChange", () => {
     await vi.advanceTimersByTimeAsync(SETTINGS_SAVE_DEBOUNCE_MS);
     expect(storeSave).toHaveBeenCalledTimes(1);
     expect(storeSet).toHaveBeenCalledWith("blurRadius", 20);
+    stop();
+  });
+
+  it("뷰 모드·사이드바 접힘·자동 저장도 함께 쓴다", async () => {
+    vi.useFakeTimers();
+    stored({});
+    await loadSettings();
+    const stop = persistSettingsOnChange();
+
+    setViewMode("editor");
+    setSidebarVisible(false);
+    setAutosaveInterval(null);
+
+    await vi.advanceTimersByTimeAsync(SETTINGS_SAVE_DEBOUNCE_MS);
+    expect(storeSet).toHaveBeenCalledWith("viewMode", "editor");
+    expect(storeSet).toHaveBeenCalledWith("sidebarVisible", false);
+    expect(storeSet).toHaveBeenCalledWith("autosaveIntervalMs", null);
     stop();
   });
 
@@ -153,12 +199,10 @@ describe("flushSettings", () => {
     const stop = persistSettingsOnChange();
 
     useGlassStore.getState().setBlurRadius(44);
-    expect(hasPendingSettingsSave()).toBe(true);
 
     await flushSettings();
     expect(storeSave).toHaveBeenCalledTimes(1);
     expect(storeSet).toHaveBeenCalledWith("blurRadius", 44);
-    expect(hasPendingSettingsSave()).toBe(false);
     stop();
   });
 

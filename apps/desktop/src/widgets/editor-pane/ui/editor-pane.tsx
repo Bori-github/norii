@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { notifyDocChanged, useDocumentStore } from "@entities/document";
 import { noteDocumentChanged } from "@features/save-file";
 import { publishScroll, subscribeScroll } from "@features/scroll-sync";
+import { useViewModeStore } from "@features/switch-view-mode";
 import { STRINGS } from "@shared/config";
 
 import { createEditorController, type EditorController } from "../model/editor-controller";
@@ -49,6 +50,8 @@ export function EditorPane() {
   // 이 값이 바뀌어 이펙트가 다시 돌아 view.focus()가 호출된다(→ document-store).
   const focusEditorOnActivate = useDocumentStore((state) => state.focusEditorOnActivate);
   const openTabIds = useDocumentStore(useShallow((state) => state.tabs.map((tab) => tab.id)));
+  // 프리뷰 전용 모드에서 이 패널은 display: none이 된다(→ pages/editor).
+  const hidden = useViewModeStore((state) => state.mode === "preview");
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<EditorController | null>(null);
 
@@ -80,6 +83,14 @@ export function EditorPane() {
     });
     controllerRef.current.showTab(activeTabId, focusEditorOnActivate);
   }, [activeTabId, focusEditorOnActivate]);
+
+  useEffect(() => {
+    if (!hidden) {
+      // 숨은 동안 보류된 자리를 적용한다 — 숨김이 풀리면 WebKit이 앞 탭의 픽셀 위치를
+      // 되살린다(→ model/editor-controller).
+      controllerRef.current?.reapplyScroll();
+    }
+  }, [hidden]);
 
   // 프리뷰발 동기화 신호를 받아 뷰포트를 따라 옮긴다.
   useEffect(

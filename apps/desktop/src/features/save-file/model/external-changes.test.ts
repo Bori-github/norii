@@ -35,7 +35,7 @@ import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
 
-import { AUTOSAVE_DELAY_MS } from "../config";
+import { AUTOSAVE_INTERVAL_DEFAULT_MS } from "../config";
 import { useConflictStore } from "./conflict-store";
 import {
   handleFileChanged,
@@ -214,7 +214,7 @@ describe("handleFileRemoved", () => {
 
       useDocumentStore.getState().setDirty(id, true);
       noteDocumentChanged(id);
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2);
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS * 2);
       expect(saveFile).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -325,7 +325,7 @@ describe("handleFileRemoved", () => {
 
   // 집행: file-lifecycle.md#외부-변경-처리 — "자동 저장이 조용히 되살리지 않는다"는 저장
   //       실행 시점에 판정되어야 한다.
-  // 왜: 재확인(IPC) 대기 중 자동 저장 타이머가 발화하면 그 저장이 재확인 뒤에 줄을 서고,
+  // 왜: 재확인(IPC) 대기 중 자동 저장 타이머가 발화하면 그 저장이 재확인 뒤로 밀리고,
   //     재확인이 삭제 표시를 켠 뒤 실행되어 '새로 생성' 변환을 타 파일을 되살린다
   //     (이 경합은 큐 직렬화 때문에 결정론적이다).
   // 보장: 자동 저장 출신 저장은 실행 시점에 탭이 삭제 표시면 건너뛴다 — 파일이 재생성되지
@@ -346,7 +346,7 @@ describe("handleFileRemoved", () => {
 
       const removing = handleFileRemoved({ path: "/vault/doc.md" }); // 재확인 대기 시작.
       noteDocumentChanged(id);
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS); // 자동 저장이 재확인 뒤에 줄을 선다.
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_INTERVAL_DEFAULT_MS); // 자동 저장이 재확인 뒤에 줄을 선다.
 
       probeRejects(); // 정말 삭제됨 — 표시가 켜지고, 이어서 줄 선 자동 저장이 실행된다.
       await removing;

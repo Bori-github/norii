@@ -91,6 +91,8 @@ export const STRINGS = {
   closeUnapprovedBody:
     "이 문서는 저장 형식 변환(인코딩·개행) 승인 전이라 자동 저장되지 않았습니다.\n" +
     "저장하지 않고 닫으면 편집한 내용이 사라집니다.",
+  closeDirtyTitle: "저장되지 않은 문서",
+  closeDirtyBody: "자동 저장이 꺼져 있습니다. 저장하지 않고 닫으면 마지막 편집이 사라집니다.",
   closeDiscardLabel: "저장하지 않고 닫기",
   closeCancelLabel: "취소",
 
@@ -150,8 +152,12 @@ export const STRINGS = {
   // (→ .claude/docs/design/design-system.md#테마-라이트다크).
   settingsTitle: "설정",
   settingsCloseLabel: "설정 닫기",
+  // 왼쪽 메뉴 (→ .claude/docs/design/decisions/settings-screen.md).
+  settingsNavLabel: "설정 분류",
+  settingsSectionAppearance: "외형",
+  settingsSectionGeneral: "일반",
   settingsThemeTitle: "테마",
-  settingsThemeHint: "밝은 화면 · 어두운 화면 · 시스템 설정 따라가기",
+  settingsThemeHint: "밝은 화면과 어두운 화면 중에 고르거나 시스템 설정을 따릅니다.",
   settingsResetLabel: "기본값으로",
   themeSystemLabel: "시스템",
   themeLightLabel: "라이트",
@@ -160,7 +166,18 @@ export const STRINGS = {
   // 유리 두 값 — 조절 대상이 무엇인지 설명이 갈라 준다(→ design/decisions/glass.md).
   settingsGlassCaption: "유리 효과",
   settingsOpacityTitle: "유리 불투명도",
-  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바의 불투명도",
+  settingsOpacityHint: "타이틀바·사이드바·탭바·상태바가 얼마나 비칠지 정합니다.",
   settingsBlurTitle: "흐림 반경",
-  settingsBlurHint: "유리 뒤 배경이 번지는 정도",
+  settingsBlurHint: "유리 뒤 배경이 번지는 정도를 정합니다.",
+
+  settingsAutosaveTitle: "자동 저장",
+  // 고른 값에 따라 갈린다 — 끄기를 고르면 저장 방법이 바뀌므로 그것을 알린다.
+  settingsAutosaveHint: (interval: string | null) =>
+    interval === null
+      ? "자동 저장이 꺼져 있습니다. ⌘S로 직접 저장하세요."
+      : `${interval}마다 문서를 자동으로 저장합니다.`,
+  // 간격 칸 — 값은 features/save-file/config.ts가 소유한다.
+  settingsAutosaveOffLabel: "끄기",
+  durationSecondsLabel: (seconds: number) => `${String(seconds)}초`,
+  durationMinutesLabel: (minutes: number) => `${String(minutes)}분`,
 } as const;

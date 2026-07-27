@@ -9,6 +9,7 @@ mod error;
 mod fs_commands;
 mod mac_geometry;
 mod scope;
+mod session;
 mod standard_window_buttons;
 mod text_encoding;
 mod titlebar_drag;
@@ -34,6 +35,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         dialog_commands::show_save_dialog,
         dialog_commands::show_open_folder_dialog,
         window_glass::set_window_blur_radius,
+        session::load_session,
+        session::save_session,
     ])
 }
 
@@ -85,6 +88,18 @@ pub fn run() {
                     );
                     // 표준 창 버튼을 띠 세로 중앙으로 — 리사이즈·전체화면마다 다시 적용된다.
                     standard_window_buttons::center_standard_window_buttons(&window);
+                }
+            }
+
+            // 앱 자신의 config 디렉터리는 파일 커맨드가 만질 수 없다 — 그 안의 세션 파일이
+            // 다음 부팅의 허용 루트를 정한다(→ src/scope.rs의 deny).
+            {
+                use tauri::Manager;
+                if let Ok(dir) = app.path().app_config_dir() {
+                    let _ = std::fs::create_dir_all(&dir);
+                    if let Ok(canonical) = std::fs::canonicalize(&dir) {
+                        app.state::<scope::FileScope>().deny(canonical);
+                    }
                 }
             }
 

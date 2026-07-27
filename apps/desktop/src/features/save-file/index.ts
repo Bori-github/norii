@@ -1,3 +1,6 @@
+export { setAutosaveInterval, useAutosaveStore } from "./model/autosave-store";
+export { AUTOSAVE_INTERVAL_DEFAULT_MS, AUTOSAVE_INTERVALS_MS, isAutosaveInterval } from "./config";
+export type { AutosaveInterval } from "./config";
 export { useExternalChanges } from "./model/external-changes";
 export {
   approveTabNormalization,
