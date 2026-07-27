@@ -33,8 +33,8 @@ const TREE_NOTES = path.join(TREE_ROOT, "notes");
 
 let browser: WebdriverIO.Browser;
 
-/** 앱이 세션 파일을 두는 자리 — 식별자는 tauri.conf.json이 소유하므로 거기서 읽는다. */
-async function sessionFile(): Promise<string> {
+/** 앱이 상태 파일을 두는 자리 — 식별자는 tauri.conf.json이 소유하므로 거기서 읽는다. */
+async function appConfigFile(name: string): Promise<string> {
   const config = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8")) as {
     identifier: string;
   };
@@ -45,7 +45,7 @@ async function sessionFile(): Promise<string> {
       : process.platform === "win32"
         ? (process.env.APPDATA ?? path.join(home, "AppData", "Roaming"))
         : (process.env.XDG_CONFIG_HOME ?? path.join(home, ".config"));
-  return path.join(base, config.identifier, "session.json");
+  return path.join(base, config.identifier, name);
 }
 
 beforeAll(async () => {
@@ -57,7 +57,9 @@ beforeAll(async () => {
     logLevel: "error",
   });
   // 세션 파일을 지운 뒤 리로드해야 탭 0개에서 출발한다(→ .claude/docs/testing.md).
-  await rm(await sessionFile(), { force: true });
+  // 설정 파일은 여기서 못 지운다 — plugin-store가 값을 앱 프로세스 메모리에 들고 있어
+  // 파일을 지워도 앱이 그대로 다시 쓴다. 앱을 띄우는 dev-webdriver가 미리 지운다.
+  await rm(await appConfigFile("session.json"), { force: true });
   await browser.execute(() => {
     location.reload();
     return null;
