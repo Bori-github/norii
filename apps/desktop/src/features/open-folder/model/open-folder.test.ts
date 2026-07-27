@@ -74,7 +74,7 @@ describe("openFolderInteractive", () => {
     expect(readDir).not.toHaveBeenCalled();
   });
 
-  it("선택한 폴더의 한 단계로 워크스페이스를 세운다", async () => {
+  it("선택한 폴더의 한 단계로 워크스페이스를 만든다", async () => {
     showOpenFolderDialog.mockResolvedValueOnce("/vault");
     readDir.mockResolvedValueOnce([NOTES_DIR]);
 

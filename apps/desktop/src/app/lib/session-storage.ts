@@ -62,7 +62,7 @@ async function restoreSession(): Promise<void> {
       activeTabId = tabId;
     }
   });
-  // 저장된 활성 탭이 걸러졌으면 첫 탭을 세운다 — openFileTab이 열 때마다 활성을 옮기므로,
+  // 저장된 활성 탭이 걸러졌으면 첫 탭을 활성으로 만든다 — openFileTab이 열 때마다 활성을 옮기므로,
   // 그러지 않으면 마지막에 열린 탭이 활성으로 남는다(→ document-model.md#세션-복원).
   const target = activeTabId ?? firstTabId;
   if (target !== null) {

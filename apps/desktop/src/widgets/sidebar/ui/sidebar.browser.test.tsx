@@ -419,7 +419,7 @@ describe("Sidebar 컨텍스트 메뉴", () => {
     expect(queryByTestId("entry-context-menu")).toBeNull();
   });
 
-  it("이름 변경은 그 항목 자리에 입력칸을 세운다", () => {
+  it("이름 변경은 그 항목 자리에 입력칸을 띄운다", () => {
     const { getAllByTestId, getByTestId, queryByTestId } = render(<Sidebar />);
 
     fireEvent.contextMenu(getAllByTestId("tree-file")[0]!);

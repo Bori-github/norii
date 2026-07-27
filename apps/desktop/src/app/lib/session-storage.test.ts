@@ -208,7 +208,7 @@ describe("restoreSessionWithin", () => {
     expect(tabs.find((t) => t.id === activeTabId)?.filePath).toBe("/vault/b.md");
   });
 
-  it("저장된 활성 탭을 열지 못하면 남은 첫 탭을 세운다", async () => {
+  it("저장된 활성 탭을 열지 못하면 남은 첫 탭을 활성으로 만든다", async () => {
     openFile.mockImplementation(async (path: string) => {
       if (path === "/vault/깨진.md") {
         throw new Error("열 수 없습니다");

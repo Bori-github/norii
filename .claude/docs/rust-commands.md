@@ -163,7 +163,7 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 //   변경을 놓쳤는지 특정할 수 없으므로, 프론트는 읽어 둔 모든 레벨을 다시 읽어 병합한다
 //   (읽어 둔 폴더는 펼침이 캐시를 쓰므로 이 신호 없이는 보정 경로가 없다).
 // 알려진 한계: 루트 자체가 밖에서 삭제되면 감시가 조용히 끝날 수 있다 — 다음 폴더
-//   열기가 새 감시를 세운다.
+//   열기가 새 감시를 등록한다.
 ```
 
 ### 다이얼로그
@@ -208,7 +208,7 @@ fn load_session() -> Result<Option<Session>, AppError>;
 // 파일이 없거나 JSON이 깨졌으면 None — 손으로 고칠 수 있는 파일이라 읽기 실패는 오류가 아니다.
 // 지금 없는 경로(밖에서 지웠거나 옮긴 파일)는 아래 표의 종류와 어긋난 경로와 함께
 //   결과에서 빠지고 허용되지도 않는다.
-// 활성 탭이 걸러지면 active는 빈다 — 프론트가 남은 첫 탭을 세운다(→ document-model.md#세션-복원).
+// 활성 탭이 걸러지면 active는 빈다 — 프론트가 남은 첫 탭을 활성으로 만든다(→ document-model.md#세션-복원).
 
 #[tauri::command]
 fn save_session(session: Session) -> Result<(), AppError>;
