@@ -158,8 +158,9 @@ export function createEditorController(options: Options): EditorController {
     }
   }
 
-  // 숨은 편집면(프리뷰 전용 모드)은 높이가 0이라 측정이 맨 위를 가리키고 스크롤 지정도 먹지
-  // 않는다. 그래서 숨은 동안에는 기억을 쓰지도 읽지도 않고, 다시 보일 때 reapplyScroll이 잇는다.
+  // 숨은 편집면(프리뷰 전용 모드)은 높이가 0이라 측정이 맨 위를 가리키고 스크롤 지정도
+  // 적용되지 않는다. 그래서 숨은 동안에는 기억을 쓰지도 읽지도 않고, 다시 보일 때
+  // reapplyScroll이 그 기억을 적용한다.
   function isLaidOut(): boolean {
     return view !== null && view.scrollDOM.clientHeight > 0;
   }

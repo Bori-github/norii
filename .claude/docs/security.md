@@ -39,7 +39,7 @@ connect-src 'self';                     local-first → 외부 연결 없음 (�
 믿는 것      같은 사용자만 앱 config 디렉터리에 쓸 수 있다는 것
              (macOS: ~/Library/Application Support — 홈 문서 폴더와 달리 TCC 승인이 없다)
 막는 것      norii 자신의 파일 커맨드로 그 파일을 고치는 길 (FileScope의 거부 목록)
-             종류가 어긋난 경로로 허용을 넓히는 길 (탭=파일 · 루트=디렉터리 검사)
+             종류가 어긋난 경로로 허용을 넓히는 길 (→ rust-commands.md#세션의 자리별 종류)
 남는 위험    같은 사용자 권한으로 도는 다른 프로세스가 파일을 미리 심어 두는 것 —
              norii가 가진 TCC 승인 범위 안에서 그 경로가 열린다
 ```

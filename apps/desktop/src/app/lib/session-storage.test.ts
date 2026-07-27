@@ -119,7 +119,7 @@ describe("persistSessionOnChange", () => {
     stop();
   });
 
-  it("타이핑 중에는 쓰지 않는다 — 커서·스크롤만 달라진 상태는 구독의 관심이 아니다", async () => {
+  it("타이핑 중에는 쓰지 않는다 — 열린 문서가 그대로면 자리만 달라져도 넘어간다", async () => {
     vi.useFakeTimers();
     const stop = persistSessionOnChange();
 
@@ -127,7 +127,8 @@ describe("persistSessionOnChange", () => {
     await vi.advanceTimersByTimeAsync(SESSION_SAVE_DEBOUNCE_MS);
     expect(saveSession).toHaveBeenCalledTimes(1);
 
-    // 자동 저장이 한 바퀴 돌면 탭 배열이 새로 만들어져 구독이 깨어난다. 그 사이 커서도 움직인다.
+    // 타이핑하는 동안 실제로 일어나는 일: 커서·스크롤이 계속 바뀌고, 자동 저장이 성공하면
+    // setLastSavedHash가 tabs를 새 배열로 만들어 스토어 구독자가 호출된다.
     setTabCursor("t1", { line: 40, column: 3 });
     setTabScroll("t1", { line: 38, fraction: 0 });
     useDocumentStore.setState({ tabs: [{ ...tab("t1", "/vault/a.md"), lastSavedHash: "h2" }] });

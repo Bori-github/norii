@@ -104,7 +104,7 @@ interface WorkspaceState {
 
 ## 세션 복원
 
-마지막 세션을 재시작 때 되살린다. 저장 자리는 값의 성격에 따라 셋으로 갈린다.
+마지막 세션을 재시작 때 되살린다. 저장 자리는 셋이다.
 
 ```text
 탭 목록·활성 탭·루트 폴더·탭별 자리   session.json — Rust가 소유(→ rust-commands.md#세션)
@@ -112,7 +112,7 @@ interface WorkspaceState {
 뷰 모드·사이드바 접힘                설정 파일(→ file-lifecycle.md#설정-저장)
 ```
 
-**탭 경로가 Rust 파일에 사는 이유는 경로 스코프다.** 재시작 뒤 그 파일을 열 권한은 Rust가 직접 읽은 값에서만 나온다(→ [Rust 커맨드 계약](rust-commands.md#권한-capabilities)). 세 자리 모두 `.md`가 아니라 앱 config다(→ [파일 생명주기 정책](file-lifecycle.md#앱-상태는-md에-넣지-않는다)).
+**탭 경로가 Rust 파일에 사는 이유는 경로 스코프다**(→ [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)). 세 자리 모두 `.md`가 아니라 앱 config다(→ [파일 생명주기 정책](file-lifecycle.md#앱-상태는-md에-넣지-않는다)).
 
 ```text
 쓰는 시점    탭·루트가 바뀔 때 디바운스 + 창을 닫기 전(→ file-lifecycle.md#종료-방어)

@@ -1,8 +1,5 @@
 //! 세션 저장·복원 커맨드 — 시그니처의 단일 출처: .claude/docs/rust-commands.md#세션.
-//!
-//! 세션 파일은 경로 스코프의 세 번째 입구다: 재시작 뒤 다이얼로그 없이 지난 탭을 열 수
-//! 있게, Rust가 자기가 쓴 파일에서 읽은 경로만 허용 루트로 등록한다
-//! (→ rust-commands.md#권한-capabilities).
+//! 이 파일이 읽은 경로가 허용 루트가 되는 근거는 rust-commands.md#권한-capabilities.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -109,8 +106,8 @@ fn remap(session: &Session, map: impl Fn(&str, PathKind) -> Option<String>) -> S
     }
 }
 
-/// 종류가 맞는 경로만 정규화해 돌려준다 — 탭 자리에 디렉터리가 오면 허용 루트가 그 하위
-/// 트리 전체로 넓어진다(손으로 고친 세션 파일의 증폭 경로).
+/// 기대한 종류와 실제가 같은 경로만 정규화해 돌려준다
+/// (자리별 종류와 그 근거 → .claude/docs/rust-commands.md#세션).
 fn canonical_of(path: &str, kind: PathKind) -> Option<PathBuf> {
     let canonical = fs::canonicalize(path).ok()?;
     let is_dir = canonical.is_dir();
@@ -232,8 +229,8 @@ mod tests {
     }
 
     // 집행: rust-commands.md#세션 — 탭 경로는 파일이고 루트는 디렉터리다.
-    // 왜: 허용은 하위 트리 전체를 연다. 탭 자리에 디렉터리("/")가 오면 세션 파일 한 줄이
-    //     전역 접근으로 번진다 — config 디렉터리에 쓸 수 있는 같은 사용자 프로세스가
+    // 왜: 허용은 하위 트리 전체를 연다. 탭 자리에 디렉터리("/")가 오면 세션 파일 한 줄로
+    //     그 아래 모든 파일이 열린다 — config 디렉터리에 쓸 수 있는 같은 사용자 프로세스가
     //     노릴 수 있는 자리다(→ security.md#세션-파일).
     // 보장: 종류가 어긋난 경로는 결과에서 빠지고 허용되지도 않는다.
     #[test]
@@ -243,7 +240,7 @@ mod tests {
         fs::write(&doc, "본문").unwrap();
         let file = dir.path().join(SESSION_FILE);
         let stored = Session {
-            // 루트 자리에 파일, 탭 자리에 디렉터리 — 손으로 고친 세션이 노리는 모양.
+            // 루트 자리에 파일, 탭 자리에 디렉터리 — 손으로 고친 세션이 노리는 형태다.
             root_dir: Some(doc.to_string_lossy().into_owned()),
             tabs: vec![tab(dir.path().to_str().unwrap())],
             active: Some(0),

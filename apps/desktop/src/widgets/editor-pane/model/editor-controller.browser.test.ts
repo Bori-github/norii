@@ -124,7 +124,7 @@ it("편집면이 숨은 동안 옮긴 탭도 다시 보일 때 제 자리에서 
   await nextFrame();
   scrollDom().scrollTop = 600;
   const left = scrollDom().scrollTop;
-  // 기억이 실제로 남은 뒤에 모드를 바꾼다 — 사람이 굴린 다음 모드를 바꾸는 순서다.
+  // 기억이 실제로 남은 뒤에 모드를 바꾼다 — 사용자가 스크롤한 다음 모드를 바꾸는 순서다.
   await vi.waitFor(() => {
     expect(getTabScroll("a")).not.toBeNull();
   });

@@ -25,12 +25,8 @@ impl FileScope {
             .insert(canonical_root);
     }
 
-    /// 어떤 허용 루트 아래에 있어도 거부할 디렉터리를 등록한다.
-    ///
-    /// 앱의 config 디렉터리가 그 대상이다: 세션 파일이 다음 부팅의 허용 루트를 정하므로
-    /// (→ .claude/docs/rust-commands.md#권한-capabilities), 그 파일을 파일 커맨드로 고칠 수
-    /// 있으면 웹뷰가 스스로 권한을 넓힐 수 있다. 사용자가 홈 폴더를 열면 config 디렉터리도
-    /// 허용 루트 하위가 되므로, 허용보다 강한 거부가 필요하다.
+    /// 어떤 허용 루트 아래에 있어도 거부할 디렉터리를 등록한다 — 대상은 앱 config
+    /// 디렉터리다(→ .claude/docs/rust-commands.md#권한-capabilities).
     pub fn deny(&self, canonical_dir: PathBuf) {
         self.denied
             .lock()

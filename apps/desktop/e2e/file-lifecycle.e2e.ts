@@ -56,9 +56,7 @@ beforeAll(async () => {
     capabilities: {},
     logLevel: "error",
   });
-  // 이전 실행이 남긴 탭 상태를 지운다. 리로드만으로는 초기화가 아니다 — 부팅이 세션을
-  // 복원하므로(→ .claude/docs/document-model.md#세션-복원) 파일을 먼저 지운다. 앱 실행
-  // 시점이 아니라 매 실행마다 지워야 앞선 실행이 남긴 탭이 시작 상태로 새지 않는다.
+  // 세션 파일을 지운 뒤 리로드해야 탭 0개에서 출발한다(→ .claude/docs/testing.md).
   await rm(await sessionFile(), { force: true });
   await browser.execute(() => {
     location.reload();

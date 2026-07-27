@@ -62,8 +62,8 @@ async function restoreSession(): Promise<void> {
       activeTabId = tabId;
     }
   });
-  // 저장된 활성 탭이 걸러졌으면 첫 탭을 세운다 — 그러지 않으면 마지막에 열린 탭이 활성으로
-  // 남아, 어느 문서가 뜨는지가 저장 순서에 딸려간다(→ document-model.md#세션-복원).
+  // 저장된 활성 탭이 걸러졌으면 첫 탭을 세운다 — openFileTab이 열 때마다 활성을 옮기므로,
+  // 그러지 않으면 마지막에 열린 탭이 활성으로 남는다(→ document-model.md#세션-복원).
   const target = activeTabId ?? firstTabId;
   if (target !== null) {
     store.activateTab(target);
@@ -101,11 +101,8 @@ function snapshot(): Session {
 }
 
 /**
- * 구독이 반응해야 하는 부분만 뽑는다 — 어느 문서가 어떤 순서로 열려 있는가.
- *
- * 탭별 자리(커서·스크롤)를 여기 넣으면 타이핑 내내 쓰기가 나간다: 자동 저장이 한 바퀴 돌
- * 때마다 탭 배열이 새로 만들어져 구독이 깨어나고, 그 사이 커서가 움직여 있기 때문이다.
- * 자리는 종료 시 flushSession이 담는다.
+ * 구독이 반응하는 부분 — 어느 문서가 어떤 순서로 열려 있는가. 탭별 자리는 제외한다
+ * (→ session-storage.test.ts "타이핑 중에는 쓰지 않는다").
  */
 function structureKey(session: Session): string {
   return JSON.stringify([session.rootDir, session.active, session.tabs.map((tab) => tab.path)]);

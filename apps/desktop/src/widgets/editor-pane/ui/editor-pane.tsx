@@ -86,7 +86,7 @@ export function EditorPane() {
 
   useEffect(() => {
     if (!hidden) {
-      // 숨은 동안 보류된 자리를 잇는다 — 숨김이 풀리면 WebKit이 앞 탭의 픽셀 위치를
+      // 숨은 동안 보류된 자리를 적용한다 — 숨김이 풀리면 WebKit이 앞 탭의 픽셀 위치를
       // 되살린다(→ model/editor-controller).
       controllerRef.current?.reapplyScroll();
     }
