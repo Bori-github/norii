@@ -37,12 +37,8 @@ const buttonClass = css({
   color: "text.muted",
   cursor: "pointer",
   _hover: { color: "text" },
-  _focusVisible: {
-    opacity: 1,
-    outline: "2px solid",
-    outlineColor: "text",
-    outlineOffset: "2px",
-  },
+  layerStyle: "focusOutside",
+  _focusVisible: { opacity: 1 },
   // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/color-palette),
   // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
   "&[data-copied]": { opacity: 1, color: "text" },

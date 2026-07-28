@@ -35,7 +35,7 @@ const tabClass = css({
   borderRightColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
   _hover: { background: "bg.hover" },
   '&[aria-selected="true"]': {
     background: "bg.paper",

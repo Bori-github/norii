@@ -66,7 +66,7 @@ const navItemClass = css({
   cursor: "pointer",
   _hover: { color: "text" },
   "&[aria-selected='true']": { background: "bg.paper", color: "text", fontWeight: "medium" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
 });
 
 const panelClass = css({
@@ -137,7 +137,7 @@ const segmentButtonClass = css({
   fontSize: "xs",
   cursor: "pointer",
   "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
   "& svg": { width: "3.5", height: "3.5" },
 });
 

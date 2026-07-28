@@ -33,9 +33,7 @@ const paneClass = css({
   // CSS 격리 — 문서 인라인 스타일(position:fixed 등)이 패널 밖 앱 UI 위에 그려지는 것을
   // 차단한다(→ preview-strategy.md의 DOMPurify 정책).
   contain: "paint",
-  // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
-  // → design/decisions/color-palette).
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
   // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
   fontFamily: "prose",
   lineHeight: "prose",
@@ -96,7 +94,7 @@ const paneClass = css({
     textDecoration: "underline",
     textUnderlineOffset: "2px",
     _hover: { textDecorationThickness: "2px" },
-    _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
+    layerStyle: "focusOutside",
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },

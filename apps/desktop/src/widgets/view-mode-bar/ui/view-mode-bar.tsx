@@ -48,8 +48,7 @@ const buttonClass = css({
   color: "text.muted",
   cursor: "pointer",
   _hover: { background: "bg.hover" },
-  // 안쪽 링 — 묶음의 overflow: hidden이 바깥 윤곽을 잘라내므로 안쪽에 그린다.
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
   "&[aria-pressed='true']": { background: "bg.hover", color: "text" },
   "& svg": { width: "4", height: "4" },
   "& + &": { borderLeftWidth: "1px", borderLeftStyle: "solid", borderLeftColor: "border" },
