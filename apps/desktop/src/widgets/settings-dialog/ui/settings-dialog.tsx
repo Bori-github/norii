@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { css } from "styled-system/css";
 
 import {
@@ -14,26 +14,16 @@ import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
 import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
-import { Button, CloseIcon, ComputerIcon, IconButton, MoonIcon, Select, SunIcon } from "@shared/ui";
-
-// 다이얼로그는 불투명하다(→ .claude/docs/design/decisions/glass.md).
-const dialogClass = css({
-  margin: "auto",
-  width: "90vw",
-  maxWidth: "2xl",
-  padding: "0",
-  overflow: "hidden",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  borderRadius: "lg",
-  background: "bg.paper",
-  color: "text",
-  boxShadow: "lg",
-  animation: "dialogIn 0.16s ease",
-  _motionReduce: { animation: "none" },
-  _backdrop: { background: "bg.scrim" },
-});
+import {
+  Button,
+  CloseIcon,
+  ComputerIcon,
+  Dialog,
+  IconButton,
+  MoonIcon,
+  Select,
+  SunIcon,
+} from "@shared/ui";
 
 const headerClass = css({
   display: "flex",
@@ -245,18 +235,6 @@ export function SettingsDialog() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const resolvedOpacity = resolveOpacity(opacity, theme);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
   /** 세로 탭의 방향키 이동 — 옮긴 칸으로 포커스도 따라간다(roving tabindex 계약). */
   function moveSection(event: React.KeyboardEvent<HTMLDivElement>): void {
     const delta = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
@@ -279,13 +257,11 @@ export function SettingsDialog() {
     setAutosaveInterval(AUTOSAVE_INTERVAL_DEFAULT_MS);
   }
 
-  if (!open) {
-    return null;
-  }
   return (
-    <dialog
-      ref={dialogRef}
-      className={dialogClass}
+    <Dialog
+      open={open}
+      size="lg"
+      dialogRef={dialogRef}
       data-testid="settings-dialog"
       aria-label={STRINGS.settingsTitle}
       onCancel={closeSettings} // Esc.
@@ -440,6 +416,6 @@ export function SettingsDialog() {
           {STRINGS.settingsResetLabel}
         </Button>
       </div>
-    </dialog>
+    </Dialog>
   );
 }

@@ -2,6 +2,8 @@ export { bannerBodyClass, bannerClass, bannerDangerClass } from "./banner-styles
 export { Button, IconButton } from "./button";
 export type { ButtonProps, IconButtonProps } from "./button";
 export { ConfirmDialog } from "./confirm-dialog";
+export { Dialog } from "./dialog";
+export type { DialogProps } from "./dialog";
 export {
   AlertTriangleIcon,
   AnnotationAlertIcon,
