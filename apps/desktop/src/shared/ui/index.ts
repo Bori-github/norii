@@ -26,6 +26,8 @@ export {
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";
 export { NoticeBanner } from "./notice-banner";
+export { Select } from "./select";
+export type { SelectProps } from "./select";
 export { Tooltip } from "./tooltip";
 export { useNoticeStore } from "./notice-store";
 export type { Notice, NoticeAction } from "./notice-store";

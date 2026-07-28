@@ -14,7 +14,7 @@ import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
 import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
-import { Button, CloseIcon, ComputerIcon, IconButton, MoonIcon, SunIcon } from "@shared/ui";
+import { Button, CloseIcon, ComputerIcon, IconButton, MoonIcon, Select, SunIcon } from "@shared/ui";
 
 // 다이얼로그는 불투명하다(→ .claude/docs/design/decisions/glass.md).
 const dialogClass = css({
@@ -100,6 +100,8 @@ const captionClass = css({
 const rowClass = css({ display: "flex", flexDirection: "column", gap: "2", paddingY: "3" });
 
 // 폭을 쓰지 않는 컨트롤은 설명 오른쪽에 둔다.
+const selectMinWidthClass = css({ minWidth: "32" });
+
 const rowInlineClass = css({
   display: "flex",
   alignItems: "center",
@@ -147,45 +149,6 @@ const segmentButtonClass = css({
   "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
   _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   "& svg": { width: "3.5", height: "3.5" },
-});
-
-const selectWrapClass = css({
-  position: "relative",
-  display: "inline-flex",
-  _after: {
-    content: '""',
-    position: "absolute",
-    top: "50%",
-    right: "3",
-    width: "6px",
-    height: "6px",
-    borderRightWidth: "1.5px",
-    borderRightStyle: "solid",
-    borderRightColor: "text.muted",
-    borderBottomWidth: "1.5px",
-    borderBottomStyle: "solid",
-    borderBottomColor: "text.muted",
-    transform: "translateY(-70%) rotate(45deg)",
-    pointerEvents: "none",
-  },
-});
-
-const selectClass = css({
-  appearance: "none",
-  minWidth: "32",
-  paddingLeft: "2.5",
-  paddingRight: "7",
-  paddingY: "1.5",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  borderRadius: "sm",
-  background: "bg.hover",
-  color: "text",
-  fontFamily: "ui",
-  fontSize: "xs",
-  cursor: "pointer",
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-1px" },
 });
 
 // 트랙과 손잡이를 직접 그린다 — OS 기본 슬라이더는 굵기·손잡이 크기가 앱 스케일과 어긋난다.
@@ -376,23 +339,21 @@ export function SettingsDialog() {
               <div className={rowTitleClass}>{STRINGS.settingsAutosaveTitle}</div>
               <div className={rowHintClass}>{autosaveHint(autosaveInterval)}</div>
             </div>
-            <div className={selectWrapClass}>
-              <select
-                className={selectClass}
-                data-testid="settings-autosave"
-                aria-label={STRINGS.settingsAutosaveTitle}
-                value={autosaveOptionId(autosaveInterval)}
-                onChange={(event) => {
-                  setAutosaveInterval(autosaveIntervalOf(event.target.value));
-                }}
-              >
-                {AUTOSAVE_OPTIONS.map(({ id, label }) => (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              wrapClassName={selectMinWidthClass}
+              data-testid="settings-autosave"
+              aria-label={STRINGS.settingsAutosaveTitle}
+              value={autosaveOptionId(autosaveInterval)}
+              onChange={(event) => {
+                setAutosaveInterval(autosaveIntervalOf(event.target.value));
+              }}
+            >
+              {AUTOSAVE_OPTIONS.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </Select>
           </div>
         </div>
 

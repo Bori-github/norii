@@ -2,27 +2,15 @@ import { needsNormalizationApproval, useDocumentStore } from "@entities/document
 import { REOPEN_ENCODINGS, reopenTabWithEncoding } from "@features/open-file";
 import { approveTabNormalization } from "@features/save-file";
 import { STRINGS } from "@shared/config";
-import { bannerBodyClass, bannerClass, Button } from "@shared/ui";
 import { css } from "styled-system/css";
+
+import { bannerBodyClass, bannerClass, Button, Select } from "@shared/ui";
 
 // 활성 탭의 정규화 승인 배너 — "저장 시 무엇이 바뀌는지"(인코딩 변환·개행 통일)를 알리고
 // 승인을 받는다(→ file-lifecycle.md#자동-저장). 감지 오판의 구제로 재해석 메뉴를 함께 노출한다
 // (→ file-lifecycle.md#인코딩-정책 수동 재해석). 승인·재해석이 서로 다른 feature에 속해
 // 위젯에서 조합한다.
-const selectClass = css({
-  flexShrink: 0,
-  paddingX: "2",
-  paddingY: "1",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  borderRadius: "sm",
-  background: "transparent",
-  color: "text",
-  fontSize: "xs",
-  cursor: "pointer",
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
-});
+const selectWrapClass = css({ flexShrink: 0 });
 
 export function NormalizationBanner() {
   const activeTab = useDocumentStore((state) =>
@@ -46,8 +34,8 @@ export function NormalizationBanner() {
       <Button variant="accent" size="sm" onClick={() => approveTabNormalization(activeTab.id)}>
         {STRINGS.normalizationApproveLabel}
       </Button>
-      <select
-        className={selectClass}
+      <Select
+        wrapClassName={selectWrapClass}
         aria-label={STRINGS.reopenEncodingLabel}
         value=""
         onChange={(event) => {
@@ -64,7 +52,7 @@ export function NormalizationBanner() {
             {label}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }
