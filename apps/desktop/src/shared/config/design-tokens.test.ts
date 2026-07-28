@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { AA_NON_TEXT, AA_TEXT, contrastOnGlass, contrastOnSolid } from "@shared/lib";
+import {
+  AA_NON_TEXT,
+  AA_TEXT,
+  contrastOnGlass,
+  contrastOnSolid,
+  hueDistance,
+  oklchHue,
+  parseColor,
+} from "@shared/lib";
 
 import { resolveSemanticColors } from "./resolve-tokens";
 
@@ -108,6 +116,9 @@ const STATUS = [
   "statusDanger",
 ] as const;
 
+/** 상태색끼리 최소로 벌어져야 하는 색상각. 경고–위험이 37°로 가장 좁다. */
+const MIN_STATUS_HUE_GAP = 35;
+
 describe("상태색 — 모두 두 종이에서 표시 기준(3:1)을 넘는다", () => {
   it.each(THEMES)("%s 테마", (theme) => {
     const colors = resolveSemanticColors(theme);
@@ -130,6 +141,17 @@ describe("상태색 — 모두 두 종이에서 표시 기준(3:1)을 넘는다"
   it.each(THEMES)("%s 유리 위 위험색은 기준을 통과하지 못한다 — 감수한 예외다", (theme) => {
     const colors = resolveSemanticColors(theme);
     expect(worstOnGlass(colors.statusDanger, colors.bgChrome)).toBeLessThan(AA_NON_TEXT);
+  });
+
+  // 대비는 휘도만 재므로 두 상태색이 같은 색으로 보여도 통과한다. 색으로 종류를 가르려면
+  // 색상각도 벌어져 있어야 한다. 하한은 이미 쓰고 있는 가장 좁은 쌍(경고–위험)이 정한다.
+  it("서로 색상각이 벌어져 있다", () => {
+    const colors = resolveSemanticColors("light");
+    const hues = STATUS.map((key) => oklchHue(parseColor(colors[key]).rgb));
+    const gaps = hues.flatMap((hue, i) =>
+      hues.slice(i + 1).map((other) => hueDistance(hue, other)),
+    );
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(MIN_STATUS_HUE_GAP);
   });
 });
 

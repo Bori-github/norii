@@ -9,6 +9,8 @@ export {
   contrastOnGlass,
   contrastOnSolid,
   contrastRatio,
+  hueDistance,
+  oklchHue,
   parseColor,
   relativeLuminance,
 } from "./color-contrast";
