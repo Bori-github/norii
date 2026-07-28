@@ -14,7 +14,6 @@ const COLORS: EditorColors = {
   text: "var(--text)",
   muted: "var(--muted)",
   mark: "var(--mark)",
-  accent: "var(--accent)",
   hover: "var(--hover)",
   selection: "var(--selection)",
   match: "var(--match)",
@@ -44,12 +43,6 @@ describe("noriiTheme", () => {
 
   it("활성 줄을 앱의 상태 배경색으로 덮는다", () => {
     expect(themeRules()).toContain("var(--hover)");
-  });
-
-  // 액센트는 채운 면에만 쓴다 — 커서·검색 결과 테두리 같은 가는 표시는 본문색이 맡는다
-  // (→ .claude/docs/design/decisions/color-palette.md).
-  it("가는 표시에 액센트를 쓰지 않는다", () => {
-    expect(themeRules()).not.toContain("var(--accent)");
   });
 
   it("커서를 본문색으로 그린다", () => {

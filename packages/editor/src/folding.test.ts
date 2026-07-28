@@ -120,7 +120,6 @@ describe("에디터 확장 배선 (변이 검증)", () => {
     text: "var(--text)",
     muted: "var(--muted)",
     mark: "var(--mark)",
-    accent: "var(--accent)",
     hover: "var(--hover)",
     selection: "var(--selection)",
     match: "var(--match)",

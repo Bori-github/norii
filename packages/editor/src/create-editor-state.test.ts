@@ -16,7 +16,6 @@ const COLORS: EditorColors = {
   text: "#000000",
   muted: "#666666",
   mark: "#336633",
-  accent: "#568335",
   hover: "rgba(0, 0, 0, 0.06)",
   selection: "rgba(86, 131, 53, 0.28)",
   match: "rgba(86, 131, 53, 0.14)",

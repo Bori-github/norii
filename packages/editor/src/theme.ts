@@ -17,8 +17,6 @@ export interface EditorColors {
   muted: string;
   /** 마크다운 구문 마크(#, -, **, 링크). 글자이므로 AA를 만족하는 색이어야 한다. */
   mark: string;
-  /** 액센트 — 커서에만 쓴다. 글자에는 쓰지 않는다(→ decisions/color-palette). */
-  accent: string;
   /** 상태 배경 — 활성 줄·호버. **선택에는 쓰지 않는다**(같은 색이면 겹칠 때 선택이 사라진다). */
   hover: string;
   /** 사용자가 고른 것 — 텍스트 선택, 검색 결과 중 지금 보고 있는 하나. hover 위에 겹쳐도 보여야 한다. */
