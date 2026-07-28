@@ -100,12 +100,15 @@ function worstOnGlass(text: string, tint: string): number {
   return Math.min(onWhite, onBlack);
 }
 
-// 넷을 한꺼번에 검사하는 이유는 하나만 통과해서는 쓸 수 없기 때문이다: 콜아웃은 네 종류가
-// 나란히 뜨므로 한 색이라도 종이에서 사라지면 "색으로 종류를 가른다"는 규칙 자체가 깨진다.
-// 경계: 색이 서로 구별되는지(같은 파랑 둘이 아닌지)는 계산으로 판정할 수 없어 눈으로 본다.
-const STATUS = ["statusInfo", "statusSuccess", "statusWarning", "statusDanger"] as const;
+const STATUS = [
+  "statusInfo",
+  "statusEmphasis",
+  "statusSuccess",
+  "statusWarning",
+  "statusDanger",
+] as const;
 
-describe("상태색 — 네 색 모두 두 종이에서 표시 기준(3:1)을 넘는다", () => {
+describe("상태색 — 모두 두 종이에서 표시 기준(3:1)을 넘는다", () => {
   it.each(THEMES)("%s 테마", (theme) => {
     const colors = resolveSemanticColors(theme);
     for (const key of STATUS) {

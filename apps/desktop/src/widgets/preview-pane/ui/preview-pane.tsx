@@ -100,11 +100,9 @@ const paneClass = css({
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },
-  // 콜아웃 — 인용문에 얹는 강조 상자. 아이콘·라벨·색의 규칙은
-  // preview-strategy.md#콜아웃-gfm-alerts가 소유한다.
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
-    borderColor: "accent",
+    borderColor: "border",
     bg: "bg.hover",
     color: "text",
     paddingX: "4",
@@ -117,7 +115,7 @@ const paneClass = css({
   },
   "& blockquote.norii-callout-note": { borderColor: "status.info" },
   "& blockquote.norii-callout-tip": { borderColor: "status.success" },
-  // IMPORTANT만 borderColor를 덮지 않는다 — 위 기본값(액센트)을 그대로 쓴다.
+  "& blockquote.norii-callout-important": { borderColor: "status.emphasis" },
   "& blockquote.norii-callout-warning": { borderColor: "status.warning" },
   "& blockquote.norii-callout-caution": { borderColor: "status.danger" },
   // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.

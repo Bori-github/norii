@@ -188,7 +188,6 @@ export default defineConfig({
           },
 
           // 쓰는 자리와 금지되는 자리는 decisions/color-palette가 소유한다.
-          // fg·hover·pressed는 테마 공통이라 원시 층에 두지 않는다.
           accent: {
             DEFAULT: { value: "{colors.lime.200}" },
             fg: { value: "{colors.gray.900}" },
@@ -196,9 +195,9 @@ export default defineConfig({
             pressed: { value: "#b7e329" },
           },
 
-          // 상태색 — 테마 공통 단일 값이라 원시 층에 두지 않는다. 갈라질 것이 없으면 매핑도 없다.
           status: {
-            info: { value: "#7b68f3" },
+            info: { value: "#008feb" },
+            emphasis: { value: "#7b68f3" },
             success: { value: "#00a72c" },
             warning: { value: "#d17d00" },
             danger: { value: "#e44339" },

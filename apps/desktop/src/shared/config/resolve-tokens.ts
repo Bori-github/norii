@@ -18,6 +18,7 @@ export interface SemanticColors {
   accentHover: string;
   accentPressed: string;
   statusInfo: string;
+  statusEmphasis: string;
   statusSuccess: string;
   statusWarning: string;
   statusDanger: string;
@@ -103,6 +104,7 @@ export function resolveSemanticColors(theme: Theme): SemanticColors {
     accentHover: pick("accent.hover"),
     accentPressed: pick("accent.pressed"),
     statusInfo: pick("status.info"),
+    statusEmphasis: pick("status.emphasis"),
     statusSuccess: pick("status.success"),
     statusWarning: pick("status.warning"),
     statusDanger: pick("status.danger"),
