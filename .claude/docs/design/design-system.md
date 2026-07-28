@@ -73,6 +73,7 @@ accent.fg     액센트 면 위의 글자. **테마 공통**이다 — text는 �
               라이트 테마에서는 면의 1px 테두리에도 쓴다.
 accent.hover  채움이 어두워지는 상태. accent.pressed와 함께 테마 공통이다.
 border        경계선. 비텍스트이므로 3:1 기준.
+border.muted  더 연한 경계선 — 트리 세로 가이드처럼 옅게 두는 선.
 ```
 
 위 금지는 취향이 아니라 [대비 게이트](#대비-게이트)의 계산 결과다 — 액센트를 글자로 쓸 수 있는 색은 색 계열과 무관하게 존재하지 않는다(→ [컬러 팔레트](decisions/color-palette.md)).
@@ -108,7 +109,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 **고른 값은 저장된다.** 저장이 없으면 매 기동 `system`으로 시작한다. 저장 정책은 [파일 생명주기 정책](../file-lifecycle.md#설정-저장), 읽는 시점은 [창 표면 계약](window-chrome.md#부팅-순서--창은-언제-보이는가)이 소유한다.
 
 ```text
-semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.950}' } }
+semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.900}' } }
 ```
 
 (단계 번호는 형태를 보이려는 예시다 — 실제 값의 단일 출처는 `panda.config.ts`다.)
@@ -128,7 +129,7 @@ semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{c
 버튼·탭 같은 컴포넌트의 변형(`variant`·`size`·상태)은 Panda **recipe**로 정의한다. 변형이 타입으로 노출되어 오용을 막는다.
 
 ```text
-buttonRecipe = { base, variants: { variant: {solid, ghost}, size: {sm, md} }, defaultVariants }
+buttonRecipe = { base, variants: { variant: {accent, outline, ghost}, size: {sm, md}, icon }, defaultVariants }
 ```
 
 여러 요소로 구성된 컴포넌트는 slot recipe(`sva`)를 쓴다.
