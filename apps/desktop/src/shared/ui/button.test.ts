@@ -4,8 +4,9 @@ import { BUTTON_STYLES } from "./button";
 
 // 왜: 버튼 정의가 파일마다 흩어져 있으면 한쪽만 고쳐져 모습이 갈린다. 한 곳에서 나오게 하고,
 //     디자인 규칙이 정한 것(액센트는 채운 면·비활성은 액센트 회수·포커스 링은 안쪽)을 여기서 막는다.
-// 경계: 실제 색이 대비 기준을 넘는지는 design-tokens.test.ts가 본다. 여기서는 어느 토큰을
-//     고르는지만 본다. 렌더 결과는 각 화면의 browser 테스트가 본다.
+// 경계: 실제 색이 대비 기준을 넘는지는 design-tokens.test.ts가, 포커스 링의 값은
+//     layer-styles.test.ts가 본다. 여기서는 어느 토큰을 고르는지만 본다.
+//     렌더 결과는 각 화면의 browser 테스트가 본다.
 
 const { base, variants } = BUTTON_STYLES;
 
@@ -32,11 +33,9 @@ describe("버튼 변형", () => {
 });
 
 describe("모든 변형이 공유하는 것", () => {
-  it("포커스 링은 본문색이고 안쪽에 그린다 — 좁은 컨테이너에서 잘리지 않게", () => {
-    expect(base["_focusVisible"]).toMatchObject({
-      outlineColor: "text",
-      outlineOffset: "-2px",
-    });
+  // 탭 묶음·설정 창처럼 잘라내는 컨테이너 안에 놓이므로 바깥 링은 잘린다.
+  it("포커스 링은 안쪽에 그린다", () => {
+    expect(base.layerStyle).toBe("focusInside");
   });
 
   it("비활성은 액센트를 회수하고 무채색으로 둔다", () => {

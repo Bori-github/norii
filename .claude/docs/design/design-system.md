@@ -133,6 +133,10 @@ buttonRecipe = { base, variants: { variant: {solid, ghost}, size: {sm, md} }, de
 
 여러 요소로 구성된 컴포넌트는 slot recipe(`sva`)를 쓴다.
 
+## 여러 컴포넌트가 공유하는 상태 스타일
+
+버튼·탭·트리 행처럼 서로 다른 컴포넌트가 같은 모습으로 반응하는 상태(포커스 링)는 Panda **layerStyle**로 한 번 정의하고 이름으로 참조한다. 컴포넌트마다 값을 복사하면 한쪽만 고쳐진다.
+
 ## FSD 배치
 
 ```text

@@ -214,6 +214,22 @@ export default defineConfig({
           },
         },
       },
+
+      // 포커스 링 — 어디에 쓰고 왜 text인지는 decisions/color-palette가 소유한다.
+      // Panda 내장 focusRing 유틸은 안쪽 링을 offset 0으로 그리고 borderColor까지 바꿔 쓰지 않는다.
+      layerStyles: {
+        focusInside: {
+          value: {
+            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+          },
+        },
+        // 잘라내는 컨테이너 밖에 있는 것 — 링크·떠 있는 버튼.
+        focusOutside: {
+          value: {
+            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
+          },
+        },
+      },
     },
   },
 

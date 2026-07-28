@@ -14,8 +14,7 @@ export const BUTTON_STYLES = {
     borderRadius: "sm",
     cursor: "pointer",
     whiteSpace: "nowrap",
-    // 바깥 오프셋은 좁은 컨테이너에서 잘린다.
-    _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
+    layerStyle: "focusInside",
     _disabled: {
       cursor: "not-allowed",
       background: "bg.hover",
