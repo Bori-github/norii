@@ -14,7 +14,7 @@ import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
 import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
-import { Button, CloseIcon, ComputerIcon, MoonIcon, SunIcon } from "@shared/ui";
+import { Button, CloseIcon, ComputerIcon, IconButton, MoonIcon, SunIcon } from "@shared/ui";
 
 // 다이얼로그는 불투명하다(→ .claude/docs/design/decisions/glass.md).
 const dialogClass = css({
@@ -85,19 +85,6 @@ const panelClass = css({
   paddingX: "4",
   paddingBottom: "4",
   overflowY: "auto",
-});
-
-const closeButtonClass = css({
-  display: "flex",
-  padding: "1",
-  border: "none",
-  borderRadius: "sm",
-  background: "transparent",
-  color: "text",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
-  "& svg": { width: "4", height: "4" },
 });
 
 const captionClass = css({
@@ -342,15 +329,13 @@ export function SettingsDialog() {
     >
       <header className={headerClass}>
         <strong className={titleClass}>{STRINGS.settingsTitle}</strong>
-        <button
-          type="button"
-          className={closeButtonClass}
+        <IconButton
           data-testid="settings-close"
-          aria-label={STRINGS.settingsCloseLabel}
+          label={STRINGS.settingsCloseLabel}
           onClick={closeSettings}
         >
           <CloseIcon />
-        </button>
+        </IconButton>
       </header>
 
       <div className={bodyClass}>
