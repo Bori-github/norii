@@ -19,21 +19,20 @@ export const bannerClass = css({
   whiteSpace: "pre-line",
 });
 
-// 액센트는 글자로 쓰지 않는다 — 테마 공통 단일 값이라 어느 한 테마에서 AA를 통과하지 못한다
-// (→ decisions/color-palette). 강조는 테두리와 굵기로 낸다.
 export const bannerActionClass = css({
   flexShrink: 0,
   paddingX: "2",
   paddingY: "1",
   borderWidth: "1px",
   borderStyle: "solid",
-  borderColor: "accent",
+  borderColor: "accent.fg",
   borderRadius: "sm",
   cursor: "pointer",
-  background: "transparent",
-  color: "text",
+  background: "accent",
+  color: "accent.fg",
   fontWeight: "medium",
-  _hover: { background: "bg.hover" },
+  _hover: { background: "accent.hover" },
+  _active: { background: "accent.pressed" },
 });
 
 export const bannerBodyClass = css({ flex: 1 });
