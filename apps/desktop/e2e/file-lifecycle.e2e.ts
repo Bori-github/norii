@@ -725,6 +725,53 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
   await (await browser.$('[data-testid="settings-close"]')).click();
 });
 
+// 집행: design/decisions/color-palette.md — 액센트는 테마와 무관하게 한 색이다.
+// 왜: 토큰 테스트는 panda.config의 값만 본다. 실제 앱에서는 테마 조건이 CSS 변수로 풀리므로,
+//     어딘가에서 다크 조건이 액센트를 덮어써도 그 테스트는 통과한다.
+// 보장: 테마를 바꿔 종이색이 실제로 뒤집혀도 액센트 변수는 같은 값으로 남는다.
+// 경계: 그 색이 대비 기준을 넘는지는 design-tokens.test.ts가 본다.
+it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
+  const openSettings = await browser.$('[data-testid="open-settings"]');
+  await openSettings.waitForExist({ timeout: 10_000 });
+  await openSettings.click();
+  await (await browser.$('[data-testid="settings-dialog"]')).waitForExist({ timeout: 10_000 });
+  await (await browser.$('[data-testid="settings-nav-appearance"]')).click();
+
+  async function readTokens(): Promise<{ accent: string; paper: string }> {
+    return browser.execute(() => {
+      const style = getComputedStyle(document.documentElement);
+      return {
+        accent: style.getPropertyValue("--colors-accent").trim(),
+        paper: style.getPropertyValue("--colors-bg-paper").trim(),
+      };
+    });
+  }
+
+  await (await browser.$('[data-testid="settings-theme-light"]')).click();
+  const light = await browser.waitUntil(
+    async () => {
+      const tokens = await readTokens();
+      return tokens.accent === "" ? false : tokens;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "액센트 변수를 읽지 못했다" },
+  );
+
+  await (await browser.$('[data-testid="settings-theme-dark"]')).click();
+  // 종이색이 뒤집힌 뒤에 읽어야 한다 — 바뀌기 전에 읽으면 두 값이 같은 것이 당연해진다.
+  const dark = await browser.waitUntil(
+    async () => {
+      const tokens = await readTokens();
+      return tokens.paper === light.paper ? false : tokens;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "다크로 바꿔도 종이색이 바뀌지 않았다" },
+  );
+
+  expect(dark.accent).toBe(light.accent);
+
+  await (await browser.$('[data-testid="settings-theme-system"]')).click();
+  await (await browser.$('[data-testid="settings-close"]')).click();
+});
+
 // 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.
 // 왜: 세션 파일에 쓰는 것과 그것으로 화면을 되살리는 것은 다른 일이다. 단위 테스트는 앞만 본다.
 // 보장: 탭 둘을 연 뒤 웹뷰를 다시 띄우면 두 탭이 그대로 돌아오고 활성 탭이 유지된다.
