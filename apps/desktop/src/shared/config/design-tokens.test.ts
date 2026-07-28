@@ -30,16 +30,26 @@ describe.each(THEMES)("%s 테마 — 종이 위 글자", (theme) => {
 // 액센트는 테마와 무관하게 한 색이다(브랜드가 테마마다 달라 보이지 않게 — decisions/color-palette).
 // 그 대가로 **글자에는 쓰지 않는다**: 흰 종이 위에서 AA를 넘으려면 휘도가 0.183 이하여야 하고
 // 어두운 종이 위에서 넘으려면 0.201 이상이어야 하는데, 두 조건은 동시에 만족될 수 없다.
-// 따라서 액센트는 표시(커서·dirty ●·포커스 링·강조 테두리)에만 쓰고, 비텍스트 기준(3:1)을 적용한다.
+// 따라서 액센트는 **채운 면**에만 쓰고, 그 위의 글자는 테마 공통인 accent.fg가 맡는다.
 describe("액센트 — 테마 공통 단일 값", () => {
   it("두 테마의 액센트가 같은 색이다", () => {
     expect(resolveSemanticColors("light").accent).toBe(resolveSemanticColors("dark").accent);
   });
 
-  it.each(THEMES)("%s 테마의 종이 위에서 비텍스트 기준(3:1)을 만족한다", (theme) => {
-    const colors = resolveSemanticColors(theme);
-    expect(contrastOnSolid(colors.accent, colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  // 면 위의 글자가 테마별 값이면 다크에서 밝은 라임 위에 밝은 글자가 얹혀 읽히지 않는다.
+  it("액센트 면 위의 글자도 테마 공통이다", () => {
+    expect(resolveSemanticColors("light").accentFg).toBe(resolveSemanticColors("dark").accentFg);
   });
+
+  // 액센트를 면으로 쓴다는 것의 실질 조건 — 그 위에 글자가 얹히므로 AA를 넘겨야 한다.
+  // 채움이 어두워지는 상태(hover·pressed)에서도 유지되어야 한다.
+  it.each(["accent", "accentHover", "accentPressed"] as const)(
+    "%s 면 위의 글자가 AA를 만족한다",
+    (key) => {
+      const colors = resolveSemanticColors("light");
+      expect(contrastOnSolid(colors.accentFg, colors[key])).toBeGreaterThanOrEqual(AA_TEXT);
+    },
+  );
 
   // 이 테스트가 실패한다면 액센트를 글자로 쓸 수 있다는 뜻이고, 그러면 위 금지 규칙의 근거가 사라진다.
   // 즉 규칙과 팔레트가 어긋난 것이므로 둘 중 하나를 고쳐야 한다.
@@ -51,6 +61,18 @@ describe("액센트 — 테마 공통 단일 값", () => {
       }),
     );
     expect(worst).toBeLessThan(AA_TEXT);
+  });
+
+  // 라이트 종이에서는 채움의 휘도가 흰색에 가까워 경계가 서지 않는다. 그 자리를 테두리가 맡는다.
+  it("라이트 테마에서는 accent.fg 테두리가 면의 경계를 만든다", () => {
+    const colors = resolveSemanticColors("light");
+    expect(contrastOnSolid(colors.accent, colors.bgPaper)).toBeLessThan(AA_NON_TEXT);
+    expect(contrastOnSolid(colors.accentFg, colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
+  });
+
+  it("다크 테마에서는 채움이 직접 면의 경계를 만든다", () => {
+    const colors = resolveSemanticColors("dark");
+    expect(contrastOnSolid(colors.accent, colors.bgPaper)).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 });
 
@@ -108,14 +130,14 @@ describe("상태색 — 네 색 모두 두 종이에서 표시 기준(3:1)을 �
   });
 });
 
-describe("크롬 위 액센트 금지 (→ decisions/color-palette)", () => {
-  // 다크 테마만 보면 액센트는 유리 위에서도 통과한다. 금지의 근거는 라이트 테마다 —
-  // 흰 유리 위 액센트가 어두운 바탕화면에서 1.31:1까지 떨어진다.
-  // 컴포넌트 코드는 한 갈래이므로 규칙도 하나여야 한다: 한 테마에서 못 쓰면 두 테마 모두에서 금지다.
-  it("액센트는 적어도 한 테마의 유리 위에서 기준을 통과하지 못한다", () => {
+describe("유리 위 가는 표시 금지 (→ decisions/color-palette)", () => {
+  // 커서·포커스 링·점은 면적이 없어 휘도가 지배한다. 액센트를 그 자리에 쓰면 어느 한 테마의
+  // 유리 위에서 비텍스트 기준마저 무너진다. 컴포넌트 코드는 한 갈래이므로 규칙도 하나여야 한다:
+  // 한 테마에서 못 쓰면 두 테마 모두에서 금지다. 채운 면은 테두리가 경계를 맡으므로 이 금지 밖이다.
+  it("액센트는 적어도 한 테마의 유리 위에서 비텍스트 기준(3:1)을 통과하지 못한다", () => {
     const failing = THEMES.filter((theme) => {
       const colors = resolveSemanticColors(theme);
-      return worstOnGlass(colors.accent, colors.bgChrome) < AA_TEXT;
+      return worstOnGlass(colors.accent, colors.bgChrome) < AA_NON_TEXT;
     });
     expect(failing.length).toBeGreaterThan(0);
   });

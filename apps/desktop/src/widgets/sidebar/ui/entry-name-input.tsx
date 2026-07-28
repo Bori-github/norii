@@ -32,7 +32,7 @@ const rowClass = css({
   borderRadius: "md",
   background: "bg.paper",
   outline: "2px solid",
-  outlineColor: "color-mix(in srgb, var(--colors-glacier-300) 50%, transparent)",
+  outlineColor: "color-mix(in srgb, var(--colors-accent) 50%, transparent)",
 });
 
 const inputClass = css({
