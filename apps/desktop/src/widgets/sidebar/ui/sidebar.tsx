@@ -62,7 +62,7 @@ const iconButtonClass = css({
   padding: "1",
   cursor: "pointer",
   _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
 });
 
 const iconClass = css({ width: "4", height: "4" });
@@ -78,7 +78,7 @@ const folderButtonClass = css({
   cursor: "pointer",
   flexShrink: 0,
   _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
 });
 
 const treeClass = css({
@@ -127,7 +127,7 @@ const emptyButtonClass = css({
   paddingY: "1",
   cursor: "pointer",
   _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
 });
 
 function folderNameOf(path: string): string {

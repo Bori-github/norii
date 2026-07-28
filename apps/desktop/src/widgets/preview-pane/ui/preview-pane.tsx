@@ -35,7 +35,7 @@ const paneClass = css({
   contain: "paint",
   // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
   // → design/decisions/color-palette).
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
   fontFamily: "prose",
   lineHeight: "prose",
@@ -96,7 +96,7 @@ const paneClass = css({
     textDecoration: "underline",
     textUnderlineOffset: "2px",
     _hover: { textDecorationThickness: "2px" },
-    _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
+    _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
   },
   "& hr": { borderColor: "border", marginY: "4" },
   "& img": { maxWidth: "100%" },

@@ -16,7 +16,7 @@ const buttonClass = css({
   paddingY: "0.5",
   borderRadius: "sm",
   _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   "&[aria-pressed='true'] [data-pane]": { fill: "currentColor", fillOpacity: 0.25 },
   "& svg": { width: "4", height: "4" },
 });

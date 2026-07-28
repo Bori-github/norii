@@ -76,7 +76,7 @@ const navItemClass = css({
   cursor: "pointer",
   _hover: { color: "text" },
   "&[aria-selected='true']": { background: "bg.paper", color: "text", fontWeight: "medium" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
 });
 
 const panelClass = css({
@@ -96,7 +96,7 @@ const closeButtonClass = css({
   color: "text",
   cursor: "pointer",
   _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   "& svg": { width: "4", height: "4" },
 });
 
@@ -158,7 +158,7 @@ const segmentButtonClass = css({
   fontSize: "xs",
   cursor: "pointer",
   "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   "& svg": { width: "3.5", height: "3.5" },
 });
 
@@ -198,7 +198,7 @@ const selectClass = css({
   fontFamily: "ui",
   fontSize: "xs",
   cursor: "pointer",
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-1px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-1px" },
 });
 
 // 트랙과 손잡이를 직접 그린다 — OS 기본 슬라이더는 굵기·손잡이 크기가 앱 스케일과 어긋난다.
@@ -223,7 +223,7 @@ const sliderClass = css({
   },
   "&:focus-visible::-webkit-slider-thumb": {
     outline: "2px solid",
-    outlineColor: "accent",
+    outlineColor: "text",
     outlineOffset: "2px",
   },
 });
@@ -250,7 +250,7 @@ const ghostButtonClass = css({
   fontSize: "xs",
   cursor: "pointer",
   _hover: { background: "bg.hover", color: "text" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-1px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-1px" },
 });
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof SunIcon }[] = [

@@ -35,12 +35,12 @@ const tabClass = css({
   borderRightColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
   _hover: { background: "bg.hover" },
   '&[aria-selected="true"]': {
     background: "bg.paper",
     // 액센트는 종이 위에서만 빛난다 — 활성 탭이 종이이므로 여기서만 dirty ●가 액센트가 된다.
-    "& [data-dirty]": { color: "accent" },
+    "& [data-dirty]": { color: "text" },
   },
 });
 

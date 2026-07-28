@@ -46,8 +46,16 @@ describe("noriiTheme", () => {
     expect(themeRules()).toContain("var(--hover)");
   });
 
-  it("커서는 액센트다 — 살아 있는 것의 표시", () => {
-    expect(themeRules()).toContain("var(--accent)");
+  // 액센트는 채운 면에만 쓴다 — 커서·검색 결과 테두리 같은 가는 표시는 본문색이 맡는다
+  // (→ .claude/docs/design/decisions/color-palette.md).
+  it("가는 표시에 액센트를 쓰지 않는다", () => {
+    expect(themeRules()).not.toContain("var(--accent)");
+  });
+
+  it("커서를 본문색으로 그린다", () => {
+    expect(editorThemeSpec(COLORS)[".cm-cursor, .cm-dropCursor"]?.borderLeftColor).toBe(
+      "var(--text)",
+    );
   });
 
   it("편집면 배경을 명시적으로 칠한다 — 유리를 켜도 본문이 뚫리지 않게", () => {

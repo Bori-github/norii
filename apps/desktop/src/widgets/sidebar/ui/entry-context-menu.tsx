@@ -39,8 +39,8 @@ const itemClass = css({
   paddingX: "2.5",
   paddingY: "1",
   cursor: "pointer",
-  _hover: { background: "accent", color: "white" },
-  _focusVisible: { outline: "none", background: "accent", color: "white" },
+  _hover: { background: "accent", color: "accent.fg" },
+  _focusVisible: { outline: "none", background: "accent", color: "accent.fg" },
 });
 
 const dangerItemClass = css({
