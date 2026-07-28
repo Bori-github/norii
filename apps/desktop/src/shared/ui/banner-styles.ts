@@ -19,22 +19,6 @@ export const bannerClass = css({
   whiteSpace: "pre-line",
 });
 
-export const bannerActionClass = css({
-  flexShrink: 0,
-  paddingX: "2",
-  paddingY: "1",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "accent.fg",
-  borderRadius: "sm",
-  cursor: "pointer",
-  background: "accent",
-  color: "accent.fg",
-  fontWeight: "medium",
-  _hover: { background: "accent.hover" },
-  _active: { background: "accent.pressed" },
-});
-
 export const bannerBodyClass = css({ flex: 1 });
 
 // 사용자 개입이 필요한 배너(충돌·삭제됨)만 쓴다. 안내 배너는 기본 모습을 그대로 둔다 —

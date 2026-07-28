@@ -1,6 +1,7 @@
 import { STRINGS } from "../config";
 
-import { bannerActionClass, bannerBodyClass, bannerClass } from "./banner-styles";
+import { bannerBodyClass, bannerClass } from "./banner-styles";
+import { Button, IconButton } from "./button";
 import { useNoticeStore } from "./notice-store";
 
 // 알림 배너 스택 — 에러·확인 요청을 비차단으로 보여준다(네이티브 다이얼로그 금지).
@@ -14,26 +15,25 @@ export function NoticeBanner() {
         <div key={notice.id} className={bannerClass} role="alert" data-testid="notice">
           <span className={bannerBodyClass}>{notice.message}</span>
           {notice.actions?.map((action) => (
-            <button
+            <Button
               key={action.label}
-              type="button"
-              className={bannerActionClass}
+              variant="accent"
+              size="sm"
               onClick={() => {
                 dismissNotice(notice.id);
                 action.onPress();
               }}
             >
               {action.label}
-            </button>
+            </Button>
           ))}
-          <button
-            type="button"
-            className={bannerActionClass}
-            aria-label={STRINGS.dismissNoticeLabel}
+          <IconButton
+            size="sm"
+            label={STRINGS.dismissNoticeLabel}
             onClick={() => dismissNotice(notice.id)}
           >
             ×
-          </button>
+          </IconButton>
         </div>
       ))}
     </>

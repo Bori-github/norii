@@ -1,9 +1,4 @@
-export {
-  bannerActionClass,
-  bannerBodyClass,
-  bannerClass,
-  bannerDangerClass,
-} from "./banner-styles";
+export { bannerBodyClass, bannerClass, bannerDangerClass } from "./banner-styles";
 export { Button, IconButton } from "./button";
 export type { ButtonProps, IconButtonProps } from "./button";
 export { ConfirmDialog } from "./confirm-dialog";

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { css } from "styled-system/css";
 
+import { Button } from "./button";
 import { useConfirmStore } from "./confirm-store";
 
 // 다이얼로그는 앱 위에 뜨지만 불투명하다 — 투명 창에서 backdrop-filter가 동작하지 않는다는 보고가
@@ -31,32 +32,6 @@ const actionsClass = css({
   justifyContent: "flex-end",
   gap: "2",
   marginTop: "4",
-});
-
-// 생성된 클래스를 문자열로 이으면 같은 속성을 둘 다 가질 때 CSS 파일 순서가 결과를
-// 정한다. 덮어쓰기는 스타일 객체를 합쳐서 한다.
-const buttonStyles = {
-  paddingX: "3",
-  paddingY: "1.5",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  borderRadius: "sm",
-  cursor: "pointer",
-  background: "transparent",
-  fontSize: "sm",
-  _hover: { background: "bg.hover" },
-} as const;
-
-const buttonClass = css(buttonStyles);
-
-const confirmButtonClass = css(buttonStyles, {
-  background: "accent",
-  color: "accent.fg",
-  borderColor: "accent.fg",
-  fontWeight: "semibold",
-  _hover: { background: "accent.hover" },
-  _active: { background: "accent.pressed" },
 });
 
 // 인앱 확인 모달 — 표준 <dialog>가 포커스 트랩·Esc(cancel 이벤트)를 기본 제공한다.
@@ -90,22 +65,12 @@ export function ConfirmDialog() {
         {pending.body}
       </p>
       <div className={actionsClass}>
-        <button
-          type="button"
-          className={buttonClass}
-          data-testid="confirm-cancel"
-          onClick={() => settle(false)}
-        >
+        <Button data-testid="confirm-cancel" onClick={() => settle(false)}>
           {pending.cancelLabel}
-        </button>
-        <button
-          type="button"
-          className={confirmButtonClass}
-          data-testid="confirm-accept"
-          onClick={() => settle(true)}
-        >
+        </Button>
+        <Button variant="accent" data-testid="confirm-accept" onClick={() => settle(true)}>
           {pending.confirmLabel}
-        </button>
+        </Button>
       </div>
     </dialog>
   );
