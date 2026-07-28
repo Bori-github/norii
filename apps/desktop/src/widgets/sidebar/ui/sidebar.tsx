@@ -6,7 +6,7 @@ import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { SettingsButton } from "@features/toggle-settings";
 import { STRINGS } from "@shared/config";
-import { FilePlusIcon, FolderPlusIcon } from "@shared/ui";
+import { Button, FilePlusIcon, FolderPlusIcon } from "@shared/ui";
 
 import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
 import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
@@ -67,20 +67,6 @@ const iconButtonClass = css({
 
 const iconClass = css({ width: "4", height: "4" });
 
-const folderButtonClass = css({
-  border: "none",
-  background: "transparent",
-  color: "text",
-  fontSize: "xs",
-  borderRadius: "sm",
-  paddingX: "1.5",
-  paddingY: "0.5",
-  cursor: "pointer",
-  flexShrink: 0,
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
-});
-
 const treeClass = css({
   flex: 1,
   overflowY: "auto",
@@ -113,21 +99,6 @@ const emptyClass = css({
   fontSize: "xs",
   color: "text",
   textAlign: "center",
-});
-
-const emptyButtonClass = css({
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  background: "transparent",
-  color: "text",
-  fontSize: "sm",
-  borderRadius: "md",
-  paddingX: "3",
-  paddingY: "1",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
 });
 
 function folderNameOf(path: string): string {
@@ -248,14 +219,9 @@ export function Sidebar() {
       <nav className={sidebarClass} aria-label={STRINGS.sidebarTreeLabel} data-testid="sidebar">
         <div className={emptyClass}>
           <span>{STRINGS.sidebarEmptyBody}</span>
-          <button
-            type="button"
-            className={emptyButtonClass}
-            data-testid="open-folder"
-            onClick={() => void openFolderInteractive()}
-          >
+          <Button data-testid="open-folder" onClick={() => void openFolderInteractive()}>
             {STRINGS.openFolderButtonLabel}
-          </button>
+          </Button>
         </div>
         <div className={footerClass}>
           <SettingsButton />
@@ -289,15 +255,14 @@ export function Sidebar() {
           >
             <FolderPlusIcon className={iconClass} />
           </button>
-          <button
-            type="button"
-            className={folderButtonClass}
-            aria-label={STRINGS.openFolderButtonLabel}
+          <Button
+            variant="ghost"
+            size="sm"
             data-testid="open-folder"
             onClick={() => void openFolderInteractive()}
           >
             {STRINGS.openFolderButtonLabel}
-          </button>
+          </Button>
         </div>
       </div>
       <ul

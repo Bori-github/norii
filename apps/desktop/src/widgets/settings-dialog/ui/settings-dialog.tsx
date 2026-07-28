@@ -14,7 +14,7 @@ import { useResolvedTheme, useThemeStore } from "@entities/theme";
 import type { ThemePreference } from "@entities/theme";
 import { BLUR_RADIUS_DEFAULT, BLUR_RADIUS_MAX, STRINGS } from "@shared/config";
 import { hasWindowGlass } from "@shared/lib";
-import { CloseIcon, ComputerIcon, MoonIcon, SunIcon } from "@shared/ui";
+import { Button, CloseIcon, ComputerIcon, MoonIcon, SunIcon } from "@shared/ui";
 
 // 다이얼로그는 불투명하다(→ .claude/docs/design/decisions/glass.md).
 const dialogClass = css({
@@ -236,21 +236,6 @@ const actionsClass = css({
   borderTopWidth: "1px",
   borderTopStyle: "solid",
   borderTopColor: "border",
-});
-
-const ghostButtonClass = css({
-  paddingX: "3",
-  paddingY: "1.5",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  borderRadius: "sm",
-  background: "transparent",
-  color: "text.muted",
-  fontSize: "xs",
-  cursor: "pointer",
-  _hover: { background: "bg.hover", color: "text" },
-  _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-1px" },
 });
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof SunIcon }[] = [
@@ -505,14 +490,9 @@ export function SettingsDialog() {
       </div>
 
       <div className={actionsClass}>
-        <button
-          type="button"
-          className={ghostButtonClass}
-          data-testid="settings-reset"
-          onClick={restoreDefaults}
-        >
+        <Button size="sm" data-testid="settings-reset" onClick={restoreDefaults}>
           {STRINGS.settingsResetLabel}
-        </button>
+        </Button>
       </div>
     </dialog>
   );
