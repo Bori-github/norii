@@ -6,7 +6,7 @@ import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { SettingsButton } from "@features/toggle-settings";
 import { STRINGS } from "@shared/config";
-import { Button, FilePlusIcon, FolderPlusIcon } from "@shared/ui";
+import { Button, FilePlusIcon, FolderPlusIcon, IconButton } from "@shared/ui";
 
 import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
 import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
@@ -52,20 +52,6 @@ const headerActionsClass = css({
   gap: "0.5",
   flexShrink: 0,
 });
-
-const iconButtonClass = css({
-  display: "flex",
-  border: "none",
-  background: "transparent",
-  color: "text",
-  borderRadius: "sm",
-  padding: "1",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  layerStyle: "focusOutside",
-});
-
-const iconClass = css({ width: "4", height: "4" });
 
 const treeClass = css({
   flex: 1,
@@ -237,24 +223,20 @@ export function Sidebar() {
           {folderNameOf(rootDir)}
         </span>
         <div className={headerActionsClass}>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={STRINGS.newFileButtonLabel}
+          <IconButton
+            label={STRINGS.newFileButtonLabel}
             data-testid="new-file"
             onClick={() => void startCreate("file", null)}
           >
-            <FilePlusIcon className={iconClass} />
-          </button>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={STRINGS.newDirButtonLabel}
+            <FilePlusIcon />
+          </IconButton>
+          <IconButton
+            label={STRINGS.newDirButtonLabel}
             data-testid="new-dir"
             onClick={() => void startCreate("dir", null)}
           >
-            <FolderPlusIcon className={iconClass} />
-          </button>
+            <FolderPlusIcon />
+          </IconButton>
           <Button
             variant="ghost"
             size="sm"
