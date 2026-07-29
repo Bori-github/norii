@@ -4,7 +4,7 @@ import { css } from "styled-system/css";
 import { useDocumentStore } from "@entities/document";
 import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
-import { AlertTriangleIcon } from "@shared/ui";
+import { AlertTriangleIcon, CloseIcon, IconButton } from "@shared/ui";
 
 // 탭바는 유리(크롬)다 — 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표). 유리 드래그 띠·앱
 // 이름·토글은 타이틀 스트립이 소유한다(→ widgets/title-strip); 탭바는 그 아래 오른쪽 칸에 선다.
@@ -56,16 +56,6 @@ const warningClass = css({
 
 // 유리 위에서 흐려지는 것을 감수한 자리다 — DESIGN.md 접근성 기준의 유일한 예외다.
 const alertTitleClass = css({ color: "status.danger" });
-
-const closeClass = css({
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-  color: "text",
-  borderRadius: "sm",
-  paddingX: "1",
-  _hover: { background: "bg.hover" },
-});
 
 // 탭바 — 열린 문서 목록·dirty 표시(●)·닫기. 닫기 규칙(플러시·확인)은 features/save-file이 소유.
 // 키보드: roving tabindex(활성 탭만 Tab 정지점) + ←/→ 이동 + Enter/Space 활성화 —
@@ -171,18 +161,18 @@ export function TabBar() {
                 ●
               </span>
             )}
-            <button
-              type="button"
-              className={closeClass}
-              aria-label={STRINGS.closeTabLabel}
+            <IconButton
+              size="sm"
+              label={STRINGS.closeTabLabel}
+              // 탭 정지점은 탭 자신뿐이다 — 키보드 닫기는 Delete가 맡는다(위 onTabKeyDown).
               tabIndex={-1}
               onClick={(event) => {
                 event.stopPropagation();
                 void requestCloseTab(tab.id);
               }}
             >
-              ×
-            </button>
+              <CloseIcon />
+            </IconButton>
           </div>
         );
       })}
