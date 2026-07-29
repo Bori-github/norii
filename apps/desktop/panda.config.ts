@@ -119,6 +119,13 @@ export default defineConfig({
           editor: { value: "1.6" },
           prose: { value: "1.8" },
         },
+
+        // Panda 기본값(4·6·8px)보다 작게 잡는다(→ DESIGN.md 모서리).
+        radii: {
+          sm: { value: "2px" },
+          md: { value: "4px" },
+          lg: { value: "6px" },
+        },
       },
 
       // 다이얼로그 진입 — 상태 변화를 설명하는 모션만 둔다(→ DESIGN.md 모션).
@@ -191,8 +198,8 @@ export default defineConfig({
           accent: {
             DEFAULT: { value: "{colors.lime.200}" },
             fg: { value: "{colors.gray.900}" },
-            hover: { value: "#c4f420" },
-            pressed: { value: "#b7e329" },
+            hover: { value: "#baeb00" },
+            pressed: { value: "#a6d400" },
           },
 
           status: {
@@ -218,15 +225,15 @@ export default defineConfig({
       // 포커스 링 — 어디에 쓰고 왜 text인지는 decisions/color-palette가 소유한다.
       // Panda 내장 focusRing 유틸은 안쪽 링을 offset 0으로 그리고 borderColor까지 바꿔 쓰지 않는다.
       layerStyles: {
-        focusInside: {
-          value: {
-            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
-          },
-        },
-        // 잘라내는 컨테이너 밖에 있는 것 — 링크·떠 있는 버튼.
         focusOutside: {
           value: {
             _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
+          },
+        },
+        // 링이 밖으로 나갈 자리가 없을 때만 쓴다 — 잘라내는 묶음 안이거나 여백이 링보다 좁은 곳.
+        focusInside: {
+          value: {
+            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
           },
         },
       },

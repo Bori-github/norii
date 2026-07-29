@@ -33,9 +33,8 @@ describe("버튼 변형", () => {
 });
 
 describe("모든 변형이 공유하는 것", () => {
-  // 탭 묶음·설정 창처럼 잘라내는 컨테이너 안에 놓이므로 바깥 링은 잘린다.
-  it("포커스 링은 안쪽에 그린다", () => {
-    expect(base.layerStyle).toBe("focusInside");
+  it("포커스 링은 바깥에 그린다", () => {
+    expect(base.layerStyle).toBe("focusOutside");
   });
 
   it("비활성은 액센트를 회수하고 무채색으로 둔다", () => {

@@ -42,7 +42,7 @@ const selectClass = css({
   fontFamily: "ui",
   fontSize: "xs",
   cursor: "pointer",
-  layerStyle: "focusInside",
+  layerStyle: "focusOutside",
 });
 
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {

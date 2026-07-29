@@ -62,7 +62,7 @@ const iconButtonClass = css({
   padding: "1",
   cursor: "pointer",
   _hover: { background: "bg.hover" },
-  layerStyle: "focusInside",
+  layerStyle: "focusOutside",
 });
 
 const iconClass = css({ width: "4", height: "4" });

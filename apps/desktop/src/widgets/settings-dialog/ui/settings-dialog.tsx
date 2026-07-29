@@ -66,7 +66,7 @@ const navItemClass = css({
   cursor: "pointer",
   _hover: { color: "text" },
   "&[aria-selected='true']": { background: "bg.paper", color: "text", fontWeight: "medium" },
-  layerStyle: "focusInside",
+  layerStyle: "focusOutside",
 });
 
 const panelClass = css({

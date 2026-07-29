@@ -14,7 +14,7 @@ export const BUTTON_STYLES = {
     borderRadius: "sm",
     cursor: "pointer",
     whiteSpace: "nowrap",
-    layerStyle: "focusInside",
+    layerStyle: "focusOutside",
     _disabled: {
       cursor: "not-allowed",
       background: "bg.hover",

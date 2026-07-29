@@ -15,7 +15,7 @@ describe("포커스 링", () => {
     });
   });
 
-  // 잘라내는 컨테이너(탭 묶음·설정 창) 안에서 바깥 링은 잘려 보이지 않는다.
+  // 탭 묶음처럼 잘라내는 컨테이너 안에서는 바깥 링이 잘려 보이지 않아 안쪽 링을 쓴다.
   it("안쪽 링은 요소 안으로, 바깥 링은 요소 밖으로 그린다", () => {
     expect(layerStyles.focusInside?.value).toMatchObject({
       _focusVisible: { outlineOffset: "-2px" },
