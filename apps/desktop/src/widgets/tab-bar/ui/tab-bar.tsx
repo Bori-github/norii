@@ -1,63 +1,68 @@
 import { useEffect, useRef } from "react";
-import { css } from "styled-system/css";
+import { css, cx } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { requestCloseTab, useConflictStore, useMissingFileStore } from "@features/save-file";
 import { STRINGS } from "@shared/config";
-import { AlertTriangleIcon, CloseIcon, IconButton } from "@shared/ui";
+import { CloseIcon, IconButton } from "@shared/ui";
+
+import { TabStatusDot } from "./tab-status-dot";
 
 // 탭바는 유리(크롬)다 — 뒤의 바탕화면이 흐려져 비친다(→ DESIGN.md 표면 표). 유리 드래그 띠·앱
 // 이름·토글은 타이틀 스트립이 소유한다(→ widgets/title-strip); 탭바는 그 아래 오른쪽 칸에 선다.
+// overflowX는 위아래도 잘라낸다 — 세로 여백을 줄이면 활성 탭의 그림자가 잘린다.
 const barClass = css({
   display: "flex",
-  alignItems: "stretch",
+  alignItems: "center",
+  gap: "1",
   minWidth: 0,
   overflowX: "auto",
+  padding: "1.5",
   background: "bg.chrome",
   borderBottomWidth: "1px",
   borderBottomStyle: "solid",
   borderBottomColor: "border",
-  minHeight: "9",
 });
 
-// 유리 위 글자는 흐리게 쓰지 않는다 — 흐린 글자를 읽히게 하려면 유리가 사실상 불투명해져야 한다.
-// 활성/비활성은 글자 밝기가 아니라 배경으로 가른다: 활성 탭만 종이를 깐다(→ decisions/color-palette).
 const tabClass = css({
   display: "flex",
   alignItems: "center",
   gap: "1.5",
-  paddingX: "3",
+  flexShrink: 0,
+  width: "48",
+  height: "8",
+  paddingLeft: "2",
+  paddingRight: "1.5",
   fontSize: "sm",
   color: "text",
   cursor: "pointer",
-  borderRightWidth: "1px",
-  borderRightStyle: "solid",
-  borderRightColor: "border",
   whiteSpace: "nowrap",
   userSelect: "none",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "transparent",
+  borderRadius: "md",
   layerStyle: "focusInside",
   _hover: { background: "bg.hover" },
   '&[aria-selected="true"]': {
     background: "bg.paper",
-    // 액센트는 종이 위에서만 빛난다 — 활성 탭이 종이이므로 여기서만 dirty ●가 액센트가 된다.
-    "& [data-dirty]": { color: "text" },
+    borderColor: "border",
+    boxShadow: "sm",
+    // 명시하지 않으면 specificity가 같은 호버가 나중에 나와 종이를 반투명 틴트로 덮는다.
+    _hover: { background: "bg.paper" },
   },
 });
 
-// 비활성 탭의 ●는 유리 위에 있으므로 본문색이다.
-const dirtyClass = css({ color: "text", fontSize: "xs" });
-
-const warningClass = css({
-  display: "inline-flex",
-  flexShrink: 0,
-  color: "status.danger",
-  "& svg": { width: "3.5", height: "3.5" },
+const titleClass = css({
+  flex: "1 1 auto",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
 });
 
-// 유리 위에서 흐려지는 것을 감수한 자리다 — DESIGN.md 접근성 기준의 유일한 예외다.
 const alertTitleClass = css({ color: "status.danger" });
 
-// 탭바 — 열린 문서 목록·dirty 표시(●)·닫기. 닫기 규칙(플러시·확인)은 features/save-file이 소유.
+// 탭바 — 열린 문서 목록·상태 점·닫기. 닫기 규칙(플러시·확인)은 features/save-file이 소유.
 // 키보드: roving tabindex(활성 탭만 Tab 정지점) + ←/→ 이동 + Enter/Space 활성화 —
 // ARIA tablist 패턴. 포인터 없이도 모든 탭에 도달할 수 있어야 한다.
 export function TabBar() {
@@ -65,8 +70,6 @@ export function TabBar() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const activateTab = useDocumentStore((state) => state.activateTab);
   const cycleActiveTab = useDocumentStore((state) => state.cycleActiveTab);
-  // 충돌·삭제 배너는 활성 탭 전용 — 비활성 탭의 그 상태는 ⚠ 배지가 유일한 신호다
-  // (→ file-lifecycle.md#외부-변경-처리 비활성 탭의 충돌 표시).
   const conflictTabIds = useConflictStore((state) => state.conflictTabIds);
   const missingTabIds = useMissingFileStore((state) => state.missingTabIds);
   const barRef = useRef<HTMLDivElement>(null);
@@ -115,7 +118,7 @@ export function TabBar() {
         data-testid="tab-bar"
       >
         <div role="tab" aria-selected className={tabClass} data-testid="new-tab">
-          <span>{STRINGS.newTabTitle}</span>
+          <span className={titleClass}>{STRINGS.newTabTitle}</span>
         </div>
       </div>
     );
@@ -142,29 +145,24 @@ export function TabBar() {
             onClick={() => activateTab(tab.id)}
             onKeyDown={(event) => onTabKeyDown(event, tab.id)}
           >
-            <span className={alerted ? alertTitleClass : undefined}>{tab.title}</span>
-            {alerted && (
-              <span
-                className={warningClass}
-                data-testid="tab-warning"
-                aria-label={
+            {alerted ? (
+              <TabStatusDot
+                status="alerted"
+                label={
                   conflictTabIds.includes(tab.id)
                     ? STRINGS.conflictBadgeLabel
                     : STRINGS.missingBadgeLabel
                 }
-              >
-                <AlertTriangleIcon />
-              </span>
+              />
+            ) : (
+              tab.isDirty && <TabStatusDot status="pending" label={STRINGS.dirtyIndicatorLabel} />
             )}
-            {tab.isDirty && (
-              <span className={dirtyClass} data-dirty aria-label={STRINGS.dirtyIndicatorLabel}>
-                ●
-              </span>
-            )}
+            <span className={cx(titleClass, alerted ? alertTitleClass : undefined)}>
+              {tab.title}
+            </span>
             <IconButton
               size="sm"
               label={STRINGS.closeTabLabel}
-              // 탭 정지점은 탭 자신뿐이다 — 키보드 닫기는 Delete가 맡는다(위 onTabKeyDown).
               tabIndex={-1}
               onClick={(event) => {
                 event.stopPropagation();
