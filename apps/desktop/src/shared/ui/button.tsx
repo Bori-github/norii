@@ -51,7 +51,13 @@ export const BUTTON_STYLES = {
       md: { paddingX: "3", paddingY: "1.5", fontSize: "sm" },
     },
     icon: {
-      true: { paddingX: "1.5", paddingY: "1.5" },
+      // 크롬 끝(배너 오른쪽 · 창 머리)에 붙어 있어 바깥 링이 이웃 테두리를 넘는다.
+      true: {
+        paddingX: "1.5",
+        paddingY: "1.5",
+        borderRadius: "md",
+        layerStyle: "focusInside",
+      },
     },
   },
   defaultVariants: { variant: "outline", size: "md" },

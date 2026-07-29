@@ -37,6 +37,16 @@ describe("모든 변형이 공유하는 것", () => {
     expect(base.layerStyle).toBe("focusOutside");
   });
 
+  it("아이콘 버튼만 안쪽에 그린다", () => {
+    expect(variants.icon.true.layerStyle).toBe("focusInside");
+  });
+
+  // 정사각이라 글자 버튼과 같은 2px을 주면 각져 보인다.
+  it("아이콘 버튼은 모서리를 한 단계 크게 둔다", () => {
+    expect(base.borderRadius).toBe("sm");
+    expect(variants.icon.true.borderRadius).toBe("md");
+  });
+
   it("비활성은 액센트를 회수하고 무채색으로 둔다", () => {
     expect(base["_disabled"]).toMatchObject({
       background: "bg.hover",
