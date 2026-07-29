@@ -161,7 +161,7 @@ export function TabBar() {
               {tab.title}
             </span>
             <IconButton
-              size="sm"
+              size="xs"
               label={STRINGS.closeTabLabel}
               tabIndex={-1}
               onClick={(event) => {
