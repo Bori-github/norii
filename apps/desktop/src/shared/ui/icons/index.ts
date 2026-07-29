@@ -18,5 +18,6 @@ export { default as LightbulbIcon } from "./generated/lightbulb";
 export { default as MinusCircleContainedIcon } from "./generated/minus-circle-contained";
 export { default as MoonIcon } from "./generated/moon";
 export { default as PanelLeftIcon } from "./generated/panel-left";
+export { default as PlusIcon } from "./generated/plus";
 export { default as SettingsIcon } from "./generated/settings";
 export { default as SunIcon } from "./generated/sun";

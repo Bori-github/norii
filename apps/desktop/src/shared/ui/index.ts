@@ -22,6 +22,7 @@ export {
   MinusCircleContainedIcon,
   MoonIcon,
   PanelLeftIcon,
+  PlusIcon,
   SettingsIcon,
   SunIcon,
 } from "./icons";
