@@ -100,7 +100,7 @@ dark    [data-theme="dark"] &    사용자·OS가 정한 테마
 glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가(→ window-chrome.md)
 ```
 
-**`glass`를 `dark` 뒤에 정의한다.** 특이도가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
+**`glass`를 `dark` 뒤에 정의한다.** specificity가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
 
 선택지는 셋이다 — `system`(OS를 따른다) · `light` · `dark`. **`system`은 기본값이자 하나의 선택**이다: 그 의도를 버리고 light/dark만 저장하면 OS를 바꿔도 앱이 따라오지 않는다.
 
