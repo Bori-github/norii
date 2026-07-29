@@ -45,6 +45,14 @@ export const BUTTON_STYLES = {
         borderColor: "transparent",
         _hover: { background: "bg.hover" },
       },
+      // 켜짐/꺼짐을 갖는 버튼 — 켜진 것만 본문색이고 나머지는 물러난다.
+      toggle: {
+        background: "transparent",
+        color: "text.muted",
+        borderColor: "transparent",
+        _hover: { background: "bg.hover", color: "text" },
+        "&[aria-pressed='true']": { background: "bg.hover", color: "text" },
+      },
     },
     size: {
       sm: { paddingX: "2", paddingY: "1", fontSize: "xs" },
@@ -70,7 +78,7 @@ const iconSizeClass = {
   md: css({ "& svg": { width: "4", height: "4" } }),
 } as const;
 
-type Variant = "accent" | "outline" | "ghost";
+type Variant = "accent" | "outline" | "ghost" | "toggle";
 type Size = "sm" | "md";
 
 // className은 배치(여백·정렬)만 받는다. 생성된 클래스는 같은 속성을 둘 다 가지면 CSS 파일

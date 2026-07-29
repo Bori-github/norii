@@ -26,7 +26,7 @@ describe("버튼 변형", () => {
 
   // 액센트는 채운 면에만 쓴다 — 나머지 변형이 액센트를 집으면 그 규칙이 깨진다.
   it("액센트가 아닌 변형은 액센트 토큰을 쓰지 않는다", () => {
-    for (const name of ["outline", "ghost"] as const) {
+    for (const name of ["outline", "ghost", "toggle"] as const) {
       expect(JSON.stringify(variants.variant[name])).not.toContain("accent");
     }
   });
