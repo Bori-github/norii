@@ -37,17 +37,22 @@ const paneClass = css({
   // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
   fontFamily: "prose",
   lineHeight: "prose",
-  "& h1, & h2, & h3, & h4, & h5, & h6": { lineHeight: "heading" },
-  "& h1": { fontSize: "prose.h1", fontWeight: "bold", marginY: "3" },
-  "& h2": { fontSize: "prose.h2", fontWeight: "bold", marginY: "3" },
-  "& h3": { fontSize: "prose.h3", fontWeight: "bold", marginY: "2" },
-  "& h4": { fontSize: "prose.h4", fontWeight: "bold", marginY: "2" },
-  "& h5": { fontSize: "prose.h5", fontWeight: "bold", marginY: "2" },
-  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted", marginY: "2" },
-  "& p": { marginY: "2" },
-  "& ul, & ol": { paddingLeft: "6", marginY: "2" },
+  "& h1, & h2, & h3, & h4, & h5, & h6": {
+    lineHeight: "heading",
+    marginTop: "6",
+    marginBottom: "4",
+  },
+  "& h1": { fontSize: "prose.h1", fontWeight: "bold" },
+  "& h2": { fontSize: "prose.h2", fontWeight: "bold" },
+  "& h3": { fontSize: "prose.h3", fontWeight: "bold" },
+  "& h4": { fontSize: "prose.h4", fontWeight: "bold" },
+  "& h5": { fontSize: "prose.h5", fontWeight: "bold" },
+  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted" },
+  "& p": { marginTop: 0, marginBottom: "3" },
+  "& ul, & ol": { paddingLeft: "6", marginTop: 0, marginBottom: "3" },
   "& ul": { listStyleType: "disc" },
   "& ol": { listStyleType: "decimal" },
+  "& li + li": { marginTop: "1" },
   "& li.task-list-item": { listStyleType: "none", marginLeft: "-6" },
   // 코드 블록은 종이 위의 옅은 틴트다 — bg.canvas는 유리에서 투명해지므로 쓰지 않는다.
   // 전용 토큰이 없어 상태 배경(bg.hover)을 빌린다(→ 열린 결정: 프리뷰 코드면 토큰).
@@ -55,9 +60,10 @@ const paneClass = css({
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
   "& pre": {
     bg: "bg.hover",
-    padding: "3",
+    padding: "4",
     borderRadius: "md",
-    marginY: "2",
+    marginTop: 0,
+    marginBottom: "4",
     position: "relative",
   },
   "& pre code": { display: "block", overflowX: "auto" },
@@ -80,14 +86,16 @@ const paneClass = css({
     borderColor: "border",
     paddingLeft: "3",
     color: "text.muted",
-    marginY: "2",
+    marginTop: 0,
+    marginBottom: "4",
   },
   // 넓은 표는 패널 전체가 아니라 표만 가로 스크롤한다(코드 블록과 동일한 처리).
   // 셀 글자는 먼저 줄바꿈되고, 더 줄일 수 없을 때(열이 많을 때) 비로소 가로 스크롤이 생긴다 —
   // GitHub 등 표준 마크다운 뷰어와 같은 동작이다.
   "& table": {
     borderCollapse: "collapse",
-    marginY: "2",
+    marginTop: 0,
+    marginBottom: "4",
     display: "block",
     overflowX: "auto",
     maxWidth: "100%",
@@ -96,9 +104,10 @@ const paneClass = css({
     borderWidth: "1px",
     borderColor: "border",
     paddingX: "3",
-    paddingY: "1",
+    paddingY: "1.5",
     wordBreak: "keep-all",
   },
+  "& th": { fontWeight: "semibold", bg: "bg.hover", textAlign: "left" },
   // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/color-palette).
   // 프리뷰의 유일한 상호작용 요소이므로 가리킴·포커스에 반응한다.
   "& a": {
@@ -108,8 +117,12 @@ const paneClass = css({
     _hover: { textDecorationThickness: "2px" },
     layerStyle: "focusOutside",
   },
-  "& hr": { borderColor: "border", marginY: "4" },
-  "& img": { maxWidth: "100%" },
+  "& details": { marginTop: 0, marginBottom: "4" },
+  "& summary": { cursor: "pointer", layerStyle: "focusOutside" },
+  // 삼각형이 차지하는 폭은 11.4px다(실측) — 그에 맞는 단계를 쓴다.
+  "& details > *:not(summary)": { marginLeft: "3" },
+  "& hr": { borderColor: "border", marginY: "6" },
+  "& img": { maxWidth: "100%", marginTop: 0, marginBottom: "4" },
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
     borderColor: "border",
@@ -157,6 +170,7 @@ const paneClass = css({
 const contentClass = css({
   maxWidth: "72ch",
   marginX: "auto",
+  "& > *:first-child": { marginTop: 0 },
 });
 
 // (링크 클릭 처리는 컴포넌트 안에 있다 — 앵커 이동이 패널·콘텐츠 요소를 필요로 한다.)
