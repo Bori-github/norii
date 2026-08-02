@@ -9,7 +9,7 @@ norii는 프로젝트 내부에 디자인 시스템을 구축하고, 스타일�
 디자인 문서는 넷으로 나뉜다. 같은 사실을 복제하지 않는다.
 
 ```text
-/DESIGN.md                       지금의 규칙 — 큰 그림 · 불변식 · 표면 표 · 원칙 요약
+/DESIGN.md                       지켜야 할 규칙 — 재질(표면 표) · 색 · 타이포 · 접근성 · 모션 · 간격 · 모서리
 design/decisions/*.md            왜 그렇게 정했는가 — 맥락 · 기각한 대안 · 치르는 비용
 design/design-system.md          어떻게 구현하는가 — Panda 토큰 · recipe · 대비 게이트 (이 문서)
 design/window-chrome.md          창 설정의 실제 값 — transparent · 창 뒤 흐림 반경 · 폴백
@@ -129,7 +129,7 @@ semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{c
 버튼·탭 같은 컴포넌트의 변형(`variant`·`size`·상태)은 Panda **recipe**로 정의한다. 변형이 타입으로 노출되어 오용을 막는다.
 
 ```text
-buttonRecipe = { base, variants: { variant: {accent, outline, ghost}, size: {sm, md}, icon }, defaultVariants }
+buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defaultVariants }
 ```
 
 여러 요소로 구성된 컴포넌트는 slot recipe(`sva`)를 쓴다.

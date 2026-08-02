@@ -42,6 +42,7 @@ norii/
       design/                디자인 상세 (주제별 결정 기록 · Panda 토큰 · 창 표면 계약)
     rules/                   규칙·정책 (작업 규칙·비목표·라이선스·커밋 컨벤션)
     commands/                Claude 슬래시 커맨드 (/commit·/pr → commit-convention.md)
+    skills/                  작업 절차 스킬 (실앱 E2E 런북 → testing.md)
 
   apps/
     desktop/                 Tauri 데스크탑 앱
