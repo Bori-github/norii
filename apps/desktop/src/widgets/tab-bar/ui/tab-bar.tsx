@@ -17,6 +17,8 @@ const barClass = css({
   gap: "1.5",
   minWidth: 0,
   overflowX: "auto",
+  "&::-webkit-scrollbar": { display: "none" },
+
   height: "9",
   paddingX: "3",
   background: "bg.chrome",

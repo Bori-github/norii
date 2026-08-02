@@ -96,7 +96,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **비UTF-8 파일명** — 트리가 �로 표시하고 열지 못한다 — macOS는 발생 불가, Windows/Linux 확장 시 (→ [플랫폼 전략](platform-strategy.md))
 - **프리뷰 후속** — 각주 스크롤 동기화 사각지대 · 복사 하이재킹(textContent→innerText) · 헤딩/각주 id 네임스페이스 · mermaid SVG 신뢰 결정 기록 · katex alias 통합 (→ [프리뷰 전략](preview-strategy.md))
 - **아이콘 생성 색 게이트** — svgr 생성물이 `currentColor` 규칙을 지키는지 검사 추가 (→ [디자인 시스템](design/design-system.md#아이콘))
-- **스크롤바 스타일 전역화** — 사이드바·에디터·프리뷰 등 모든 스크롤 면에 일관된 스크롤바. 컴포넌트별이 아니라 `panda.config`의 `globalCss`(`::-webkit-scrollbar`)에서 한 번 정의 (→ [디자인 시스템](design/design-system.md))
 
 ## 성공 기준 (상시 게이트)
 

@@ -181,6 +181,14 @@ export default defineConfig({
               value: { base: "rgba(204, 255, 0, 0.14)", _dark: "rgba(204, 255, 0, 0.16)" },
             },
 
+            // 스크롤바
+            scrollbar: {
+              value: { base: "rgba(23, 23, 23, 0.25)", _dark: "rgba(250, 250, 250, 0.25)" },
+            },
+            scrollbarHover: {
+              value: { base: "rgba(23, 23, 23, 0.4)", _dark: "rgba(250, 250, 250, 0.4)" },
+            },
+
             // 오버레이 뒤를 가리는 딤. 다크에서는 표면 대비가 낮아 더 짙게 깐다.
             scrim: { value: { base: "rgba(0, 0, 0, 0.4)", _dark: "rgba(0, 0, 0, 0.6)" } },
           },
@@ -252,6 +260,20 @@ export default defineConfig({
       fontFamily: "ui",
       lineHeight: "ui",
     },
+
+    "::-webkit-scrollbar": { width: "10px", height: "10px" },
+    "::-webkit-scrollbar-track": { background: "transparent" },
+    // 손잡이 둘레의 여백은 투명 테두리로 만든다 — 배경을 content-box까지만 칠한다.
+    "::-webkit-scrollbar-thumb": {
+      backgroundColor: "bg.scrollbar",
+      backgroundClip: "content-box",
+      borderWidth: "3px",
+      borderStyle: "solid",
+      borderColor: "transparent",
+      borderRadius: "full",
+    },
+    "::-webkit-scrollbar-thumb:hover": { backgroundColor: "bg.scrollbarHover" },
+    "::-webkit-scrollbar-corner": { background: "transparent" },
   },
 
   // 생성물 위치 — VCS 제외(→ .claude/docs/project-structure.md).
