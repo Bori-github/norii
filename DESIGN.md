@@ -1,6 +1,6 @@
 # norii 디자인
 
-지켜야 할 규칙만 담는다. 왜 그렇게 정했는지는 [결정 기록](.claude/docs/design/decisions/README.md)이, 색·크기의 실제 값은 `apps/desktop/panda.config.ts`가 갖는다.
+지켜야 할 규칙만 담는다. 왜 그렇게 정했는지는 [결정 기록](.claude/docs/design/decisions/)이, 색·크기의 실제 값은 `apps/desktop/panda.config.ts`가 갖는다.
 
 ## 1. 재질
 
