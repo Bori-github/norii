@@ -92,7 +92,13 @@ const paneClass = css({
     overflowX: "auto",
     maxWidth: "100%",
   },
-  "& th, & td": { borderWidth: "1px", borderColor: "border", paddingX: "3", paddingY: "1" },
+  "& th, & td": {
+    borderWidth: "1px",
+    borderColor: "border",
+    paddingX: "3",
+    paddingY: "1",
+    wordBreak: "keep-all",
+  },
   // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/color-palette).
   // 프리뷰의 유일한 상호작용 요소이므로 가리킴·포커스에 반응한다.
   "& a": {
