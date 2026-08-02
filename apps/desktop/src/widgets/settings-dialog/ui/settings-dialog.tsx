@@ -29,9 +29,9 @@ const headerClass = css({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "4",
-  paddingX: "4",
-  paddingY: "3",
+  gap: "5",
+  paddingX: "5",
+  paddingY: "4",
   borderBottomWidth: "1px",
   borderBottomStyle: "solid",
   borderBottomColor: "border",
@@ -44,10 +44,10 @@ const bodyClass = css({ display: "flex", minHeight: "sm", maxHeight: "70vh" });
 const navClass = css({
   display: "flex",
   flexDirection: "column",
-  gap: "0.5",
+  gap: "1",
   flexShrink: 0,
   width: "40",
-  padding: "2",
+  padding: "3",
   borderRightWidth: "1px",
   borderRightStyle: "solid",
   borderRightColor: "border",
@@ -55,8 +55,8 @@ const navClass = css({
 });
 
 const navItemClass = css({
-  paddingX: "2.5",
-  paddingY: "1.5",
+  paddingX: "3",
+  paddingY: "2",
   border: "none",
   borderRadius: "sm",
   background: "transparent",
@@ -72,14 +72,14 @@ const navItemClass = css({
 const panelClass = css({
   flex: 1,
   minWidth: 0,
-  paddingX: "4",
-  paddingBottom: "4",
+  paddingX: "5",
+  paddingBottom: "5",
   overflowY: "auto",
 });
 
 const captionClass = css({
-  paddingTop: "4",
-  paddingBottom: "1",
+  paddingTop: "5",
+  paddingBottom: "1.5",
   fontSize: "xs",
   fontWeight: "semibold",
   letterSpacing: "wide",
@@ -87,7 +87,7 @@ const captionClass = css({
 });
 
 // 컨트롤은 설명 아래 한 줄을 통째로 쓴다 — 슬라이더가 좁으면 끝값을 집기 어렵다.
-const rowClass = css({ display: "flex", flexDirection: "column", gap: "2", paddingY: "3" });
+const rowClass = css({ display: "flex", flexDirection: "column", gap: "3", paddingY: "4" });
 
 // 폭을 쓰지 않는 컨트롤은 설명 오른쪽에 둔다.
 const selectMinWidthClass = css({ minWidth: "32" });
@@ -96,15 +96,15 @@ const rowInlineClass = css({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "4",
-  paddingY: "3",
+  gap: "5",
+  paddingY: "4",
 });
 
 const rowTitleClass = css({ fontSize: "sm", fontWeight: "medium" });
-const rowHintClass = css({ marginTop: "1", fontSize: "xs", color: "text.muted" });
+const rowHintClass = css({ marginTop: "1.5", fontSize: "xs", color: "text.muted" });
 
 const valueClass = css({
-  marginLeft: "1",
+  marginLeft: "1.5",
   fontWeight: "semibold",
   fontVariantNumeric: "tabular-nums",
 });
@@ -113,8 +113,8 @@ const separatorClass = css({ height: "1px", background: "border" });
 
 const segmentClass = css({
   display: "flex",
-  gap: "0.5",
-  padding: "0.5",
+  gap: "1",
+  padding: "1",
   borderWidth: "1px",
   borderStyle: "solid",
   borderColor: "border",
@@ -128,13 +128,13 @@ const segmentButtonClass = css({
   flex: "1",
   alignItems: "center",
   justifyContent: "center",
-  gap: "1.5",
-  paddingY: "1.5",
+  gap: "2",
+  paddingY: "2",
   border: "none",
   borderRadius: "sm",
   background: "transparent",
   color: "text.muted",
-  fontSize: "xs",
+  fontSize: "sm",
   cursor: "pointer",
   "&[aria-pressed='true']": { background: "bg.paper", color: "text", fontWeight: "semibold" },
   layerStyle: "focusInside",
@@ -171,8 +171,8 @@ const sliderClass = css({
 const actionsClass = css({
   display: "flex",
   justifyContent: "flex-end",
-  paddingX: "4",
-  paddingY: "3",
+  paddingX: "5",
+  paddingY: "4",
   borderTopWidth: "1px",
   borderTopStyle: "solid",
   borderTopColor: "border",

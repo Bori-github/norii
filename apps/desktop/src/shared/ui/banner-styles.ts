@@ -8,9 +8,9 @@ import { css } from "styled-system/css";
 export const bannerClass = css({
   display: "flex",
   alignItems: "center",
-  gap: "3",
-  paddingX: "4",
-  paddingY: "2",
+  gap: "4",
+  paddingX: "5",
+  paddingY: "3",
   background: "bg.paper",
   borderBottomWidth: "1px",
   borderBottomStyle: "solid",

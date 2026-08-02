@@ -21,8 +21,8 @@ const COPY_FEEDBACK_MS = 1500;
 // 있다 — 파서 DOM인 pre에 걸어야 해서 여기서는 표현할 수 없다.
 const buttonClass = css({
   position: "absolute",
-  top: "2",
-  right: "2",
+  top: "3",
+  right: "3",
   // 평소에는 투명하다(읽는 동안에는 화면에 없다) — 노출은 pre:hover(패널 쪽)·키보드
   // 포커스·복사됨 상태가 되살린다.
   opacity: 0,
@@ -33,7 +33,7 @@ const buttonClass = css({
   borderWidth: "1px",
   borderColor: "border",
   borderRadius: "sm",
-  padding: "1",
+  padding: "1.5",
   color: "text.muted",
   cursor: "pointer",
   _hover: { color: "text" },

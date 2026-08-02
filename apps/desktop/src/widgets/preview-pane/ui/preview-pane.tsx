@@ -22,8 +22,8 @@ const paneClass = css({
   flex: 1,
   minWidth: 0,
   overflowY: "auto",
-  paddingX: "6",
-  paddingTop: "4",
+  paddingX: "8",
+  paddingTop: "5",
   // 바닥 여백 — 에디터의 scrollPastEnd(마지막 줄을 상단까지)와 감각을 맞춘 큰 여백.
   // 마지막 블록이 바닥에 붙지 않고, 문서의 끝이라는 신호가 된다(VS Code 프리뷰 관례).
   paddingBottom: "70vh",
@@ -53,7 +53,13 @@ const paneClass = css({
   // 전용 토큰이 없어 상태 배경(bg.hover)을 빌린다(→ 열린 결정: 프리뷰 코드면 토큰).
   // 가로 스크롤은 pre가 아니라 **안쪽 code가** 진다 — pre가 스크롤 컨테이너면 그 안에
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
-  "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
+  "& pre": {
+    bg: "bg.hover",
+    padding: "3",
+    borderRadius: "md",
+    marginY: "2",
+    position: "relative",
+  },
   "& pre code": { display: "block", overflowX: "auto" },
   // 리거처를 끄는 이유는 decisions/typography가 소유한다.
   "& code": { fontFamily: "editor", fontSize: "prose.code", fontVariantLigatures: "none" },

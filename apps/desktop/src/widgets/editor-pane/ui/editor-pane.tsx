@@ -22,6 +22,8 @@ const hostClass = css({
   // CM6 baseTheme가 .cm-content에 직접 font-family를 걸어 .cm-editor의 값을 덮는다.
   // 토큰이 실제로 적용되려면 같은 요소를 겨냥해야 한다(실앱에서 monospace로 나오는 것을 확인).
   // 리거처를 끄는 이유는 decisions/typography가 소유한다.
+  // 검색 패널·거터는 에디터 안에 있지만 UI다 — 본문 크기를 물려받지 않게 따로 준다.
+  "& .cm-panels, & .cm-gutters": { fontSize: "sm" },
   "& .cm-content": {
     fontFamily: "editor",
     fontSize: "sm",
@@ -37,7 +39,7 @@ const emptyClass = css({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "2",
+  gap: "3",
   background: "bg.paper",
   color: "text.muted",
 });

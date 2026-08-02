@@ -20,7 +20,7 @@ export const DIALOG_STYLES = {
   variants: {
     size: {
       // 안쪽 여백을 상자가 갖는다 — 내용이 글 한 덩어리다.
-      sm: { maxWidth: "sm", padding: "5", borderRadius: "md" },
+      sm: { maxWidth: "sm", padding: "6", borderRadius: "md" },
       // 여백을 내용이 갖는다 — 머리말·본문이 자기 경계까지 채운다.
       lg: { width: "90vw", maxWidth: "2xl", padding: "0", overflow: "hidden", borderRadius: "lg" },
     },

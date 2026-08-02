@@ -11,7 +11,7 @@ const wrapClass = css({
     content: '""',
     position: "absolute",
     top: "50%",
-    right: "3",
+    right: "4",
     width: "6px",
     height: "6px",
     borderRightWidth: "1.5px",
@@ -30,9 +30,9 @@ const selectClass = css({
   // 감싸는 상자를 넓혀도 셀렉트가 따라 늘어나야 한다 — 안 그러면 상자 오른쪽에 그린 꺽쇠가
   // 셀렉트에서 떨어져 뜬다. basis는 auto로 둔다(0이면 폭을 안 준 상자가 0으로 접힌다).
   flex: "1 1 auto",
-  paddingLeft: "2.5",
-  paddingRight: "7",
-  paddingY: "1.5",
+  paddingLeft: "3",
+  paddingRight: "8",
+  paddingY: "2",
   borderWidth: "1px",
   borderStyle: "solid",
   borderColor: "border",
@@ -40,7 +40,7 @@ const selectClass = css({
   background: "bg.hover",
   color: "text",
   fontFamily: "ui",
-  fontSize: "xs",
+  fontSize: "sm",
   cursor: "pointer",
   layerStyle: "focusOutside",
 });

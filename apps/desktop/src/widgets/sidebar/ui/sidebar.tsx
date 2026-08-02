@@ -35,10 +35,10 @@ const headerClass = css({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "1",
-  paddingX: "2",
-  paddingY: "1",
-  fontSize: "xs",
+  gap: "1.5",
+  paddingX: "3",
+  height: "9",
+  fontSize: "sm",
   fontWeight: "medium",
   color: "text",
   whiteSpace: "nowrap",
@@ -49,7 +49,7 @@ const headerNameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 const headerActionsClass = css({
   display: "flex",
   alignItems: "center",
-  gap: "0.5",
+  gap: "1.5",
   flexShrink: 0,
 });
 
@@ -61,14 +61,14 @@ const treeClass = css({
   padding: 0,
   paddingTop: "1.5",
   // 마지막 줄에서 이름을 고칠 때 툴팁이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
-  paddingBottom: "8",
+  paddingBottom: "10",
 });
 
 const footerClass = css({
   display: "flex",
   justifyContent: "flex-end",
   flexShrink: 0,
-  padding: "1",
+  padding: "1.5",
   borderTopWidth: "1px",
   borderTopStyle: "solid",
   borderTopColor: "border",
@@ -79,10 +79,10 @@ const emptyClass = css({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "2",
+  gap: "3",
   flex: 1,
-  paddingX: "3",
-  fontSize: "xs",
+  paddingX: "4",
+  fontSize: "sm",
   color: "text",
   textAlign: "center",
 });
@@ -224,6 +224,7 @@ export function Sidebar() {
         </span>
         <div className={headerActionsClass}>
           <IconButton
+            size="xs"
             label={STRINGS.newFileButtonLabel}
             data-testid="new-file"
             onClick={() => void startCreate("file", null)}
@@ -231,6 +232,7 @@ export function Sidebar() {
             <FilePlusIcon />
           </IconButton>
           <IconButton
+            size="xs"
             label={STRINGS.newDirButtonLabel}
             data-testid="new-dir"
             onClick={() => void startCreate("dir", null)}
@@ -239,7 +241,7 @@ export function Sidebar() {
           </IconButton>
           <Button
             variant="ghost"
-            size="sm"
+            size="xs"
             data-testid="open-folder"
             onClick={() => void openFolderInteractive()}
           >

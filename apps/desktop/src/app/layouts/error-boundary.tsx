@@ -10,7 +10,7 @@ const fallbackClass = css({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "2",
+  gap: "3",
   color: "text",
 });
 

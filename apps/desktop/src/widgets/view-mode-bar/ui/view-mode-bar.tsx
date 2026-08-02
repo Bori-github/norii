@@ -7,13 +7,11 @@ import { ColumnVerticalIcon, EditIcon, FileEyeIcon, IconButton } from "@shared/u
 
 // 뷰 모드 전환 바 — 불투명 표면이다(→ DESIGN.md 표면 표 · preview-strategy.md#뷰-모드).
 const barClass = css({
-  position: "relative",
-  display: "flex",
+  display: "grid",
+  gridTemplateColumns: "1fr auto 1fr",
   alignItems: "center",
-  justifyContent: "center",
-  minHeight: "8",
-  // 좌우 대칭 여백 — 절대배치 버튼 묶음의 자리를 비워 두면서 제목이 가운데를 지키게 한다.
-  paddingX: "28",
+  height: "8",
+  paddingX: "3",
   fontSize: "sm",
   background: "bg.paper",
   borderBottomWidth: "1px",
@@ -22,6 +20,7 @@ const barClass = css({
 });
 
 const titleClass = css({
+  gridColumn: 2,
   minWidth: 0,
   overflow: "hidden",
   whiteSpace: "nowrap",
@@ -30,10 +29,10 @@ const titleClass = css({
 });
 
 const buttonsClass = css({
-  position: "absolute",
-  right: "2",
+  gridColumn: 3,
   display: "inline-flex",
-  gap: "0.5",
+  justifySelf: "end",
+  gap: "1.5",
 });
 
 const MODES: { mode: ViewMode; label: string; Icon: typeof EditIcon }[] = [
@@ -60,7 +59,7 @@ export function ViewModeBar() {
           <IconButton
             key={target}
             variant="toggle"
-            size="sm"
+            size="xs"
             label={label}
             title={label}
             aria-pressed={mode === target}

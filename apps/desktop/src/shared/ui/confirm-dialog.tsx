@@ -5,7 +5,7 @@ import { useConfirmStore } from "./confirm-store";
 import { Dialog } from "./dialog";
 
 const bodyClass = css({
-  marginTop: "2",
+  marginTop: "3",
   fontSize: "sm",
   color: "text.muted",
   whiteSpace: "pre-line",
@@ -14,8 +14,8 @@ const bodyClass = css({
 const actionsClass = css({
   display: "flex",
   justifyContent: "flex-end",
-  gap: "2",
-  marginTop: "4",
+  gap: "3",
+  marginTop: "5",
 });
 
 export function ConfirmDialog() {

@@ -8,11 +8,10 @@ import { STRINGS } from "@shared/config";
 const barClass = css({
   display: "flex",
   alignItems: "center",
-  gap: "2",
-  paddingX: "2",
-  paddingY: "0.5",
-  minHeight: "6",
-  fontSize: "xs",
+  gap: "4",
+  paddingX: "3",
+  height: "7",
+  fontSize: "sm",
   background: "bg.chrome",
   borderTopWidth: "1px",
   borderTopStyle: "solid",
@@ -22,7 +21,7 @@ const barClass = css({
 const fileClass = css({
   display: "inline-flex",
   alignItems: "center",
-  gap: "1",
+  gap: "1.5",
   minWidth: 0,
 });
 
@@ -38,7 +37,7 @@ const fileTitleClass = css({
 const metricsClass = css({
   display: "inline-flex",
   alignItems: "center",
-  gap: "3",
+  gap: "4",
   marginLeft: "auto",
   whiteSpace: "nowrap",
   fontVariantNumeric: "tabular-nums",

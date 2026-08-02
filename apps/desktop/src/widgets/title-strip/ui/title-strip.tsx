@@ -15,8 +15,9 @@ const titleStripClass = css({
   borderBottomWidth: "1px",
   borderBottomStyle: "solid",
   borderBottomColor: "border",
-  minHeight: "7",
-  _glass: { position: "relative", height: "36px", minHeight: "36px" },
+  // 띠 높이는 네이티브가 소유한다(→ window-chrome.md#계약--드래그-띠).
+  height: "36px",
+  _glass: { position: "relative", height: "36px" },
 });
 
 // 앱 이름은 OS 타이틀 대신 우리가 그린다(hiddenTitle). 왜·창 드래그 규칙은
@@ -47,7 +48,7 @@ const toggleSlotClass = css({
   display: "flex",
   alignItems: "center",
   flexShrink: 0,
-  paddingX: "1",
+  paddingX: "3",
   _glass: {
     position: "absolute",
     top: 0,

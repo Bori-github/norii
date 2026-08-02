@@ -17,7 +17,7 @@ const menuClass = css({
   position: "fixed",
   zIndex: 20,
   minWidth: "36",
-  padding: "1",
+  padding: "1.5",
   borderRadius: "lg",
   borderWidth: "1px",
   borderStyle: "solid",
@@ -33,11 +33,11 @@ const itemClass = css({
   border: "none",
   background: "transparent",
   color: "text",
-  fontSize: "xs",
+  fontSize: "sm",
   textAlign: "left",
   borderRadius: "sm",
-  paddingX: "2.5",
-  paddingY: "1",
+  paddingX: "3",
+  paddingY: "1.5",
   cursor: "pointer",
   _hover: { background: "accent", color: "accent.fg" },
   _focusVisible: { outline: "none", background: "accent", color: "accent.fg" },
@@ -51,8 +51,8 @@ const dangerItemClass = css({
 
 const separatorClass = css({
   height: "1px",
-  marginX: "2.5",
-  marginY: "1",
+  marginX: "3",
+  marginY: "1.5",
   background: "border",
 });
 
