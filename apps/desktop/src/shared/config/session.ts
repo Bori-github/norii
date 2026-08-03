@@ -8,3 +8,6 @@ export const SESSION_RESTORE_TIMEOUT_MS = 3000;
 
 /** 종료 시 저장 플러시 상한(ms) — 답이 오지 않아도 창은 닫힌다. */
 export const CLOSE_FLUSH_TIMEOUT_MS = 3000;
+
+/** 최근 파일 상한 — 정책은 document-model.md#최근-파일이 소유한다. */
+export const RECENT_FILES_LIMIT = 10;

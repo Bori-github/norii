@@ -1,4 +1,5 @@
 import { findTab, setTabText, useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { STRINGS } from "@shared/config";
 import { ipc } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore } from "@shared/ui";
@@ -35,11 +36,15 @@ export async function openPathInTab(
   const existing = store.tabs.find((tab) => tab.filePath === path);
   if (existing) {
     store.activateTab(existing.id, focusEditor);
+    useWorkspaceStore.getState().noteRecentFile(path);
     return;
   }
   try {
     const file = await ipc.openFile(path);
     useDocumentStore.getState().openFileTab(file, focusEditor);
+    // 최근 파일은 canonical 경로다 — 요청 문자열이 아니라 열기 결과를 올린다
+    // (→ document-model.md#최근-파일).
+    useWorkspaceStore.getState().noteRecentFile(file.path);
   } catch (error) {
     // 바이너리·손상 파일의 열기 거부도 이 경로로 안내된다 — 파일은 건드리지 않았다.
     notifyIpcError(STRINGS.openFailedTitle, error);

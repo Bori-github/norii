@@ -68,7 +68,7 @@ function openTab(path = "/vault/doc.md"): string {
 
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
-  useWorkspaceStore.setState({ rootDir: null });
+  useWorkspaceStore.setState({ rootDir: null, recentFiles: [] });
   useConflictStore.setState({ conflictTabIds: [] });
   useConfirmStore.setState({ pending: null });
   useNoticeStore.setState({ notices: [] });
@@ -419,6 +419,8 @@ describe("저장 경로 확정과 중복 탭 금지", () => {
       filePath: "/private/tmp/새 문서.md",
       title: "새 문서.md",
     });
+    // 경로 확정은 최근 파일에도 올라간다 — 값은 같은 canonical 경로다(→ document-model.md#최근-파일).
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/private/tmp/새 문서.md"]);
   });
 
   // 집행: rust-commands.md#다이얼로그 — 웹뷰는 사이드바 루트를 시작 위치로 넘긴다.

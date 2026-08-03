@@ -73,7 +73,7 @@ beforeEach(() => {
   loadSession.mockResolvedValue(null);
   openFile.mockImplementation(async (path: string) => fileContent(path));
   useDocumentStore.setState({ tabs: [], activeTabId: null });
-  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [] });
+  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [], recentFiles: [] });
   resetTabViewStates();
 });
 
@@ -98,7 +98,25 @@ describe("persistSessionOnChange", () => {
       rootDir: "/vault",
       tabs: [{ path: "/vault/a.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 }],
       active: 0,
+      recentFiles: [],
     });
+    stop();
+  });
+
+  // 집행: document-model.md#최근-파일 — 영속화는 session.json이다.
+  // 왜: 목록이 세션에 실리지 않으면 재시작 때 비고, 그 경로의 허용 등록 통로도 없다.
+  // 보장: 최근 파일만 바뀌어도 저장되고, 스냅숏에 목록이 담긴다.
+  // 경계: 목록의 삽입·상한 규칙은 workspace-store 테스트 소관.
+  it("최근 파일이 바뀌면 저장한다", async () => {
+    vi.useFakeTimers();
+    const stop = persistSessionOnChange();
+
+    useWorkspaceStore.getState().noteRecentFile("/vault/a.md");
+    await vi.advanceTimersByTimeAsync(SESSION_SAVE_DEBOUNCE_MS);
+
+    expect(saveSession).toHaveBeenCalledWith(
+      expect.objectContaining({ recentFiles: ["/vault/a.md"] }),
+    );
     stop();
   });
 
@@ -183,6 +201,24 @@ describe("restoreSessionWithin", () => {
     expect(getTabScroll(tabs[1]?.id ?? "")).toEqual({ line: 88, fraction: 0 });
     expect(getTabCursor(tabs[1]?.id ?? "")).toEqual({ line: 90, column: 4 });
     expect(useWorkspaceStore.getState().rootDir).toBe("/vault");
+  });
+
+  // 집행: document-model.md#최근-파일 — "세션 복원은 목록을 바꾸지 않는다".
+  // 왜: 복원이 탭 열기를 최근으로 치면 재시작마다 목록이 열린 탭 순서로 뒤섞인다.
+  // 보장: 저장된 목록이 순서 그대로 스토어에 서고, 탭 복원이 끼어들지 않는다.
+  //       recentFiles가 없는 세션(옛 형식)은 빈 목록이다.
+  // 경계: 없는 경로의 필터링은 Rust가 한다(→ rust-commands.md#세션).
+  it("최근 파일을 저장된 순서 그대로 세운다 — 탭 복원이 목록을 바꾸지 않는다", async () => {
+    loadSession.mockResolvedValue({
+      rootDir: null,
+      tabs: [{ path: "/vault/b.md", cursorLine: 1, cursorColumn: 1, scrollLine: 1 }],
+      active: 0,
+      recentFiles: ["/vault/a.md", "/vault/b.md"],
+    });
+
+    await restoreSessionWithin();
+
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/vault/a.md", "/vault/b.md"]);
   });
 
   it("열지 못한 탭은 건너뛰고 활성 탭은 그대로 그 문서를 가리킨다", async () => {

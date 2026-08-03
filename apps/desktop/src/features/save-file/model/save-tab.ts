@@ -163,6 +163,8 @@ async function performSave(
     // 탭 신원은 저장이 실제로 쓴 canonical 경로다(→ document-model.md#다중-탭-규칙).
     if (tab.filePath !== result.path) {
       useDocumentStore.getState().assignPath(tabId, result.path);
+      // 이 분기는 다이얼로그가 새 경로를 확정했을 때만 탄다(→ document-model.md#최근-파일).
+      useWorkspaceStore.getState().noteRecentFile(result.path);
     }
     commitSaveSuccess(tabId, tab, text, result.hash);
     return "saved";

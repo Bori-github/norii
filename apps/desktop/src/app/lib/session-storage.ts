@@ -32,6 +32,9 @@ async function restoreSession(): Promise<void> {
   if (!session) {
     return;
   }
+  // 최근 파일은 탭과 독립이라 본문 읽기를 기다리지 않는다. 복원은 목록을 바꾸지 않고
+  // 그대로 세운다(→ document-model.md#최근-파일).
+  useWorkspaceStore.getState().setRecentFiles(session.recentFiles ?? []);
 
   // 본문 읽기는 서로 독립이라 함께 나간다 — 창이 보이기 전이므로 직렬로 읽으면 그만큼 늦다.
   // 탭은 응답 순서가 아니라 저장된 순서로 세운다.
@@ -79,7 +82,7 @@ export async function restoreSessionWithin(timeoutMs = SESSION_RESTORE_TIMEOUT_M
 
 function snapshot(): Session {
   const { tabs, activeTabId } = useDocumentStore.getState();
-  const { rootDir } = useWorkspaceStore.getState();
+  const { rootDir, recentFiles } = useWorkspaceStore.getState();
   const saved = tabs.filter(
     (tab): tab is typeof tab & { filePath: string } => tab.filePath !== null,
   );
@@ -97,6 +100,7 @@ function snapshot(): Session {
       };
     }),
     active: active === -1 ? null : active,
+    recentFiles,
   };
 }
 
@@ -105,7 +109,12 @@ function snapshot(): Session {
  * (→ session-storage.test.ts "타이핑 중에는 쓰지 않는다").
  */
 function structureKey(session: Session): string {
-  return JSON.stringify([session.rootDir, session.active, session.tabs.map((tab) => tab.path)]);
+  return JSON.stringify([
+    session.rootDir,
+    session.active,
+    session.tabs.map((tab) => tab.path),
+    session.recentFiles,
+  ]);
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;

@@ -13,7 +13,7 @@ function file(path: string): TreeNode {
 }
 
 beforeEach(() => {
-  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [] });
+  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [], recentFiles: [] });
 });
 
 // 집행: document-model.md#파일-트리-사이드바 — "read_dir(한 단계 목록) 결과를 프론트가
@@ -176,5 +176,37 @@ describe("펼침 상태", () => {
 
     store.setExpanded("/vault/a", false);
     expect(useWorkspaceStore.getState().expandedDirs).toEqual([]);
+  });
+});
+
+// 집행: document-model.md#최근-파일 — "맨 앞 삽입, 중복은 앞으로 이동, 10개 초과분은
+//       뒤에서 버린다".
+// 왜: 목록 순서가 최근 여부를 표현한다 — 중복이 남으면 같은 파일이 두 번 표시되고,
+//     순서가 어긋나면 최근이 아닌 파일이 앞에 온다.
+// 보장: noteRecentFile의 삽입·이동·상한, setRecentFiles의 상한.
+// 경계: 어떤 동작이 올리는지(열기·경로 확정)는 feature 테스트가, 영속화는 세션 테스트가 다룬다.
+describe("최근 파일", () => {
+  it("맨 앞에 쌓이고 중복은 앞으로 이동한다", () => {
+    const store = useWorkspaceStore.getState();
+    store.noteRecentFile("/vault/a.md");
+    store.noteRecentFile("/vault/b.md");
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/vault/b.md", "/vault/a.md"]);
+
+    store.noteRecentFile("/vault/a.md");
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/vault/a.md", "/vault/b.md"]);
+  });
+
+  it("상한을 넘으면 가장 오래된 것이 밀려난다", () => {
+    const store = useWorkspaceStore.getState();
+    for (let index = 0; index < 11; index += 1) {
+      store.noteRecentFile(`/vault/${index}.md`);
+    }
+    const list = useWorkspaceStore.getState().recentFiles;
+    expect(list).toHaveLength(10);
+    expect(list[0]).toBe("/vault/10.md");
+    expect(list).not.toContain("/vault/0.md");
+
+    store.setRecentFiles(Array.from({ length: 12 }, (_, index) => `/x/${index}.md`));
+    expect(useWorkspaceStore.getState().recentFiles).toHaveLength(10);
   });
 });
