@@ -22,6 +22,8 @@ export interface SemanticColors {
   statusSuccess: string;
   statusWarning: string;
   statusDanger: string;
+  statusDangerSurface: string;
+  statusDangerFg: string;
 }
 
 /** Panda의 조건부 토큰 값. 다크 조건 키는 Panda가 정한 이름이라 그대로 받는다. */
@@ -108,5 +110,7 @@ export function resolveSemanticColors(theme: Theme): SemanticColors {
     statusSuccess: pick("status.success"),
     statusWarning: pick("status.warning"),
     statusDanger: pick("status.danger"),
+    statusDangerSurface: pick("status.dangerSurface"),
+    statusDangerFg: pick("status.dangerFg"),
   };
 }

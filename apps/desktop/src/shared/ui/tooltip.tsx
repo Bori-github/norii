@@ -17,8 +17,8 @@ const tooltipClass = css({
   fontSize: "xs",
   fontWeight: "medium",
   whiteSpace: "nowrap",
-  color: "white",
-  background: "status.danger",
+  color: "status.dangerFg",
+  background: "status.dangerSurface",
   // 가상 요소라 props로 클래스를 바꿀 수 없어 사용자 정의 속성을 거친다.
   _before: {
     content: '""',
@@ -31,7 +31,7 @@ const tooltipClass = css({
     borderBottomWidth: "5px",
     borderStyle: "solid",
     borderColor: "transparent",
-    borderBottomColor: "status.danger",
+    borderBottomColor: "status.dangerSurface",
   },
 });
 

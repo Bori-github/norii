@@ -216,6 +216,9 @@ export default defineConfig({
             success: { value: "#00a72c" },
             warning: { value: "#d17d00" },
             danger: { value: "#e44339" },
+            // 쓰는 자리와 근거는 decisions/color-palette 상태색이 소유한다.
+            dangerSurface: { value: "#cc3329" },
+            dangerFg: { value: "#ffffff" },
           },
 
           border: {

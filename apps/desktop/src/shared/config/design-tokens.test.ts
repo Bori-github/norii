@@ -84,6 +84,27 @@ describe("액센트 — 테마 공통 단일 값", () => {
   });
 });
 
+// status.danger는 표시로도 배경으로도 쓴다. 표시는 3:1이면 되지만 배경 위에는 글자가 와서 4.5:1이
+// 필요하고, 한 값으로 둘을 함께 만족하지 못한다(흰 글자 4.07 · 검은 글자 4.41).
+describe("글자가 오는 위험 배경", () => {
+  it("위험 배경 위의 글자가 AA를 만족한다", () => {
+    const colors = resolveSemanticColors("light");
+    expect(
+      contrastOnSolid(colors.statusDangerFg, colors.statusDangerSurface),
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  // 이 검사가 통과하면 배경을 따로 둘 이유가 사라진다 — 그때는 토큰을 하나로 합쳐야 한다.
+  it("표시로 쓰는 위험색 위에서는 어느 글자색도 AA를 넘지 못한다", () => {
+    const colors = resolveSemanticColors("light");
+    const best = Math.max(
+      contrastOnSolid(colors.statusDangerFg, colors.statusDanger),
+      contrastOnSolid(colors.text, colors.statusDanger),
+    );
+    expect(best).toBeLessThan(AA_TEXT);
+  });
+});
+
 describe.each(THEMES)("%s 테마 — 유리(크롬) 위 글자", (theme) => {
   const colors = resolveSemanticColors(theme);
 

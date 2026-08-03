@@ -30,7 +30,6 @@ const itemClass = css({
   display: "flex",
   width: "100%",
   alignItems: "center",
-  // 강조될 때 테두리가 생기면 행 높이가 1px씩 달라진다.
   borderWidth: "1px",
   borderStyle: "solid",
   borderColor: "transparent",
@@ -53,8 +52,8 @@ const itemClass = css({
 
 const dangerItemClass = css({
   color: "status.danger",
-  _hover: { background: "status.danger", color: "white" },
-  _focusVisible: { background: "status.danger", color: "white" },
+  _hover: { background: "status.dangerSurface", color: "status.dangerFg" },
+  _focusVisible: { background: "status.dangerSurface", color: "status.dangerFg" },
 });
 
 const separatorClass = css({
