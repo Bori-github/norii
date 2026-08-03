@@ -55,7 +55,8 @@ export function Dialog({ open, size, className, dialogRef, children, ...rest }: 
       dialog.showModal();
     }
     return () => {
-      if (opener instanceof HTMLElement && opener.isConnected) {
+      // 그 사이 사라진 요소인지는 거르지 않는다 — 분리된 요소의 focus()는 아무 일도 하지 않는다.
+      if (opener instanceof HTMLElement) {
         opener.focus();
       }
     };

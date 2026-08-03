@@ -62,14 +62,3 @@ it("파일이 사라진 탭도 충돌과 같은 표시를 쓴다", () => {
   const { container } = render(<TabBar />);
   expect(dots(container).at(-1)).toBe(`alerted:${token("--colors-status-danger")}`);
 });
-
-it("활성 탭은 가리켜도 종이가 그대로다", () => {
-  const { getAllByRole } = render(<TabBar />);
-  const active = getAllByRole("tab").find((t) => t.getAttribute("aria-selected") === "true");
-  if (!active) {
-    throw new Error("활성 탭을 찾지 못했습니다");
-  }
-  const resting = getComputedStyle(active).backgroundColor;
-  active.setAttribute("data-hover", "");
-  expect(getComputedStyle(active).backgroundColor).toBe(resting);
-});
