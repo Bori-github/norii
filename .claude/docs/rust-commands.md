@@ -12,7 +12,7 @@
 #[tauri::command]
 async fn open_file(path: String, encoding_override: Option<String>) -> Result<FileContent, AppError>;
 // FileContent { path: String, text: String, encoding: String, has_bom: bool,
-//               eol: String, eol_mixed: bool, mtime: u64, hash: String }
+//               eol: Eol, eol_mixed: bool, mtime: u64, hash: String }
 // - path는 canonicalize된 정식 경로다 — 심볼릭 링크를 끝까지 해소하고 디스크에 실제로
 //   기록된 표기(대소문자·유니코드 형태)로 수렴한 값. 같은 파일은 어떤 별칭
 //   (/tmp↔/private/tmp · 대소문자 · NFC/NFD)으로 요청해도 같은 문자열이 나온다.
@@ -25,12 +25,13 @@ async fn open_file(path: String, encoding_override: Option<String>) -> Result<Fi
 //   ("euc-kr"·"utf-16le" 등, encoding_rs 표준) — 알 수 없는 라벨은 AppError::Encoding.
 //   None이면 파이프라인이 판정한다
 // - BOM은 text에서 제거하고 has_bom으로 알린다
-// - eol은 다수결로 판정한 "lf"|"crlf" (동률이면 lf). eol_mixed는 원본 개행이 판정 결과와
-//   완전히 일치하지 않음(혼합·CR-only) — 저장 시 재작성되므로 정규화 승인 대상 (→ file-lifecycle.md)
+// - eol은 다수결로 판정한 Eol("lf"|"crlf" 열거형, 동률이면 lf). eol_mixed는 원본 개행이
+//   판정 결과와 완전히 일치하지 않음(혼합·CR-only) — 저장 시 재작성되므로 정규화 승인 대상
+//   (→ file-lifecycle.md)
 // - hash는 디스크 바이트의 내용 해시 — 에코 억제·충돌 검사의 기준값 (→ file-lifecycle.md)
 
 #[tauri::command]
-async fn save_file(path: String, text: String, eol: String, has_bom: bool,
+async fn save_file(path: String, text: String, eol: Eol, has_bom: bool,
                    expected_hash: Option<String>) -> Result<SaveResult, AppError>;
 // SaveResult { path: String, mtime: u64, hash: String }
 // - path는 저장이 실제로 쓴 대상의 canonical 경로다(새 파일은 부모를 canonicalize하고
