@@ -6,7 +6,7 @@
  *
  * 두 테마의 값이 다른 것은 대비 게이트의 계산 결과다(→ design-system.md#대비-게이트).
  */
-export const GLASS_OPACITY_DEFAULT = { light: 0.55, dark: 0.62 } as const;
+export const GLASS_OPACITY_DEFAULT = { light: 0.5, dark: 0.6 } as const;
 
 /** 흐림 반경 — Rust `window_glass.rs`가 같은 값을 갖고, `docs-drift`가 둘을 대조한다. */
 export const BLUR_RADIUS_DEFAULT = 30;

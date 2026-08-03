@@ -9,7 +9,7 @@ norii는 프로젝트 내부에 디자인 시스템을 구축하고, 스타일�
 디자인 문서는 넷으로 나뉜다. 같은 사실을 복제하지 않는다.
 
 ```text
-/DESIGN.md                       지금의 규칙 — 큰 그림 · 불변식 · 표면 표 · 원칙 요약
+/DESIGN.md                       지켜야 할 규칙 — 재질(표면 표) · 색 · 타이포 · 접근성 · 모션 · 간격 · 모서리
 design/decisions/*.md            왜 그렇게 정했는가 — 맥락 · 기각한 대안 · 치르는 비용
 design/design-system.md          어떻게 구현하는가 — Panda 토큰 · recipe · 대비 게이트 (이 문서)
 design/window-chrome.md          창 설정의 실제 값 — transparent · 창 뒤 흐림 반경 · 폴백
@@ -45,18 +45,20 @@ semantic tokens    의미값 — colors.text, colors.bg.chrome, colors.border �
 표면의 역할·재질 규칙(→ [표면](decisions/surface.md))은 **배경 토큰의 이름으로** 코드에 나타난다. 컴포넌트는 "얼마나 투명한가"를 몰라도 되고, **자기가 무엇인지만** 고르면 된다. 어느 표면이 어느 토큰을 쓰는지는 루트 `DESIGN.md`의 표면 표가 단일 출처다 — 여기서는 토큰 이름만 정의한다.
 
 ```text
-bg.canvas    창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
-bg.chrome    도구 표면 — 유리 위에 얹는 틴트. 색이 아니라 불투명도만 얹는다(→ decisions/glass).
-             알파의 기본값은 대비 게이트가 정하고, 설정이 --norii-glass-opacity로 덮어쓴다.
-bg.paper     글이 놓이는 면. 항상 불투명. 편집면·프리뷰면·활성 탭이 공유한다.
-bg.hover     상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 사라진다.
-bg.selection 사용자가 **고른** 것 — 텍스트 선택. hover 위에 겹쳐도 보여야 하므로 알파가 더 높다.
-bg.match     시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 물러난다.
-bg.scrim     오버레이 뒤를 가리는 딤. 반투명 검정.
+bg.canvas         창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
+bg.chrome         도구 표면 — 유리 위에 얹는 틴트. 색이 아니라 불투명도만 얹는다(→ decisions/glass).
+                  알파의 기본값은 대비 게이트가 정하고, 설정이 --norii-glass-opacity로 덮어쓴다.
+bg.paper          글이 놓이는 면. 항상 불투명. 편집면·프리뷰면·활성 탭이 공유한다.
+bg.hover          상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 사라진다.
+bg.selection      사용자가 **고른** 것 — 텍스트 선택. hover 위에 겹쳐도 보여야 하므로 알파가 더 높다.
+bg.match          시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 알파가 낮다.
+bg.scrim          오버레이 뒤를 가리는 딤. 반투명 검정.
+bg.scrollbar      스크롤바 thumb(::-webkit-scrollbar-thumb)의 색. track은 칠하지 않는다.
+bg.scrollbarHover 호버 상태의 thumb 색.
 ```
 
-- **`bg.canvas`를 상태 배경으로 쓰지 않는다.** 캔버스가 투명해지는 순간 호버 피드백이 통째로 사라진다. 그래서 `bg.hover`가 따로 있다.
-- **활성 탭은 `bg.paper`다.** 크롬 안에 있지만 아래 편집면과 이어진 한 장의 종이로 읽힌다(→ [표면](decisions/surface.md)).
+- **`bg.canvas`를 상태 배경으로 쓰지 않는다.** 캔버스가 투명해지면 호버 피드백이 사라진다. 그래서 `bg.hover`가 따로 있다.
+- **활성 탭은 `bg.paper`다**(→ [표면](decisions/surface.md)).
 - 편집면은 **배경을 명시적으로 칠한다.** 캔버스를 비쳐 쓰면 유리 도입 시 본문이 뚫린다.
 
 ## 글자·액센트 토큰
@@ -66,13 +68,17 @@ text          본문. 종이 위에서도 크롬(유리) 위에서도 이 색을
 text.muted    흐린 글자. 종이 위에서만 — 크롬에는 금지(→ 컬러 팔레트 결정).
 text.mark     마크다운 구문 마크(#, -, **, 링크). 글자이므로 AA를 만족해야 한다.
               **액센트와 달리 테마별로 갈라도 된다** — 글자 금지는 액센트에만 적용된다.
-accent        액센트. **테마와 무관하게 한 색**이고, **글자에는 쓰지 않는다**(→ 컬러 팔레트 결정).
-              표시(커서·dirty ●·포커스 링·강조 테두리)에만 쓰므로 비텍스트 기준(3:1)이 적용된다.
-              크롬(유리) 위에도 금지.
+accent        액센트. **테마와 무관하게 한 색**이고, **채운 면에만 쓴다**(→ 컬러 팔레트 결정).
+              글자와 가는 표시(커서·포커스 링)에는 금지 — 그 자리에는 text를 쓴다.
+              유리 위에는 채운 면만 올린다.
+accent.fg     액센트 면 위의 글자. **테마 공통**이다 — text는 테마별 값이라 다크에서 읽히지 않는다.
+              라이트 테마에서는 면의 1px 테두리에도 쓴다.
+accent.hover  채움이 어두워지는 상태. accent.pressed와 함께 테마 공통이다.
 border        경계선. 비텍스트이므로 3:1 기준.
+border.muted  더 연한 경계선 — 트리 세로 가이드처럼 옅게 두는 선.
 ```
 
-세 금지는 취향이 아니라 [대비 게이트](#대비-게이트)의 계산 결과다. 브랜드 색 계열(글레이셔)에서 **두 종이를 모두 통과하는 단계는 하나뿐**이며, 그 단계가 곧 액센트다(→ [컬러 팔레트](decisions/color-palette.md)).
+위 금지는 취향이 아니라 [대비 게이트](#대비-게이트)의 계산 결과다 — 액센트를 글자로 쓸 수 있는 색은 색 계열과 무관하게 존재하지 않는다(→ [컬러 팔레트](decisions/color-palette.md)).
 
 ## 대비 게이트
 
@@ -85,7 +91,7 @@ border        경계선. 비텍스트이므로 3:1 기준.
 
 토큰이 이 기준을 어기면 **테스트가 실패한다**(`mise run check`). 바탕화면도 스크린샷도 필요 없다 — 색 계산이 전부다. 이 게이트가 팔레트 확정의 합격선이며, 실측·눈대중이 그 자리를 대신하지 않는다.
 
-**게이트가 검사하는 것은 토큰 기본값이다.** 설정이 알파를 그 아래로 내리면 기준 밖이며, 하한을 두지 않는다(→ [유리](decisions/glass.md#유리-위-틴트는-색이-아니라-불투명도다)).
+**게이트가 검사하는 것은 토큰 기본값이다.** 설정이 알파를 그 아래로 내리면 기준 밖이며, 하한을 두지 않는다(→ [유리](decisions/glass.md#크롬-틴트)).
 
 ## 테마 (라이트/다크)
 
@@ -96,7 +102,7 @@ dark    [data-theme="dark"] &    사용자·OS가 정한 테마
 glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가(→ window-chrome.md)
 ```
 
-**`glass`를 `dark` 뒤에 정의한다.** 특이도가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
+**`glass`를 `dark` 뒤에 정의한다.** specificity가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
 
 선택지는 셋이다 — `system`(OS를 따른다) · `light` · `dark`. **`system`은 기본값이자 하나의 선택**이다: 그 의도를 버리고 light/dark만 저장하면 OS를 바꿔도 앱이 따라오지 않는다.
 
@@ -105,7 +111,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 **고른 값은 저장된다.** 저장이 없으면 매 기동 `system`으로 시작한다. 저장 정책은 [파일 생명주기 정책](../file-lifecycle.md#설정-저장), 읽는 시점은 [창 표면 계약](window-chrome.md#부팅-순서--창은-언제-보이는가)이 소유한다.
 
 ```text
-semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.950}' } }
+semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.900}' } }
 ```
 
 (단계 번호는 형태를 보이려는 예시다 — 실제 값의 단일 출처는 `panda.config.ts`다.)
@@ -125,10 +131,14 @@ semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{c
 버튼·탭 같은 컴포넌트의 변형(`variant`·`size`·상태)은 Panda **recipe**로 정의한다. 변형이 타입으로 노출되어 오용을 막는다.
 
 ```text
-buttonRecipe = { base, variants: { variant: {solid, ghost}, size: {sm, md} }, defaultVariants }
+buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defaultVariants }
 ```
 
 여러 요소로 구성된 컴포넌트는 slot recipe(`sva`)를 쓴다.
+
+## 여러 컴포넌트가 공유하는 상태 스타일
+
+버튼·탭·트리 행처럼 서로 다른 컴포넌트가 같은 모습으로 반응하는 상태(포커스 링)는 Panda **layerStyle**로 한 번 정의하고 이름으로 참조한다. 컴포넌트마다 값을 복사하면 한쪽만 고쳐진다.
 
 ## FSD 배치
 

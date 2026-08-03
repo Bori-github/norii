@@ -22,8 +22,8 @@ const paneClass = css({
   flex: 1,
   minWidth: 0,
   overflowY: "auto",
-  paddingX: "6",
-  paddingTop: "4",
+  paddingX: "8",
+  paddingTop: "5",
   // 바닥 여백 — 에디터의 scrollPastEnd(마지막 줄을 상단까지)와 감각을 맞춘 큰 여백.
   // 마지막 블록이 바닥에 붙지 않고, 문서의 끝이라는 신호가 된다(VS Code 프리뷰 관례).
   paddingBottom: "70vh",
@@ -33,29 +33,39 @@ const paneClass = css({
   // CSS 격리 — 문서 인라인 스타일(position:fixed 등)이 패널 밖 앱 UI 위에 그려지는 것을
   // 차단한다(→ preview-strategy.md의 DOMPurify 정책).
   contain: "paint",
-  // 키보드 포커스 링 — 앱의 다른 포커스 가능한 면과 같은 관례(액센트는 비텍스트라 허용,
-  // → design/decisions/color-palette).
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
+  layerStyle: "focusInside",
   // 프리뷰 타이포그래피 — 위계를 가르는 규칙은 decisions/typography가 소유한다.
   fontFamily: "prose",
   lineHeight: "prose",
-  "& h1, & h2, & h3, & h4, & h5, & h6": { lineHeight: "heading" },
-  "& h1": { fontSize: "prose.h1", fontWeight: "bold", marginY: "3" },
-  "& h2": { fontSize: "prose.h2", fontWeight: "bold", marginY: "3" },
-  "& h3": { fontSize: "prose.h3", fontWeight: "bold", marginY: "2" },
-  "& h4": { fontSize: "prose.h4", fontWeight: "bold", marginY: "2" },
-  "& h5": { fontSize: "prose.h5", fontWeight: "bold", marginY: "2" },
-  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted", marginY: "2" },
-  "& p": { marginY: "2" },
-  "& ul, & ol": { paddingLeft: "6", marginY: "2" },
+  "& h1, & h2, & h3, & h4, & h5, & h6": {
+    lineHeight: "heading",
+    marginTop: "6",
+    marginBottom: "4",
+  },
+  "& h1": { fontSize: "prose.h1", fontWeight: "bold" },
+  "& h2": { fontSize: "prose.h2", fontWeight: "bold" },
+  "& h3": { fontSize: "prose.h3", fontWeight: "bold" },
+  "& h4": { fontSize: "prose.h4", fontWeight: "bold" },
+  "& h5": { fontSize: "prose.h5", fontWeight: "bold" },
+  "& h6": { fontSize: "prose.h6", fontWeight: "semibold", color: "text.muted" },
+  "& p": { marginTop: 0, marginBottom: "3" },
+  "& ul, & ol": { paddingLeft: "6", marginTop: 0, marginBottom: "3" },
   "& ul": { listStyleType: "disc" },
   "& ol": { listStyleType: "decimal" },
+  "& li + li": { marginTop: "1" },
   "& li.task-list-item": { listStyleType: "none", marginLeft: "-6" },
   // 코드 블록은 종이 위의 옅은 틴트다 — bg.canvas는 유리에서 투명해지므로 쓰지 않는다.
   // 전용 토큰이 없어 상태 배경(bg.hover)을 빌린다(→ 열린 결정: 프리뷰 코드면 토큰).
   // 가로 스크롤은 pre가 아니라 **안쪽 code가** 진다 — pre가 스크롤 컨테이너면 그 안에
   // 절대배치한 복사 버튼이 코드와 함께 흘러가 버린다(버튼은 제자리에 있어야 한다).
-  "& pre": { bg: "bg.hover", padding: "3", borderRadius: "md", marginY: "2", position: "relative" },
+  "& pre": {
+    bg: "bg.hover",
+    padding: "4",
+    borderRadius: "md",
+    marginTop: 0,
+    marginBottom: "4",
+    position: "relative",
+  },
   "& pre code": { display: "block", overflowX: "auto" },
   // 리거처를 끄는 이유는 decisions/typography가 소유한다.
   "& code": { fontFamily: "editor", fontSize: "prose.code", fontVariantLigatures: "none" },
@@ -76,19 +86,28 @@ const paneClass = css({
     borderColor: "border",
     paddingLeft: "3",
     color: "text.muted",
-    marginY: "2",
+    marginTop: 0,
+    marginBottom: "4",
   },
   // 넓은 표는 패널 전체가 아니라 표만 가로 스크롤한다(코드 블록과 동일한 처리).
   // 셀 글자는 먼저 줄바꿈되고, 더 줄일 수 없을 때(열이 많을 때) 비로소 가로 스크롤이 생긴다 —
   // GitHub 등 표준 마크다운 뷰어와 같은 동작이다.
   "& table": {
     borderCollapse: "collapse",
-    marginY: "2",
+    marginTop: 0,
+    marginBottom: "4",
     display: "block",
     overflowX: "auto",
     maxWidth: "100%",
   },
-  "& th, & td": { borderWidth: "1px", borderColor: "border", paddingX: "3", paddingY: "1" },
+  "& th, & td": {
+    borderWidth: "1px",
+    borderColor: "border",
+    paddingX: "3",
+    paddingY: "1.5",
+    wordBreak: "keep-all",
+  },
+  "& th": { fontWeight: "semibold", bg: "bg.hover", textAlign: "left" },
   // 링크는 액센트가 아니라 마크 글자색이다 — 액센트를 글자에 쓰지 않는다(→ decisions/color-palette).
   // 프리뷰의 유일한 상호작용 요소이므로 가리킴·포커스에 반응한다.
   "& a": {
@@ -96,15 +115,18 @@ const paneClass = css({
     textDecoration: "underline",
     textUnderlineOffset: "2px",
     _hover: { textDecorationThickness: "2px" },
-    _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
+    layerStyle: "focusOutside",
   },
-  "& hr": { borderColor: "border", marginY: "4" },
-  "& img": { maxWidth: "100%" },
-  // 콜아웃 — 인용문에 얹는 강조 상자. 아이콘·라벨·색의 규칙은
-  // preview-strategy.md#콜아웃-gfm-alerts가 소유한다.
+  "& details": { marginTop: 0, marginBottom: "4" },
+  "& summary": { cursor: "pointer", layerStyle: "focusOutside" },
+  // 삼각형 폭은 환경마다 다르다(이 맥 11.4px · CI 16.2px 실측). 글자 크기에 비례하는 값으로 둬
+  // 어느 쪽에서도 삼각형을 넘어선다.
+  "& details > *:not(summary)": { marginLeft: "1.25em" },
+  "& hr": { borderColor: "border", marginY: "6" },
+  "& img": { maxWidth: "100%", marginTop: 0, marginBottom: "4" },
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
-    borderColor: "accent",
+    borderColor: "border",
     bg: "bg.hover",
     color: "text",
     paddingX: "4",
@@ -117,7 +139,7 @@ const paneClass = css({
   },
   "& blockquote.norii-callout-note": { borderColor: "status.info" },
   "& blockquote.norii-callout-tip": { borderColor: "status.success" },
-  // IMPORTANT만 borderColor를 덮지 않는다 — 위 기본값(액센트)을 그대로 쓴다.
+  "& blockquote.norii-callout-important": { borderColor: "status.emphasis" },
   "& blockquote.norii-callout-warning": { borderColor: "status.warning" },
   "& blockquote.norii-callout-caution": { borderColor: "status.danger" },
   // 상자 안의 문단은 흐린 글자를 상속하지 않는다 — 인용문 규칙(text.muted)을 덮는다.
@@ -149,6 +171,7 @@ const paneClass = css({
 const contentClass = css({
   maxWidth: "72ch",
   marginX: "auto",
+  "& > *:first-child": { marginTop: 0 },
 });
 
 // (링크 클릭 처리는 컴포넌트 안에 있다 — 앵커 이동이 패널·콘텐츠 요소를 필요로 한다.)

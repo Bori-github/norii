@@ -87,3 +87,25 @@ export function contrastOnSolid(text: string, background: string): number {
   // 글자가 반투명이면 배경 위에 합성한 뒤 잰다.
   return contrastRatio(composite(textRgb, textAlpha, bgRgb), bgRgb);
 }
+
+/**
+ * oklch 색상각(0~360°). 대비는 휘도만 재므로, 색이 서로 구별되는지는 이 값으로 본다.
+ * 변환은 Björn Ottosson의 oklab 정의를 따른다.
+ */
+export function oklchHue([r, g, b]: Rgb): number {
+  const lr = linearize(r);
+  const lg = linearize(g);
+  const lb = linearize(b);
+  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  return ((Math.atan2(bb, a) * 180) / Math.PI + 360) % 360;
+}
+
+/** 두 색상각 사이의 최단 거리(0~180°). */
+export function hueDistance(a: number, b: number): number {
+  const diff = Math.abs(a - b) % 360;
+  return Math.min(diff, 360 - diff);
+}

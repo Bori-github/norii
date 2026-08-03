@@ -21,8 +21,8 @@ const COPY_FEEDBACK_MS = 1500;
 // 있다 — 파서 DOM인 pre에 걸어야 해서 여기서는 표현할 수 없다.
 const buttonClass = css({
   position: "absolute",
-  top: "2",
-  right: "2",
+  top: "3",
+  right: "3",
   // 평소에는 투명하다(읽는 동안에는 화면에 없다) — 노출은 pre:hover(패널 쪽)·키보드
   // 포커스·복사됨 상태가 되살린다.
   opacity: 0,
@@ -33,19 +33,14 @@ const buttonClass = css({
   borderWidth: "1px",
   borderColor: "border",
   borderRadius: "sm",
-  padding: "1",
+  padding: "1.5",
   color: "text.muted",
   cursor: "pointer",
   _hover: { color: "text" },
-  _focusVisible: {
-    opacity: 1,
-    outline: "2px solid",
-    outlineColor: "accent",
-    outlineOffset: "2px",
-  },
-  // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/color-palette),
-  // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
-  "&[data-copied]": { opacity: 1, color: "accent" },
+  layerStyle: "focusOutside",
+  _focusVisible: { opacity: 1 },
+  // 복사 직후 — 포인터가 떠나도 피드백이 끝날 때까지 보인다.
+  "&[data-copied]": { opacity: 1, color: "text" },
   // 아이콘 크기는 소비 측 CSS가 정한다 — 생성된 svg에는 width/height가 없다(viewBox만).
   "& svg": { width: "4", height: "4" },
 });

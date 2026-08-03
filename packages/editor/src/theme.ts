@@ -17,8 +17,6 @@ export interface EditorColors {
   muted: string;
   /** 마크다운 구문 마크(#, -, **, 링크). 글자이므로 AA를 만족하는 색이어야 한다. */
   mark: string;
-  /** 액센트 — 커서에만 쓴다. 글자에는 쓰지 않는다(→ decisions/color-palette). */
-  accent: string;
   /** 상태 배경 — 활성 줄·호버. **선택에는 쓰지 않는다**(같은 색이면 겹칠 때 선택이 사라진다). */
   hover: string;
   /** 사용자가 고른 것 — 텍스트 선택, 검색 결과 중 지금 보고 있는 하나. hover 위에 겹쳐도 보여야 한다. */
@@ -60,10 +58,10 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
     },
     // 편집면은 종이다 — 배경을 명시적으로 칠한다(→ decisions/surface).
     ".cm-content": {
-      caretColor: colors.accent,
+      caretColor: colors.text,
     },
     ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: colors.accent,
+      borderLeftColor: colors.text,
       borderLeftWidth: "2px",
     },
     // 선택은 활성 줄(hover)과 **다른 색**이어야 한다 — 같으면 커서가 있는 줄에서 선택이 사라진다.
@@ -80,12 +78,12 @@ export function editorThemeSpec(colors: EditorColors): Record<string, Record<str
     },
     ".cm-searchMatch": {
       backgroundColor: colors.match,
-      outline: `1px solid ${colors.accent}`,
+      outline: `1px solid ${colors.text}`,
     },
     // 여러 결과 중 지금 보고 있는 하나 — 고른 것과 같은 무게로 도드라진다.
     ".cm-searchMatch.cm-searchMatch-selected": {
       backgroundColor: colors.selection,
-      outline: `2px solid ${colors.accent}`,
+      outline: `2px solid ${colors.text}`,
     },
     // 검색 패널은 content 위에 놓인 크롬이다 — 뒤에 있는 것이 바탕화면이 아니라 글이므로
     // **불투명**해야 한다(→ decisions/surface). CM6 기본값은 #f5f5f5 하드코딩이다.

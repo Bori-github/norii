@@ -47,35 +47,37 @@ export default defineConfig({
       // 원시 토큰 — 팔레트의 실제 값. 시맨틱 토큰이 이걸 참조한다.
       tokens: {
         colors: {
-          // 글레이셔 — 브랜드이자 액센트의 색 계열. oklch(L C 223)로 생성해 명도 계단이 고르다.
-          // 팔레트를 왜 이렇게 정했는지는 decisions/color-palette가 소유한다.
-          glacier: {
-            50: { value: "#eafbff" },
-            100: { value: "#d1f7ff" },
-            200: { value: "#9cf3ff" },
-            300: { value: "#63e2ff" },
-            400: { value: "#3dc9f4" },
-            500: { value: "#00a8d2" },
-            600: { value: "#0082a7" },
-            700: { value: "#006f90" },
-            800: { value: "#00516b" },
-            900: { value: "#003a4f" },
-            950: { value: "#001f2b" },
+          // oklch(L C 123.1)로 생성 — 명도가 고르게 벌어진다(ΔL 0.085).
+          lime: {
+            50: { value: "#f6fee8" },
+            100: { value: "#e4fdb2" },
+            200: { value: "#ccff00" },
+            // 한 단계(ΔL 0.085)를 건너뛰면 hover·pressed가 너무 어두워진다.
+            250: { value: "#baeb00" },
+            300: { value: "#b3e100" },
+            350: { value: "#a6d400" },
+            400: { value: "#9bc300" },
+            500: { value: "#83a600" },
+            600: { value: "#6d8a00" },
+            700: { value: "#577000" },
+            800: { value: "#425600" },
+            900: { value: "#2f3d03" },
+            950: { value: "#222c02" },
           },
 
-          // 무채색 — 글레이셔와 색상각이 다른 것은 의도된 것이다(→ decisions/color-palette).
+          // Tailwind neutral.
           gray: {
-            50: { value: "#fcfdfe" },
-            100: { value: "#f3f7fa" },
-            200: { value: "#dce7ee" },
-            300: { value: "#bbcad3" },
-            400: { value: "#9badb9" },
-            500: { value: "#80919d" },
-            600: { value: "#677781" },
-            700: { value: "#4e5d67" },
-            800: { value: "#313e47" },
-            900: { value: "#16212a" },
-            950: { value: "#101820" },
+            50: { value: "#fafafa" },
+            100: { value: "#f5f5f5" },
+            200: { value: "#e5e5e5" },
+            300: { value: "#d4d4d4" },
+            400: { value: "#a3a3a3" },
+            500: { value: "#737373" },
+            600: { value: "#525252" },
+            700: { value: "#404040" },
+            800: { value: "#262626" },
+            900: { value: "#171717" },
+            950: { value: "#0a0a0a" },
           },
         },
 
@@ -120,6 +122,13 @@ export default defineConfig({
           editor: { value: "1.6" },
           prose: { value: "1.8" },
         },
+
+        // Panda 기본값(4·6·8px)보다 작게 잡는다(→ DESIGN.md 모서리).
+        radii: {
+          sm: { value: "2px" },
+          md: { value: "4px" },
+          lg: { value: "6px" },
+        },
       },
 
       // 다이얼로그 진입 — 상태 변화를 설명하는 모션만 둔다(→ DESIGN.md 모션).
@@ -160,19 +169,27 @@ export default defineConfig({
             // 상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 피드백이 사라진다.
             // **선택 영역에는 쓰지 않는다** — 활성 줄과 같은 색이면 커서가 있는 줄에서 선택이 사라진다.
             hover: {
-              value: { base: "rgba(22, 33, 42, 0.06)", _dark: "rgba(252, 253, 254, 0.08)" },
+              value: { base: "rgba(23, 23, 23, 0.06)", _dark: "rgba(250, 250, 250, 0.08)" },
             },
 
             // 사용자가 **고른** 것 — 텍스트 선택, 그리고 검색 결과 중 지금 보고 있는 하나.
             // 활성 줄(hover) 위에 겹쳐도 보여야 하므로 알파가 그보다 훨씬 높고, 액센트 색을 써서
             // 무채색 상태 배경들과 성격이 갈린다.
             selection: {
-              value: { base: "rgba(0, 130, 167, 0.28)", _dark: "rgba(99, 226, 255, 0.30)" },
+              value: { base: "rgba(204, 255, 0, 0.28)", _dark: "rgba(204, 255, 0, 0.30)" },
             },
 
             // 시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 물러난다.
             match: {
-              value: { base: "rgba(0, 130, 167, 0.14)", _dark: "rgba(99, 226, 255, 0.16)" },
+              value: { base: "rgba(204, 255, 0, 0.14)", _dark: "rgba(204, 255, 0, 0.16)" },
+            },
+
+            // 스크롤바
+            scrollbar: {
+              value: { base: "rgba(23, 23, 23, 0.25)", _dark: "rgba(250, 250, 250, 0.25)" },
+            },
+            scrollbarHover: {
+              value: { base: "rgba(23, 23, 23, 0.4)", _dark: "rgba(250, 250, 250, 0.4)" },
             },
 
             // 오버레이 뒤를 가리는 딤. 다크에서는 표면 대비가 낮아 더 짙게 깐다.
@@ -185,28 +202,51 @@ export default defineConfig({
             // 흐린 글자 — 종이 위에서만 쓴다(→ decisions/color-palette).
             muted: { value: { base: "{colors.gray.700}", _dark: "{colors.gray.400}" } },
             // 마크다운 구문 마크(#, -, **, 링크 등)의 색. 액센트와 달리 테마별로 값이 갈린다.
-            mark: { value: { base: "{colors.glacier.700}", _dark: "{colors.glacier.300}" } },
+            mark: { value: { base: "{colors.lime.700}", _dark: "{colors.lime.300}" } },
           },
 
-          // 액센트 — 쓰는 자리와 금지되는 자리는 decisions/color-palette가 소유한다.
-          accent: { value: "{colors.glacier.600}" },
+          // 쓰는 자리와 금지되는 자리는 decisions/color-palette가 소유한다.
+          accent: {
+            DEFAULT: { value: "{colors.lime.200}" },
+            fg: { value: "{colors.gray.900}" },
+            hover: { value: "{colors.lime.250}" },
+            pressed: { value: "{colors.lime.350}" },
+          },
 
-          // 상태색 — 테마 공통 단일 값이라 원시 층에 두지 않는다. 갈라질 것이 없으면 매핑도 없다.
           status: {
-            info: { value: "#7b68f3" },
+            info: { value: "#008feb" },
+            emphasis: { value: "#7b68f3" },
             success: { value: "#00a72c" },
             warning: { value: "#d17d00" },
             danger: { value: "#e44339" },
+            dangerSurface: { value: "#cc3329" },
+            dangerFg: { value: "#ffffff" },
           },
 
           border: {
             DEFAULT: {
-              value: { base: "rgba(22, 33, 42, 0.14)", _dark: "rgba(252, 253, 254, 0.14)" },
+              value: { base: "rgba(23, 23, 23, 0.14)", _dark: "rgba(250, 250, 250, 0.14)" },
             },
             // 더 연한 경계선 — 트리 세로 가이드 등 옅게 두는 선.
             muted: {
-              value: { base: "rgba(22, 33, 42, 0.2)", _dark: "rgba(252, 253, 254, 0.2)" },
+              value: { base: "rgba(23, 23, 23, 0.2)", _dark: "rgba(250, 250, 250, 0.2)" },
             },
+          },
+        },
+      },
+
+      // 포커스 링 — 어디에 쓰고 왜 text인지는 decisions/color-palette가 소유한다.
+      // Panda 내장 focusRing 유틸은 안쪽 링을 offset 0으로 그리고 borderColor까지 바꿔 쓰지 않는다.
+      layerStyles: {
+        focusOutside: {
+          value: {
+            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
+          },
+        },
+        // 링이 밖으로 나갈 자리가 없을 때만 쓴다 — 잘라내는 묶음 안이거나 여백이 링보다 좁은 곳.
+        focusInside: {
+          value: {
+            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
           },
         },
       },
@@ -225,6 +265,20 @@ export default defineConfig({
       fontFamily: "ui",
       lineHeight: "ui",
     },
+
+    "::-webkit-scrollbar": { width: "10px", height: "10px" },
+    "::-webkit-scrollbar-track": { background: "transparent" },
+    // thumb 둘레의 여백은 투명 테두리로 만든다 — 배경을 content-box까지만 칠한다.
+    "::-webkit-scrollbar-thumb": {
+      backgroundColor: "bg.scrollbar",
+      backgroundClip: "content-box",
+      borderWidth: "3px",
+      borderStyle: "solid",
+      borderColor: "transparent",
+      borderRadius: "full",
+    },
+    "::-webkit-scrollbar-thumb:hover": { backgroundColor: "bg.scrollbarHover" },
+    "::-webkit-scrollbar-corner": { background: "transparent" },
   },
 
   // 생성물 위치 — VCS 제외(→ .claude/docs/project-structure.md).

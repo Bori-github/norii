@@ -5,6 +5,8 @@ import {
   contrastOnGlass,
   contrastOnSolid,
   contrastRatio,
+  hueDistance,
+  oklchHue,
   parseColor,
   relativeLuminance,
 } from "./color-contrast";
@@ -92,5 +94,32 @@ describe("불투명 배경 위 대비", () => {
     const solid = contrastOnSolid("#000000", "#ffffff");
     const translucent = contrastOnSolid("rgba(0, 0, 0, 0.5)", "#ffffff");
     expect(translucent).toBeLessThan(solid);
+  });
+});
+
+// 왜: 대비는 휘도만 재므로 "두 색이 서로 구별되는가"를 판정하지 못한다. 색상각이 그 자리를 맡는다.
+// 경계: 사람이 실제로 구별하는지가 아니라 색상각 거리만 본다.
+const hueOf = (hex: string): number => oklchHue(parseColor(hex).rgb);
+
+describe("oklch 색상각", () => {
+  it.each([
+    ["빨강", "#ff0000", 29.2],
+    ["초록", "#00ff00", 142.5],
+    ["파랑", "#0000ff", 264.1],
+  ])("%s의 색상각을 낸다", (_label, hex, expected) => {
+    expect(hueOf(hex)).toBeCloseTo(expected, 0);
+  });
+
+  it("무채색은 색상각이 의미를 갖지 않지만 예외를 던지지 않는다", () => {
+    expect(Number.isFinite(hueOf("#808080"))).toBe(true);
+  });
+
+  it("색상각 거리는 0°를 넘어 이어진다 — 350°와 10°는 20° 떨어져 있다", () => {
+    expect(hueDistance(350, 10)).toBeCloseTo(20, 5);
+    expect(hueDistance(10, 350)).toBeCloseTo(20, 5);
+  });
+
+  it("거리는 180°를 넘지 않는다", () => {
+    expect(hueDistance(0, 200)).toBeCloseTo(160, 5);
   });
 });

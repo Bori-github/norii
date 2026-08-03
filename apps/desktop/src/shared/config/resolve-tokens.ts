@@ -2,7 +2,7 @@ import config from "../../../panda.config";
 
 // panda.config.ts의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
 // 대비 게이트가 "문서에 적힌 값"이 아니라 "코드가 실제로 쓰는 값"을 검사하게 하려면
-// 토큰 참조({colors.glacier.600})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
+// 토큰 참조({colors.lime.200})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
 
 type Theme = "light" | "dark";
 
@@ -14,10 +14,16 @@ export interface SemanticColors {
   textMuted: string;
   textMark: string;
   accent: string;
+  accentFg: string;
+  accentHover: string;
+  accentPressed: string;
   statusInfo: string;
+  statusEmphasis: string;
   statusSuccess: string;
   statusWarning: string;
   statusDanger: string;
+  statusDangerSurface: string;
+  statusDangerFg: string;
 }
 
 /** Panda의 조건부 토큰 값. 다크 조건 키는 Panda가 정한 이름이라 그대로 받는다. */
@@ -59,7 +65,7 @@ function foldCssVar(value: string): string {
   return value.replaceAll(/var\(--[\w-]+,\s*([^()]+)\)/g, "$1");
 }
 
-/** `{colors.glacier.600}` 참조를 원시 토큰 값으로 바꾼다. 참조가 아니면 그대로 돌려준다. */
+/** `{colors.lime.200}` 참조를 원시 토큰 값으로 바꾼다. 참조가 아니면 그대로 돌려준다. */
 function deref(value: string, primitives: TokenTree): string {
   const [, reference] = /^\{colors\.([\w.]+)\}$/.exec(value) ?? [];
   if (reference === undefined) {
@@ -95,10 +101,16 @@ export function resolveSemanticColors(theme: Theme): SemanticColors {
     text: pick("text.DEFAULT"),
     textMuted: pick("text.muted"),
     textMark: pick("text.mark"),
-    accent: pick("accent"),
+    accent: pick("accent.DEFAULT"),
+    accentFg: pick("accent.fg"),
+    accentHover: pick("accent.hover"),
+    accentPressed: pick("accent.pressed"),
     statusInfo: pick("status.info"),
+    statusEmphasis: pick("status.emphasis"),
     statusSuccess: pick("status.success"),
     statusWarning: pick("status.warning"),
     statusDanger: pick("status.danger"),
+    statusDangerSurface: pick("status.dangerSurface"),
+    statusDangerFg: pick("status.dangerFg"),
   };
 }

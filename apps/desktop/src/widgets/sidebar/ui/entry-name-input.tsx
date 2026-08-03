@@ -24,15 +24,15 @@ const rowClass = css({
   alignItems: "center",
   gap: "1.5",
   marginX: "1.5",
-  marginY: "1",
-  paddingLeft: "2",
-  paddingRight: "2",
+  marginY: "1.5",
+  paddingLeft: "1.5",
+  paddingRight: "1.5",
   paddingY: "1.5",
   position: "relative",
   borderRadius: "md",
   background: "bg.paper",
   outline: "2px solid",
-  outlineColor: "color-mix(in srgb, var(--colors-glacier-300) 50%, transparent)",
+  outlineColor: "color-mix(in srgb, var(--colors-text) 50%, transparent)",
 });
 
 const inputClass = css({
@@ -45,7 +45,7 @@ const inputClass = css({
   _focusVisible: { outline: "none" },
 });
 
-const problemClass = css({ left: "2" });
+const problemClass = css({ left: "3" });
 
 const PROBLEM_ID = "entry-name-problem";
 

@@ -13,7 +13,6 @@ export const EDITOR_COLORS: EditorColors = {
   text: "var(--colors-text)",
   muted: "var(--colors-text-muted)",
   mark: "var(--colors-text-mark)",
-  accent: "var(--colors-accent)",
   hover: "var(--colors-bg-hover)",
   selection: "var(--colors-bg-selection)",
   match: "var(--colors-bg-match)",

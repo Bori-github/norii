@@ -2,7 +2,7 @@ import { cx } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { bannerActionClass, bannerBodyClass, bannerClass, bannerDangerClass } from "@shared/ui";
+import { bannerBodyClass, bannerClass, bannerDangerClass, Button } from "@shared/ui";
 
 import { useConflictStore } from "../model/conflict-store";
 import { resolveConflictKeepDisk, resolveConflictKeepMine } from "../model/save-tab";
@@ -21,20 +21,12 @@ export function ConflictBanner() {
       <span className={bannerBodyClass}>
         {STRINGS.conflictTitle} — {STRINGS.conflictBody}
       </span>
-      <button
-        type="button"
-        className={bannerActionClass}
-        onClick={() => void resolveConflictKeepMine(activeTabId)}
-      >
+      <Button size="sm" onClick={() => void resolveConflictKeepMine(activeTabId)}>
         {STRINGS.conflictKeepMine}
-      </button>
-      <button
-        type="button"
-        className={bannerActionClass}
-        onClick={() => void resolveConflictKeepDisk(activeTabId)}
-      >
+      </Button>
+      <Button size="sm" onClick={() => void resolveConflictKeepDisk(activeTabId)}>
         {STRINGS.conflictKeepDisk}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { SettingsButton } from "@features/toggle-settings";
 import { STRINGS } from "@shared/config";
-import { FilePlusIcon, FolderPlusIcon } from "@shared/ui";
+import { Button, FilePlusIcon, FolderPlusIcon, IconButton } from "@shared/ui";
 
 import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
 import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
@@ -35,10 +35,10 @@ const headerClass = css({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "1",
-  paddingX: "2",
-  paddingY: "1",
-  fontSize: "xs",
+  gap: "1.5",
+  paddingX: "3",
+  height: "9",
+  fontSize: "sm",
   fontWeight: "medium",
   color: "text",
   whiteSpace: "nowrap",
@@ -49,36 +49,8 @@ const headerNameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 const headerActionsClass = css({
   display: "flex",
   alignItems: "center",
-  gap: "0.5",
+  gap: "1.5",
   flexShrink: 0,
-});
-
-const iconButtonClass = css({
-  display: "flex",
-  border: "none",
-  background: "transparent",
-  color: "text",
-  borderRadius: "sm",
-  padding: "1",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
-});
-
-const iconClass = css({ width: "4", height: "4" });
-
-const folderButtonClass = css({
-  border: "none",
-  background: "transparent",
-  color: "text",
-  fontSize: "xs",
-  borderRadius: "sm",
-  paddingX: "1.5",
-  paddingY: "0.5",
-  cursor: "pointer",
-  flexShrink: 0,
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "-2px" },
 });
 
 const treeClass = css({
@@ -89,14 +61,14 @@ const treeClass = css({
   padding: 0,
   paddingTop: "1.5",
   // 마지막 줄에서 이름을 고칠 때 툴팁이 줄 아래로 나온다 — 그만큼 스크롤 여지를 둔다.
-  paddingBottom: "8",
+  paddingBottom: "10",
 });
 
 const footerClass = css({
   display: "flex",
   justifyContent: "flex-end",
   flexShrink: 0,
-  padding: "1",
+  padding: "1.5",
   borderTopWidth: "1px",
   borderTopStyle: "solid",
   borderTopColor: "border",
@@ -107,27 +79,12 @@ const emptyClass = css({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: "2",
+  gap: "3",
   flex: 1,
-  paddingX: "3",
-  fontSize: "xs",
+  paddingX: "4",
+  fontSize: "sm",
   color: "text",
   textAlign: "center",
-});
-
-const emptyButtonClass = css({
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "border",
-  background: "transparent",
-  color: "text",
-  fontSize: "sm",
-  borderRadius: "md",
-  paddingX: "3",
-  paddingY: "1",
-  cursor: "pointer",
-  _hover: { background: "bg.hover" },
-  _focusVisible: { outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" },
 });
 
 function folderNameOf(path: string): string {
@@ -248,14 +205,9 @@ export function Sidebar() {
       <nav className={sidebarClass} aria-label={STRINGS.sidebarTreeLabel} data-testid="sidebar">
         <div className={emptyClass}>
           <span>{STRINGS.sidebarEmptyBody}</span>
-          <button
-            type="button"
-            className={emptyButtonClass}
-            data-testid="open-folder"
-            onClick={() => void openFolderInteractive()}
-          >
+          <Button data-testid="open-folder" onClick={() => void openFolderInteractive()}>
             {STRINGS.openFolderButtonLabel}
-          </button>
+          </Button>
         </div>
         <div className={footerClass}>
           <SettingsButton />
@@ -271,33 +223,30 @@ export function Sidebar() {
           {folderNameOf(rootDir)}
         </span>
         <div className={headerActionsClass}>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={STRINGS.newFileButtonLabel}
+          <IconButton
+            size="xs"
+            label={STRINGS.newFileButtonLabel}
             data-testid="new-file"
             onClick={() => void startCreate("file", null)}
           >
-            <FilePlusIcon className={iconClass} />
-          </button>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={STRINGS.newDirButtonLabel}
+            <FilePlusIcon />
+          </IconButton>
+          <IconButton
+            size="xs"
+            label={STRINGS.newDirButtonLabel}
             data-testid="new-dir"
             onClick={() => void startCreate("dir", null)}
           >
-            <FolderPlusIcon className={iconClass} />
-          </button>
-          <button
-            type="button"
-            className={folderButtonClass}
-            aria-label={STRINGS.openFolderButtonLabel}
+            <FolderPlusIcon />
+          </IconButton>
+          <Button
+            variant="ghost"
+            size="xs"
             data-testid="open-folder"
             onClick={() => void openFolderInteractive()}
           >
             {STRINGS.openFolderButtonLabel}
-          </button>
+          </Button>
         </div>
       </div>
       <ul

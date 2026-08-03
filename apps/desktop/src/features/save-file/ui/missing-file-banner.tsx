@@ -2,7 +2,7 @@ import { cx } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { bannerActionClass, bannerBodyClass, bannerClass, bannerDangerClass } from "@shared/ui";
+import { bannerBodyClass, bannerClass, bannerDangerClass, Button } from "@shared/ui";
 
 import { useMissingFileStore } from "../model/missing-file-store";
 import { saveTabNow } from "../model/save-tab";
@@ -23,13 +23,9 @@ export function MissingFileBanner() {
       data-testid="missing-file-banner"
     >
       <span className={bannerBodyClass}>{STRINGS.missingFileBody}</span>
-      <button
-        type="button"
-        className={bannerActionClass}
-        onClick={() => void saveTabNow(activeTabId)}
-      >
+      <Button variant="accent" size="sm" onClick={() => void saveTabNow(activeTabId)}>
         {STRINGS.missingFileRecreate}
-      </button>
+      </Button>
     </div>
   );
 }

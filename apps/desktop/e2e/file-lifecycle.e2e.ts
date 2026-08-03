@@ -389,11 +389,11 @@ it("외부 변경 리로드 — 편집 중이 아닌 탭은 조용히 새로고�
 });
 
 // 집행: file-lifecycle.md#외부-변경-처리 — "비활성 탭의 충돌 표시": 비활성 탭
-//       충돌은 ⚠ 배지가 유일한 신호이고, 그 탭으로 전환하면 충돌 배너가 뜬다.
-// 왜: 배너는 활성 탭 전용이라 이 배지가 없으면 사용자가 충돌을 알아차릴 방법이 없다.
-// 보장: 편집 중인 비활성 탭의 파일이 외부 수정되면 그 탭에 ⚠가 뜨고(활성 탭에는 배너 없음),
-//       전환하면 충돌 배너가 보인다.
-it("비활성 탭 충돌 — ⚠ 배지가 뜨고 전환하면 충돌 배너가 보인다", async () => {
+//       충돌은 상태 점이 유일한 신호이고, 그 탭으로 전환하면 충돌 배너가 뜬다.
+// 왜: 배너는 활성 탭 전용이라 이 점이 없으면 사용자가 충돌을 알아차릴 방법이 없다.
+// 보장: 편집 중인 비활성 탭의 파일이 외부 수정되면 그 탭의 점이 알림 상태가 되고(활성 탭에는
+//       배너 없음), 전환하면 충돌 배너가 보인다.
+it("비활성 탭 충돌 — 상태 점이 알림으로 바뀌고 전환하면 충돌 배너가 보인다", async () => {
   const inactivePath = path.join(SCOPE_ROOT, "badge-target.md");
   const activePath = path.join(SCOPE_ROOT, "badge-other.md");
   await writeFile(inactivePath, "# 배지 대상\n", "utf8");
@@ -406,8 +406,8 @@ it("비활성 탭 충돌 — ⚠ 배지가 뜨고 전환하면 충돌 배너가 
   // 자동 저장이 나가기 전에 외부 수정 — 어느 경로로든(watch 이벤트·저장 해시 검사) 충돌.
   await writeFile(inactivePath, "# 외부에서 고침\n", "utf8");
 
-  const badge = await browser.$('[data-testid="tab-warning"]');
-  await badge.waitForExist({ timeout: 10_000 });
+  const dot = await browser.$('[data-status="alerted"]');
+  await dot.waitForExist({ timeout: 10_000 });
   // 충돌은 비활성 탭 것 — 활성 탭에는 충돌 배너가 없어야 한다.
   expect(await (await browser.$('[data-testid="conflict-banner"]')).isExisting()).toBe(false);
 
@@ -722,6 +722,53 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
 
   // 뒤 시나리오가 기다리는 시간 안에 저장이 나가도록 기본값으로 되돌린다.
   await selectOption("settings-autosave", "5s");
+  await (await browser.$('[data-testid="settings-close"]')).click();
+});
+
+// 집행: design/decisions/color-palette.md — 액센트는 테마와 무관하게 한 색이다.
+// 왜: 토큰 테스트는 panda.config의 값만 본다. 실제 앱에서는 테마 조건이 CSS 변수로 풀리므로,
+//     어딘가에서 다크 조건이 액센트를 덮어써도 그 테스트는 통과한다.
+// 보장: 테마를 바꿔 종이색이 실제로 뒤집혀도 액센트 변수는 같은 값으로 남는다.
+// 경계: 그 색이 대비 기준을 넘는지는 design-tokens.test.ts가 본다.
+it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
+  const openSettings = await browser.$('[data-testid="open-settings"]');
+  await openSettings.waitForExist({ timeout: 10_000 });
+  await openSettings.click();
+  await (await browser.$('[data-testid="settings-dialog"]')).waitForExist({ timeout: 10_000 });
+  await (await browser.$('[data-testid="settings-nav-appearance"]')).click();
+
+  async function readTokens(): Promise<{ accent: string; paper: string }> {
+    return browser.execute(() => {
+      const style = getComputedStyle(document.documentElement);
+      return {
+        accent: style.getPropertyValue("--colors-accent").trim(),
+        paper: style.getPropertyValue("--colors-bg-paper").trim(),
+      };
+    });
+  }
+
+  await (await browser.$('[data-testid="settings-theme-light"]')).click();
+  const light = await browser.waitUntil(
+    async () => {
+      const tokens = await readTokens();
+      return tokens.accent === "" ? false : tokens;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "액센트 변수를 읽지 못했다" },
+  );
+
+  await (await browser.$('[data-testid="settings-theme-dark"]')).click();
+  // 종이색이 뒤집힌 뒤에 읽어야 한다 — 바뀌기 전에 읽으면 두 값이 같은 것이 당연해진다.
+  const dark = await browser.waitUntil(
+    async () => {
+      const tokens = await readTokens();
+      return tokens.paper === light.paper ? false : tokens;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "다크로 바꿔도 종이색이 바뀌지 않았다" },
+  );
+
+  expect(dark.accent).toBe(light.accent);
+
+  await (await browser.$('[data-testid="settings-theme-system"]')).click();
   await (await browser.$('[data-testid="settings-close"]')).click();
 });
 

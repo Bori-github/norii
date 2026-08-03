@@ -8,32 +8,15 @@ import { css } from "styled-system/css";
 export const bannerClass = css({
   display: "flex",
   alignItems: "center",
-  gap: "3",
-  paddingX: "4",
-  paddingY: "2",
+  gap: "4",
+  paddingX: "5",
+  paddingY: "3",
   background: "bg.paper",
   borderBottomWidth: "1px",
   borderBottomStyle: "solid",
   borderBottomColor: "border",
   fontSize: "sm",
   whiteSpace: "pre-line",
-});
-
-// 액센트는 글자로 쓰지 않는다 — 테마 공통 단일 값이라 어느 한 테마에서 AA를 통과하지 못한다
-// (→ decisions/color-palette). 강조는 테두리와 굵기로 낸다.
-export const bannerActionClass = css({
-  flexShrink: 0,
-  paddingX: "2",
-  paddingY: "1",
-  borderWidth: "1px",
-  borderStyle: "solid",
-  borderColor: "accent",
-  borderRadius: "sm",
-  cursor: "pointer",
-  background: "transparent",
-  color: "text",
-  fontWeight: "medium",
-  _hover: { background: "bg.hover" },
 });
 
 export const bannerBodyClass = css({ flex: 1 });

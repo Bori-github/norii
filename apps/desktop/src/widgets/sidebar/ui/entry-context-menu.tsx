@@ -17,7 +17,7 @@ const menuClass = css({
   position: "fixed",
   zIndex: 20,
   minWidth: "36",
-  padding: "1",
+  padding: "1.5",
   borderRadius: "lg",
   borderWidth: "1px",
   borderStyle: "solid",
@@ -30,29 +30,36 @@ const itemClass = css({
   display: "flex",
   width: "100%",
   alignItems: "center",
-  border: "none",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "transparent",
   background: "transparent",
   color: "text",
-  fontSize: "xs",
+  fontSize: "sm",
   textAlign: "left",
   borderRadius: "sm",
-  paddingX: "2.5",
-  paddingY: "1",
+  paddingX: "3",
+  paddingY: "1.5",
   cursor: "pointer",
-  _hover: { background: "accent", color: "white" },
-  _focusVisible: { outline: "none", background: "accent", color: "white" },
+  _hover: { background: "accent", color: "accent.fg", borderColor: "accent.fg" },
+  _focusVisible: {
+    outline: "none",
+    background: "accent",
+    color: "accent.fg",
+    borderColor: "accent.fg",
+  },
 });
 
 const dangerItemClass = css({
   color: "status.danger",
-  _hover: { background: "status.danger", color: "white" },
-  _focusVisible: { background: "status.danger", color: "white" },
+  _hover: { background: "status.dangerSurface", color: "status.dangerFg" },
+  _focusVisible: { background: "status.dangerSurface", color: "status.dangerFg" },
 });
 
 const separatorClass = css({
   height: "1px",
-  marginX: "2.5",
-  marginY: "1",
+  marginX: "3",
+  marginY: "1.5",
   background: "border",
 });
 

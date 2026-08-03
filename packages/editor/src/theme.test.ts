@@ -14,7 +14,6 @@ const COLORS: EditorColors = {
   text: "var(--text)",
   muted: "var(--muted)",
   mark: "var(--mark)",
-  accent: "var(--accent)",
   hover: "var(--hover)",
   selection: "var(--selection)",
   match: "var(--match)",
@@ -46,8 +45,10 @@ describe("noriiTheme", () => {
     expect(themeRules()).toContain("var(--hover)");
   });
 
-  it("커서는 액센트다 — 살아 있는 것의 표시", () => {
-    expect(themeRules()).toContain("var(--accent)");
+  it("커서를 본문색으로 그린다", () => {
+    expect(editorThemeSpec(COLORS)[".cm-cursor, .cm-dropCursor"]?.borderLeftColor).toBe(
+      "var(--text)",
+    );
   });
 
   it("편집면 배경을 명시적으로 칠한다 — 유리를 켜도 본문이 뚫리지 않게", () => {
