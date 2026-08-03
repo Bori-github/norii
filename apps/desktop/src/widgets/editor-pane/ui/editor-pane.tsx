@@ -6,9 +6,9 @@ import { notifyDocChanged, useDocumentStore } from "@entities/document";
 import { noteDocumentChanged } from "@features/save-file";
 import { publishScroll, subscribeScroll } from "@features/scroll-sync";
 import { useViewModeStore } from "@features/switch-view-mode";
-import { STRINGS } from "@shared/config";
 
 import { createEditorController, type EditorController } from "../model/editor-controller";
+import { EmptyState } from "./empty-state";
 
 // 편집면은 종이다 — 불투명 배경을 **명시적으로** 칠한다. 유리가 켜져 있으므로(창이 투명하다)
 // 캔버스를 비쳐 쓰면 본문 뒤로 바탕화면이 그대로 지나간다(→ decisions/surface · window-chrome.md).
@@ -30,18 +30,6 @@ const hostClass = css({
     lineHeight: "editor",
     fontVariantLigatures: "none",
   },
-});
-
-// 빈 상태(탭 0개)도 종이다 — 여기가 뚫리면 바탕화면 위에 글자가 뜬다.
-const emptyClass = css({
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "3",
-  background: "bg.paper",
-  color: "text.muted",
 });
 
 // 에디터 패널 — 활성 탭의 CM6 뷰를 표시한다. 탭 전환 시 상태를 갈아끼우고,
@@ -109,12 +97,7 @@ export function EditorPane() {
   );
 
   if (activeTabId === null) {
-    return (
-      <div className={emptyClass} data-testid="empty-state">
-        <strong>{STRINGS.emptyStateTitle}</strong>
-        <span>{STRINGS.emptyStateHint}</span>
-      </div>
-    );
+    return <EmptyState />;
   }
   return <div ref={hostRef} className={hostClass} data-testid="editor-pane" />;
 }

@@ -12,7 +12,12 @@ export const STRINGS = {
   newTabTitle: "새 탭",
 
   emptyStateTitle: "열린 문서가 없습니다",
-  emptyStateHint: "⌘N 새 문서 · ⌘O 파일 열기",
+  // 버튼·최근 파일 목록의 구성은 document-model.md#빈-탭--탭바는-비지-않는다.
+  emptyStateOpenFileLabel: "파일 열기",
+  emptyStateNewDocLabel: "새 문서",
+  emptyStateOpenFileShortcut: "⌘O",
+  emptyStateNewDocShortcut: "⌘N",
+  recentFilesLabel: "최근 파일",
 
   dirtyIndicatorLabel: "저장 대기",
 
