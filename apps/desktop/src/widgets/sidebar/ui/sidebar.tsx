@@ -6,6 +6,7 @@ import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { SettingsButton } from "@features/toggle-settings";
 import { STRINGS } from "@shared/config";
+import { entryNameOf } from "@shared/lib";
 import { Button, FilePlusIcon, FolderPlusIcon, IconButton } from "@shared/ui";
 
 import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
@@ -86,11 +87,6 @@ const emptyClass = css({
   color: "text",
   textAlign: "center",
 });
-
-function folderNameOf(path: string): string {
-  const name = path.split(/[/\\]/).at(-1);
-  return name && name.length > 0 ? name : path;
-}
 
 // 정지점을 index로 옮기고 포커스한다(범위는 [0, 끝]으로 물린다).
 function focusAt(list: HTMLElement[], index: number): void {
@@ -220,7 +216,7 @@ export function Sidebar() {
     <nav className={sidebarClass} aria-label={STRINGS.sidebarTreeLabel} data-testid="sidebar">
       <div className={headerClass}>
         <span className={headerNameClass} title={rootDir}>
-          {folderNameOf(rootDir)}
+          {entryNameOf(rootDir)}
         </span>
         <div className={headerActionsClass}>
           <IconButton

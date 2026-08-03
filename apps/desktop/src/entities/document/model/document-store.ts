@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { STRINGS } from "@shared/config";
+import { entryNameOf } from "@shared/lib";
 import type { FileContent } from "@shared/ipc";
 
 import { clearTabText, setInitialText } from "./text-access";
@@ -48,12 +49,6 @@ interface DocumentActions {
 
 export type DocumentStore = DocumentState & DocumentActions;
 
-function fileNameOf(path: string): string {
-  // Windows canonical 경로(\\?\C:\...)까지 고려해 양쪽 구분자를 다룬다(→ platform-strategy.md).
-  const name = path.split(/[/\\]/).at(-1);
-  return name && name.length > 0 ? name : path;
-}
-
 // 경로 구분자 경계에서만 하위로 친다 — 문자열 접두어로 보면 /vault/묶음2가 /vault/묶음의
 // 하위가 된다.
 function movedPath(filePath: string | null, oldPath: string, newPath: string): string | null {
@@ -87,7 +82,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
     const tab: Tab = {
       id,
       filePath: file.path,
-      title: fileNameOf(file.path),
+      title: entryNameOf(file.path),
       isDirty: false,
       sourceEncoding: file.encoding,
       hasBom: file.hasBom,
@@ -178,7 +173,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
 
   assignPath(tabId, path) {
     set((state) => ({
-      tabs: updateTab(state.tabs, tabId, { filePath: path, title: fileNameOf(path) }),
+      tabs: updateTab(state.tabs, tabId, { filePath: path, title: entryNameOf(path) }),
     }));
   },
 
@@ -206,7 +201,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => ({
           return tab;
         }
         changed = true;
-        return { ...tab, filePath: moved, title: fileNameOf(moved) };
+        return { ...tab, filePath: moved, title: entryNameOf(moved) };
       });
       return changed ? { tabs } : state;
     });
