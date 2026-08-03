@@ -89,9 +89,9 @@ const captionClass = css({
 // 컨트롤은 설명 아래 한 줄을 통째로 쓴다 — 슬라이더가 좁으면 끝값을 집기 어렵다.
 const rowClass = css({ display: "flex", flexDirection: "column", gap: "3", paddingY: "4" });
 
-// 폭을 쓰지 않는 컨트롤은 설명 오른쪽에 둔다.
 const selectMinWidthClass = css({ minWidth: "32" });
 
+// 폭을 쓰지 않는 컨트롤은 설명 오른쪽에 둔다.
 const rowInlineClass = css({
   display: "flex",
   alignItems: "center",

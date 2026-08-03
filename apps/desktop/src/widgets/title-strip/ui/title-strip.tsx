@@ -17,7 +17,7 @@ const titleStripClass = css({
   borderBottomColor: "border",
   // 띠 높이는 네이티브가 소유한다(→ window-chrome.md#계약--드래그-띠).
   height: "36px",
-  _glass: { position: "relative", height: "36px" },
+  _glass: { position: "relative" },
 });
 
 // 앱 이름은 OS 타이틀 대신 우리가 그린다(hiddenTitle). 왜·창 드래그 규칙은

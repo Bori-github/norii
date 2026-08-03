@@ -45,14 +45,16 @@ semantic tokens    의미값 — colors.text, colors.bg.chrome, colors.border �
 표면의 역할·재질 규칙(→ [표면](decisions/surface.md))은 **배경 토큰의 이름으로** 코드에 나타난다. 컴포넌트는 "얼마나 투명한가"를 몰라도 되고, **자기가 무엇인지만** 고르면 된다. 어느 표면이 어느 토큰을 쓰는지는 루트 `DESIGN.md`의 표면 표가 단일 출처다 — 여기서는 토큰 이름만 정의한다.
 
 ```text
-bg.canvas    창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
-bg.chrome    도구 표면 — 유리 위에 얹는 틴트. 색이 아니라 불투명도만 얹는다(→ decisions/glass).
-             알파의 기본값은 대비 게이트가 정하고, 설정이 --norii-glass-opacity로 덮어쓴다.
-bg.paper     글이 놓이는 면. 항상 불투명. 편집면·프리뷰면·활성 탭이 공유한다.
-bg.hover     상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 사라진다.
-bg.selection 사용자가 **고른** 것 — 텍스트 선택. hover 위에 겹쳐도 보여야 하므로 알파가 더 높다.
-bg.match     시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 알파가 낮다.
-bg.scrim     오버레이 뒤를 가리는 딤. 반투명 검정.
+bg.canvas         창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
+bg.chrome         도구 표면 — 유리 위에 얹는 틴트. 색이 아니라 불투명도만 얹는다(→ decisions/glass).
+                  알파의 기본값은 대비 게이트가 정하고, 설정이 --norii-glass-opacity로 덮어쓴다.
+bg.paper          글이 놓이는 면. 항상 불투명. 편집면·프리뷰면·활성 탭이 공유한다.
+bg.hover          상태 배경(호버·활성 줄). 캔버스와 분리한다 — 캔버스를 참조하면 유리에서 사라진다.
+bg.selection      사용자가 **고른** 것 — 텍스트 선택. hover 위에 겹쳐도 보여야 하므로 알파가 더 높다.
+bg.match          시스템이 **찾은** 것 — 검색 결과·같은 낱말·괄호 짝. 고른 것보다 알파가 낮다.
+bg.scrim          오버레이 뒤를 가리는 딤. 반투명 검정.
+bg.scrollbar      스크롤바 thumb(::-webkit-scrollbar-thumb)의 색. track은 칠하지 않는다.
+bg.scrollbarHover 호버 상태의 thumb 색.
 ```
 
 - **`bg.canvas`를 상태 배경으로 쓰지 않는다.** 캔버스가 투명해지면 호버 피드백이 사라진다. 그래서 `bg.hover`가 따로 있다.

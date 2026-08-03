@@ -52,7 +52,10 @@ export default defineConfig({
             50: { value: "#f6fee8" },
             100: { value: "#e4fdb2" },
             200: { value: "#ccff00" },
+            // 한 단계(ΔL 0.085)를 건너뛰면 hover·pressed가 너무 어두워진다.
+            250: { value: "#baeb00" },
             300: { value: "#b3e100" },
+            350: { value: "#a6d400" },
             400: { value: "#9bc300" },
             500: { value: "#83a600" },
             600: { value: "#6d8a00" },
@@ -206,8 +209,8 @@ export default defineConfig({
           accent: {
             DEFAULT: { value: "{colors.lime.200}" },
             fg: { value: "{colors.gray.900}" },
-            hover: { value: "#baeb00" },
-            pressed: { value: "#a6d400" },
+            hover: { value: "{colors.lime.250}" },
+            pressed: { value: "{colors.lime.350}" },
           },
 
           status: {
@@ -216,7 +219,6 @@ export default defineConfig({
             success: { value: "#00a72c" },
             warning: { value: "#d17d00" },
             danger: { value: "#e44339" },
-            // 쓰는 자리와 근거는 decisions/color-palette 상태색이 소유한다.
             dangerSurface: { value: "#cc3329" },
             dangerFg: { value: "#ffffff" },
           },
@@ -266,7 +268,7 @@ export default defineConfig({
 
     "::-webkit-scrollbar": { width: "10px", height: "10px" },
     "::-webkit-scrollbar-track": { background: "transparent" },
-    // 손잡이 둘레의 여백은 투명 테두리로 만든다 — 배경을 content-box까지만 칠한다.
+    // thumb 둘레의 여백은 투명 테두리로 만든다 — 배경을 content-box까지만 칠한다.
     "::-webkit-scrollbar-thumb": {
       backgroundColor: "bg.scrollbar",
       backgroundClip: "content-box",

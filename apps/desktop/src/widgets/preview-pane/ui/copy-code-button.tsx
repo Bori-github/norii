@@ -39,8 +39,7 @@ const buttonClass = css({
   _hover: { color: "text" },
   layerStyle: "focusOutside",
   _focusVisible: { opacity: 1 },
-  // 복사 직후 — 체크 아이콘은 액센트로 뜨고(아이콘은 글자가 아니라 허용, → decisions/color-palette),
-  // 포인터가 떠나도 피드백이 끝날 때까지는 보인다.
+  // 복사 직후 — 포인터가 떠나도 피드백이 끝날 때까지 보인다.
   "&[data-copied]": { opacity: 1, color: "text" },
   // 아이콘 크기는 소비 측 CSS가 정한다 — 생성된 svg에는 width/height가 없다(viewBox만).
   "& svg": { width: "4", height: "4" },
