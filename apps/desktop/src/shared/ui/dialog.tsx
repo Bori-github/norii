@@ -45,10 +45,20 @@ export function Dialog({ open, size, className, dialogRef, children, ...rest }: 
   const ref = dialogRef ?? fallbackRef;
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
+    // 닫을 때 <dialog>가 DOM에서 빠지므로 브라우저가 포커스를 돌려주지 않는다.
+    const opener = document.activeElement;
     const dialog = ref.current;
-    if (open && dialog && !dialog.open) {
+    if (dialog && !dialog.open) {
       dialog.showModal();
     }
+    return () => {
+      if (opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus();
+      }
+    };
   }, [open, ref]);
 
   if (!open) {
