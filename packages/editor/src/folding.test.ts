@@ -20,10 +20,11 @@ import type { EditorColors } from "./theme";
 // 경계: 접힘 UI(거터·placeholder)·키맵 실동작은 CM6 기본을 신뢰한다(단축키 계약 표).
 //       접힘 상태 영속화는 하지 않는다(→ editor-strategy.md#접힘-상태-영속화).
 
-// EditorState.create의 초기 파싱은 20ms 예산이라, CI 부하로 그 안에 못 끝내면 트리가 잘려
-// (때로 헤딩 이전까지) foldable이 null을 낸다. ensureSyntaxTree는 context만 끝까지 진행시키고
-// field.tree(생성 시 캡처한 참조)는 그대로라 syntaxTree(state)가 부분 트리로 남는다 — 빈
-// 트랜잭션으로 LanguageState를 다시 만들어 field.tree를 완전한 트리로 교체한다.
+// CI 부하로 EditorState.create의 초기 파싱 예산(20ms)을 넘기면 트리가 잘려 foldable이 null을
+// 낸다 — 재현하지는 못했고(→ 이슈 #12), 이 완화책이 들어간 뒤로는 재발이 없다.
+// ensureSyntaxTree는 context만 끝까지 진행시키고 field.tree(생성 시 캡처한 참조)는 그대로라
+// syntaxTree(state)가 부분 트리로 남는다 — 빈 트랜잭션으로 LanguageState를 다시 만들어
+// field.tree를 완전한 트리로 교체한다.
 function fullyParsed(state: EditorState): EditorState {
   ensureSyntaxTree(state, state.doc.length, 5000);
   return state.update({}).state;
