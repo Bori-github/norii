@@ -6,6 +6,7 @@ import {
   useDocumentStore,
 } from "@entities/document";
 import type { Tab } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -119,6 +120,8 @@ async function performSave(
     try {
       picked = await ipc.showSaveDialog(
         path === null ? STRINGS.untitledDefaultFileName : tab.title,
+        // 폴더가 열려 있으면 다이얼로그가 그 루트에서 시작한다(→ rust-commands.md#다이얼로그).
+        useWorkspaceStore.getState().rootDir,
       );
     } catch (error) {
       notifyIpcError(STRINGS.saveFailedTitle, error);

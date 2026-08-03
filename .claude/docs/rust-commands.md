@@ -174,9 +174,12 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
 #[tauri::command]
-async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppError>;
+async fn show_save_dialog(default_name: String, start_dir: Option<String>) -> Result<Option<String>, AppError>;
 // 두 다이얼로그 모두 Markdown 필터(.md·.markdown — read_dir 필터와 동일 집합)를 걸고,
 // 취소하면 None을 반환한다. 선택된 경로는 허용 루트로 등록된다(→ 권한)
+// start_dir가 존재하는 디렉터리면 다이얼로그가 거기서 시작한다 — 아니면 OS가 정한 위치에서
+// 연다. 웹뷰는 사이드바 루트를 넘긴다(폴더를 열지 않았으면 None). 시작 위치일 뿐 허용과
+// 무관하다 — 허용 루트 등록은 사용자가 선택한 경로로만 한다
 
 #[tauri::command]
 async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;

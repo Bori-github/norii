@@ -43,13 +43,18 @@ pub async fn show_save_dialog(
     app: AppHandle,
     scope: State<'_, FileScope>,
     default_name: String,
+    start_dir: Option<String>,
 ) -> Result<Option<String>, AppError> {
-    let picked = app
+    let mut dialog = app
         .dialog()
         .file()
         .add_filter("Markdown", MARKDOWN_EXTENSIONS)
-        .set_file_name(&default_name)
-        .blocking_save_file();
+        .set_file_name(&default_name);
+    // 존재하는 디렉터리일 때만 시작 위치로 쓴다(→ rust-commands.md#다이얼로그).
+    if let Some(dir) = start_dir.map(PathBuf::from).filter(|dir| dir.is_dir()) {
+        dialog = dialog.set_directory(dir);
+    }
+    let picked = dialog.blocking_save_file();
     let Some(file_path) = picked else {
         return Ok(None);
     };

@@ -29,7 +29,8 @@ export const ipc = {
   watchPaths: (paths: string[]) => unwrapIpcResult(commands.watchPaths(paths)),
   watchTree: (root: string | null) => unwrapIpcResult(commands.watchTree(root)),
   showOpenDialog: () => unwrapIpcResult(commands.showOpenDialog()),
-  showSaveDialog: (defaultName: string) => unwrapIpcResult(commands.showSaveDialog(defaultName)),
+  showSaveDialog: (defaultName: string, startDir: string | null) =>
+    unwrapIpcResult(commands.showSaveDialog(defaultName, startDir)),
   showOpenFolderDialog: () => unwrapIpcResult(commands.showOpenFolderDialog()),
   // 결과를 돌려주지 않는다 — 흐림이 걸렸는지는 화면으로만 확인된다(→ design/window-chrome.md#검증).
   setWindowBlurRadius: (radius: number) => commands.setWindowBlurRadius(radius),

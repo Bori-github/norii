@@ -30,6 +30,7 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 }));
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -67,6 +68,7 @@ function openTab(path = "/vault/doc.md"): string {
 
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
+  useWorkspaceStore.setState({ rootDir: null });
   useConflictStore.setState({ conflictTabIds: [] });
   useConfirmStore.setState({ pending: null });
   useNoticeStore.setState({ notices: [] });
@@ -417,5 +419,24 @@ describe("저장 경로 확정과 중복 탭 금지", () => {
       filePath: "/private/tmp/새 문서.md",
       title: "새 문서.md",
     });
+  });
+
+  // 집행: rust-commands.md#다이얼로그 — 웹뷰는 사이드바 루트를 시작 위치로 넘긴다.
+  // 왜: 사이드바 루트는 웹뷰만 안다 — 여기서 넘기지 않으면 Rust가 시작 위치로 쓸 수 없다.
+  // 보장: 폴더가 열려 있으면 rootDir가, 아니면 null이 start_dir로 전달된다.
+  // 경계: 존재하지 않는 디렉터리의 무시는 Rust가 맡는다(→ dialog_commands.rs).
+  it("저장 다이얼로그는 열린 폴더 루트를 시작 위치로 넘긴다", async () => {
+    useWorkspaceStore.setState({ rootDir: "/vault" });
+    const untitled = useDocumentStore.getState().addUntitledTab();
+    useDocumentStore.getState().setDirty(untitled, true);
+    showSaveDialog.mockResolvedValueOnce(null);
+
+    await saveTabNow(untitled);
+    expect(showSaveDialog).toHaveBeenCalledWith(expect.any(String), "/vault");
+
+    useWorkspaceStore.setState({ rootDir: null });
+    showSaveDialog.mockResolvedValueOnce(null);
+    await saveTabNow(untitled);
+    expect(showSaveDialog).toHaveBeenLastCalledWith(expect.any(String), null);
   });
 });
