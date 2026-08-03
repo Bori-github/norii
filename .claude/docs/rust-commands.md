@@ -220,6 +220,9 @@ struct Session {
   root_dir: Option<String>,   // 사이드바 루트. 없으면 폴더를 열지 않은 세션
   tabs: Vec<SessionTab>,      // 경로 있는 탭만 — Untitled는 복원 대상이 아니다
   active: Option<u32>,        // 활성 탭의 tabs 인덱스
+  recent_files: Vec<String>,  // 최근 파일, 최신이 앞 — 갱신 시점·상한은
+                              //   document-model.md#최근-파일이 소유한다.
+                              //   필드가 없는 옛 세션 파일은 빈 목록으로 읽는다
 }
 
 struct SessionTab {
@@ -236,6 +239,7 @@ struct SessionTab {
 자리            종류        허용하면 열리는 범위
 root_dir        디렉터리    그 폴더 아래 전부
 tabs[].path     파일        그 파일 하나
+recent_files[]  파일        그 파일 하나
 ```
 
 `canonicalize` 후의 실제 종류로 판정한다 — 문서처럼 보이지만 디렉터리를 가리키는 심볼릭 링크도 탭 자리에서 거부된다.

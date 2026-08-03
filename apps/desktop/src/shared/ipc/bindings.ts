@@ -21,6 +21,8 @@ export const commands = {
 	rootDir: string | null,
 	tabs: SessionTab[],
 	active: number | null,
+	/**  옛 세션 파일에는 이 필드가 없다(→ rust-commands.md#세션). */
+	recentFiles?: string[],
 } | null, AppError>(__TAURI_INVOKE("load_session")),
 	saveSession: (session: Session) => typedError<null, AppError>(__TAURI_INVOKE("save_session", { session })),
 };
@@ -67,6 +69,8 @@ export type Session = {
 	rootDir: string | null,
 	tabs: SessionTab[],
 	active: number | null,
+	/**  옛 세션 파일에는 이 필드가 없다(→ rust-commands.md#세션). */
+	recentFiles?: string[],
 };
 
 export type SessionTab = {

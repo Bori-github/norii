@@ -41,7 +41,7 @@ interface WorkspaceState {
                              // 스토어가 별도 보유한다 — 영속화하지 않는다(접힘 영속화와 동일 원칙)
   tabs: Tab[];
   activeTabId: string | null;
-  recentFiles: string[];
+  recentFiles: string[];      // 최근에 연 파일 (→ #최근-파일)
 }
 ```
 
@@ -102,12 +102,21 @@ interface WorkspaceState {
 
 이 규칙은 표면 규칙과도 맞물린다. 창 최상단 띠는 유리(크롬)여야 하는데(→ [창 표면 계약](design/window-chrome.md)), 탭바가 사라지면 그 자리를 불투명한 종이가 차지해 유리가 끊긴다.
 
+## 최근 파일
+
+`recentFiles`는 최근에 연 파일의 canonical 경로 목록이다 — 최신이 앞이다.
+
+- **올리는 시점** — 사용자가 파일을 열 때(다이얼로그·트리·최근 파일 목록·프리뷰 링크) · Untitled가 첫 저장으로 경로를 얻을 때. 경로는 `open_file`/`save_file`이 반환한 canonical 값이다(탭 신원 규칙과 같다). **세션 복원은 목록을 바꾸지 않는다** — 재시작은 사용자가 파일을 연 것이 아니다.
+- 이미 목록에 있는 경로는 맨 앞으로 옮긴다. **10개**를 넘으면 뒤에서 버린다.
+- 영속화는 `session.json`이다(→ [Rust 커맨드 계약](rust-commands.md#세션)). `load_session`이 지금 없는 경로를 걸러 돌려주고, 남은 경로를 파일 단위 허용 루트로 등록한다 — 재시작 뒤 다이얼로그 없이 다시 여는 근거다.
+- 표시 자리는 빈 상태 안내다(→ [빈 탭](#빈-탭--탭바는-비지-않는다)).
+
 ## 세션 복원
 
 마지막 세션을 재시작 때 되살린다. 저장 자리는 셋이다.
 
 ```text
-탭 목록·활성 탭·루트 폴더·탭별 자리   session.json — Rust가 소유(→ rust-commands.md#세션)
+탭 목록·활성 탭·루트 폴더·탭별 자리·최근 파일   session.json — Rust가 소유(→ rust-commands.md#세션)
 창 크기·위치                        plugin-window-state
 뷰 모드·사이드바 접힘                설정 파일(→ file-lifecycle.md#설정-저장)
 ```
