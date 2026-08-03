@@ -30,7 +30,10 @@ const itemClass = css({
   display: "flex",
   width: "100%",
   alignItems: "center",
-  border: "none",
+  // 강조될 때 테두리가 생기면 행 높이가 1px씩 달라진다.
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "transparent",
   background: "transparent",
   color: "text",
   fontSize: "sm",
@@ -39,8 +42,13 @@ const itemClass = css({
   paddingX: "3",
   paddingY: "1.5",
   cursor: "pointer",
-  _hover: { background: "accent", color: "accent.fg" },
-  _focusVisible: { outline: "none", background: "accent", color: "accent.fg" },
+  _hover: { background: "accent", color: "accent.fg", borderColor: "accent.fg" },
+  _focusVisible: {
+    outline: "none",
+    background: "accent",
+    color: "accent.fg",
+    borderColor: "accent.fg",
+  },
 });
 
 const dangerItemClass = css({

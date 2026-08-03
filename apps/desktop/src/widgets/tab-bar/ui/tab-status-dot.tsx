@@ -7,7 +7,7 @@ export const DOT_STYLES = {
     width: "7px",
     height: "7px",
     borderRadius: "full",
-    borderWidth: "0.5px",
+    borderWidth: "1px",
     borderStyle: "solid",
     borderColor: "accent.fg",
     outline: "1.5px solid",
