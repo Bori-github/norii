@@ -62,13 +62,13 @@ const nameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
 const symlinkBadgeClass = css({ flexShrink: 0, fontSize: "xs", opacity: 0.7 });
 
 // 중첩 그룹은 왼쪽 세로 가이드 선으로 그 폴더의 자식 범위를 잇는다(시안 매칭). marginLeft가
-// 한 단계 들여쓰기를 겸하고, 그 값이 곧 가이드 선의 x다 — 부모 셰브론 중심(줄 marginX 4 +
-// paddingLeft 4 + 셰브론 반폭 7 = 15px)에 맞춰 선이 셰브론 아래로 내려가게 한다.
+// 한 단계 들여쓰기를 겸하고, 그 값이 곧 가이드 선의 x다 — 부모 셰브론 중심(줄 marginX 6 +
+// paddingLeft 6 + 셰브론 반폭 7 = 19px)에 맞춰 선이 셰브론 아래로 내려가게 한다.
 const groupClass = css({
   listStyle: "none",
   margin: 0,
   padding: 0,
-  marginLeft: "15px",
+  marginLeft: "19px",
   borderLeftWidth: "1px",
   borderLeftStyle: "solid",
   borderLeftColor: "border.muted",
