@@ -119,8 +119,9 @@ const paneClass = css({
   },
   "& details": { marginTop: 0, marginBottom: "4" },
   "& summary": { cursor: "pointer", layerStyle: "focusOutside" },
-  // 삼각형이 차지하는 폭은 11.4px다(실측) — 그에 맞는 단계를 쓴다.
-  "& details > *:not(summary)": { marginLeft: "3" },
+  // 삼각형 폭은 환경마다 다르다(이 맥 11.4px · CI 16.2px 실측). 글자 크기에 비례하는 값으로 둬
+  // 어느 쪽에서도 삼각형을 넘어선다.
+  "& details > *:not(summary)": { marginLeft: "1.25em" },
   "& hr": { borderColor: "border", marginY: "6" },
   "& img": { maxWidth: "100%", marginTop: 0, marginBottom: "4" },
   "& blockquote.norii-callout": {

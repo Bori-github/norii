@@ -53,7 +53,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-it("펼친 내용이 손잡이 글자에 맞춰 들어간다", async () => {
+it("펼친 내용이 summary 글자에 맞춰 들어간다", async () => {
   const { container } = renderPreview(DETAILS);
   await waitFor(() => expect(container.querySelector("details")).not.toBeNull());
 
@@ -61,7 +61,7 @@ it("펼친 내용이 손잡이 글자에 맞춰 들어간다", async () => {
   const summary = container.querySelector("summary");
   const inner = [...(details?.children ?? [])].find((child) => child.tagName !== "SUMMARY");
   if (!summary || !inner) {
-    throw new Error("손잡이나 펼친 내용을 찾지 못했습니다");
+    throw new Error("summary나 펼친 내용을 찾지 못했습니다");
   }
 
   // summary 글자의 시작점 — 삼각형은 그 왼쪽에 있으므로 요소가 아니라 글자를 재야 한다.
