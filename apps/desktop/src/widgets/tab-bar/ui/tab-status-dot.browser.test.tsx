@@ -27,6 +27,15 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+function token(name: string): string {
+  const hex = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const [, r, g, b] = /^#(\w{2})(\w{2})(\w{2})$/.exec(hex) ?? [];
+  if (r === undefined || g === undefined || b === undefined) {
+    throw new Error(`${name}을(를) 읽지 못했습니다: ${hex}`);
+  }
+  return `rgb(${Number.parseInt(r, 16)}, ${Number.parseInt(g, 16)}, ${Number.parseInt(b, 16)})`;
+}
+
 function dots(container: HTMLElement): string[] {
   return [...container.querySelectorAll("[data-status]")].map(
     (dot) => `${dot.getAttribute("data-status")}:${getComputedStyle(dot).backgroundColor}`,
@@ -35,19 +44,23 @@ function dots(container: HTMLElement): string[] {
 
 it("저장 대기는 액센트로 칠하고, 깨끗한 탭에는 점이 없다", () => {
   const { container } = render(<TabBar />);
-  expect(dots(container)).toEqual(["pending:rgb(204, 255, 0)", "pending:rgb(204, 255, 0)"]);
+  const accent = `pending:${token("--colors-accent")}`;
+  expect(dots(container)).toEqual([accent, accent]);
 });
 
 it("저장 대기이면서 충돌이면 충돌만 보인다", () => {
   useConflictStore.setState({ conflictTabIds: ["both"] } as never);
   const { container } = render(<TabBar />);
-  expect(dots(container)).toEqual(["pending:rgb(204, 255, 0)", "alerted:rgb(228, 67, 57)"]);
+  expect(dots(container)).toEqual([
+    `pending:${token("--colors-accent")}`,
+    `alerted:${token("--colors-status-danger")}`,
+  ]);
 });
 
 it("파일이 사라진 탭도 충돌과 같은 표시를 쓴다", () => {
   useMissingFileStore.setState({ missingTabIds: ["both"] } as never);
   const { container } = render(<TabBar />);
-  expect(dots(container).at(-1)).toBe("alerted:rgb(228, 67, 57)");
+  expect(dots(container).at(-1)).toBe(`alerted:${token("--colors-status-danger")}`);
 });
 
 it("활성 탭은 가리켜도 종이가 그대로다", () => {
