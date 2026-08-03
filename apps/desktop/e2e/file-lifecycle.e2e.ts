@@ -193,6 +193,70 @@ it("스모크 — 실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다
   expect(await emptyState.isExisting()).toBe(true);
 });
 
+// 합성 Cmd+W — 전역 핸들러 경유 탭 닫기(수정자 키 합성 불가 한계와 우회는 파일 머리).
+async function closeActiveTab(): Promise<void> {
+  await browser.execute(() => {
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "w", metaKey: true, bubbles: true, cancelable: true }),
+    );
+    return null;
+  });
+}
+
+// 집행: document-model.md#빈-탭--탭바는-비지-않는다 — 버튼(폴더 열기가 첫 자리),
+//       새 문서 버튼은 Cmd+N과 같은 길(경로 없는 Untitled 탭).
+// 왜: 버튼→feature→스토어 배선이 실앱에서 이어지는지는 여기서만 확인된다(브라우저 테스트는
+//     IPC를 모킹한다).
+// 보장: 버튼의 존재·순서, 새 문서 클릭 → Untitled 탭, 닫으면 빈 상태 복귀.
+// 경계: 파일 열기·폴더 열기 버튼은 네이티브 다이얼로그를 열므로 클릭하지 않는다(수동 검증) —
+//       같은 feature 경로(openFileInteractive·openFolderInteractive)의 다이얼로그 이후는
+//       E2E 훅 시나리오들이 덮는다. 첫 실행(세션 없음)이라 최근 파일 목록은 없어야 한다.
+it("빈 상태 — 버튼이 뜨고 새 문서 버튼이 Untitled 탭을 연다", async () => {
+  const ids = await browser.execute(() =>
+    [...document.querySelectorAll('[data-testid="empty-state"] button')].map(
+      (button) => (button as HTMLElement).dataset.testid ?? "",
+    ),
+  );
+  expect(ids.filter((id) => id.startsWith("empty-"))).toEqual([
+    "empty-open-folder",
+    "empty-open-file",
+    "empty-new-doc",
+  ]);
+  expect(await (await browser.$('[data-testid="recent-files"]')).isExisting()).toBe(false);
+
+  await (await browser.$('[data-testid="empty-new-doc"]')).click();
+  await (await browser.$('[role="tab"]*=Untitled')).waitForExist({ timeout: 5_000 });
+  // 경로 없는 문서다 — 활성 탭 경로가 비어 있어야 한다(실파일 즉시 생성이 아니다).
+  expect(await browser.execute(() => window.noriiE2e?.activeTabPath() ?? null)).toBeNull();
+
+  // 편집 전 Untitled는 확인 없이 닫힌다 — 빈 상태로 돌아온다.
+  await closeActiveTab();
+  await (await browser.$('[data-testid="empty-state"]')).waitForExist({ timeout: 5_000 });
+});
+
+// 집행: document-model.md#최근-파일 — 연 파일이 목록에 올라간다.
+//       document-model.md#빈-탭--탭바는-비지-않는다 — 파일명으로 표시하고 누르면 연다.
+// 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 빈 상태에서 목록 표시 → 클릭 → 다시 열기의
+//     끝단 배선은 실앱에서만 확인된다.
+// 보장: 파일을 열었다 닫으면 빈 상태에 그 파일명이 뜨고, 누르면 같은 파일이 다시 열린다.
+it("빈 상태 — 닫은 파일이 최근 파일에 남고 누르면 다시 열린다", async () => {
+  const filePath = path.join(SCOPE_ROOT, "recent-데모.md");
+  await writeFile(filePath, "# 최근 파일 데모\n", "utf8");
+
+  await openInApp(filePath);
+  await waitActiveTab(filePath);
+  await closeActiveTab(); // 편집하지 않았다 — 확인 없이 닫힌다.
+
+  await (await browser.$('[data-testid="empty-state"]')).waitForExist({ timeout: 5_000 });
+  // 자손 결합 + 부분 텍스트(`[…] button*=`)는 이 드라이버가 파싱하지 못한다 — 탭이 닫혀
+  // 이 이름은 최근 파일 목록에만 있으므로 버튼 텍스트만으로 잡는다.
+  const item = await browser.$("button*=recent-데모.md");
+  await item.waitForExist({ timeout: 5_000 });
+
+  await item.click();
+  await waitActiveTab(filePath);
+});
+
 // 집행: file-lifecycle.md#자동-저장 — 저장 대기가 생긴 시점부터 고른 간격에 저장한다.
 // 왜: 열기 → 편집 → 자동 저장 → 디스크 반영이 앱의 존재 이유다. 이 왕복이 깨지면 전부 무의미하다.
 // 보장: 실제 Rust 커맨드로 연 파일이 편집 후 자동 저장으로 디스크에 반영되고,
@@ -798,6 +862,12 @@ it("세션 복원 — 다시 띄우면 열려 있던 탭이 돌아온다", async
     },
     { timeout: 10_000, interval: 300, timeoutMsg: "세션 파일에 두 탭이 남지 않았다" },
   );
+  // 최근 파일도 같은 파일에 실린다(→ rust-commands.md#세션 recent_files).
+  {
+    const raw = await readFile(await appConfigFile("session.json"), "utf8");
+    const stored = JSON.parse(raw) as { recentFiles?: string[] };
+    expect(stored.recentFiles?.some((entry) => entry.endsWith("session-b.md"))).toBe(true);
+  }
 
   await browser.execute(() => {
     location.reload();
