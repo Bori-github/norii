@@ -389,11 +389,11 @@ it("외부 변경 리로드 — 편집 중이 아닌 탭은 조용히 새로고�
 });
 
 // 집행: file-lifecycle.md#외부-변경-처리 — "비활성 탭의 충돌 표시": 비활성 탭
-//       충돌은 ⚠ 배지가 유일한 신호이고, 그 탭으로 전환하면 충돌 배너가 뜬다.
-// 왜: 배너는 활성 탭 전용이라 이 배지가 없으면 사용자가 충돌을 알아차릴 방법이 없다.
-// 보장: 편집 중인 비활성 탭의 파일이 외부 수정되면 그 탭에 ⚠가 뜨고(활성 탭에는 배너 없음),
-//       전환하면 충돌 배너가 보인다.
-it("비활성 탭 충돌 — ⚠ 배지가 뜨고 전환하면 충돌 배너가 보인다", async () => {
+//       충돌은 상태 점이 유일한 신호이고, 그 탭으로 전환하면 충돌 배너가 뜬다.
+// 왜: 배너는 활성 탭 전용이라 이 점이 없으면 사용자가 충돌을 알아차릴 방법이 없다.
+// 보장: 편집 중인 비활성 탭의 파일이 외부 수정되면 그 탭의 점이 알림 상태가 되고(활성 탭에는
+//       배너 없음), 전환하면 충돌 배너가 보인다.
+it("비활성 탭 충돌 — 상태 점이 알림으로 바뀌고 전환하면 충돌 배너가 보인다", async () => {
   const inactivePath = path.join(SCOPE_ROOT, "badge-target.md");
   const activePath = path.join(SCOPE_ROOT, "badge-other.md");
   await writeFile(inactivePath, "# 배지 대상\n", "utf8");
@@ -406,8 +406,8 @@ it("비활성 탭 충돌 — ⚠ 배지가 뜨고 전환하면 충돌 배너가 
   // 자동 저장이 나가기 전에 외부 수정 — 어느 경로로든(watch 이벤트·저장 해시 검사) 충돌.
   await writeFile(inactivePath, "# 외부에서 고침\n", "utf8");
 
-  const badge = await browser.$('[data-testid="tab-warning"]');
-  await badge.waitForExist({ timeout: 10_000 });
+  const dot = await browser.$('[data-status="alerted"]');
+  await dot.waitForExist({ timeout: 10_000 });
   // 충돌은 비활성 탭 것 — 활성 탭에는 충돌 배너가 없어야 한다.
   expect(await (await browser.$('[data-testid="conflict-banner"]')).isExisting()).toBe(false);
 
