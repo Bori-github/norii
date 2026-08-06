@@ -99,7 +99,14 @@ norii에서 가장 위험하고 고유한 것 — **한글 IME**와 **데이터 
 
 ## 성숙도 주의
 
-**확인된 한계·우회(0.2.1 실측)**: 이 플러그인은 WebDriver 키 액션의 **수정자 키(Meta/Ctrl)를 매핑하지 않고**, `browser.keys()`의 일반 텍스트도 CM6에 닿지 않는다(**`element.addValue()`만** insertText로 전달됨). 동작 트리거는 dev 전용 훅(`window.noriiE2e`)·UI 클릭으로 구성한다. **단축키는 핸들러 층까지 E2E로 고정한다** — 앱 전역 핸들러(window keydown capture)가 `isTrusted`를 안 보므로 `browser.execute`로 **합성 `KeyboardEvent`를 디스패치**하면 핸들러+동작이 발동한다(frontmost 불필요 → CI 가능). 실제 OS 키가 그 핸들러로 라우팅되는지(메뉴 가로채기 등)만 수동이다 — `mise run dev`에서 실제 키보드로 [단축키 계약](editor-strategy.md#단축키-계약) 표를 확인한다.
+**확인된 한계·우회(0.2.1 실측)**:
+
+- **수정자 키(Meta/Ctrl)를 매핑하지 않는다.** `browser.keys()`의 일반 텍스트도 CM6에 닿지 않는다 — **`element.addValue()`만** insertText로 전달된다. 동작 트리거는 dev 전용 훅(`window.noriiE2e`)·UI 클릭으로 구성한다.
+- **단축키는 합성 `KeyboardEvent`로 핸들러 층까지 E2E로 고정한다** — 앱 전역 핸들러(window keydown capture)가 `isTrusted`를 안 보므로 `browser.execute` 디스패치로 핸들러+동작이 발동한다(frontmost 불필요 → CI 가능). 실제 OS 키가 그 핸들러로 라우팅되는지(메뉴 가로채기 등)만 수동이다 — `mise run dev`에서 실제 키보드로 [단축키 계약](editor-strategy.md#단축키-계약) 표를 확인한다.
+- **`isDisplayed()`는 간헐적으로 어긋난다.** 긴 시퀀스 중 보이는 요소에 false를 준다 — 설정 다이얼로그에서 재현: DOM은 `open`·`hidden` 아님·정상 좌표인데 false. 창의 최상위·포커스 잃음·숨김 상태와는 무관하다(상태별 반복 질의로 실측). 표시 여부 단언은 `isDisplayed()`가 아니라 DOM(`closest("[hidden]")` 등)으로 한다.
+- **`location.reload()` 뒤에는 새 페이지가 부팅됐음을 표식으로 확인한다.**
+  - 리로드 전 화면이 다음 단언을 이미 만족하면 대기가 리로드 전 페이지에서 통과하고, 이어지는 `execute`가 아직 리로드 중인 페이지에서 돌아 훅(`noriiE2e`)이 없다(실측: 세션 복원 시나리오의 간헐 실패).
+  - 리로드 직전 `window`에 표식을 심고, 표식이 사라진 페이지(= 새 페이지)에서 훅 존재까지 확인한 뒤 다음 단언으로 간다.
 
 **네이티브 층 입력(실측)**: AppleScript System Events의 실제 **키 입력은 WebDriver 웹뷰에 닿지 않지만, 실제 마우스 클릭·드래그와 CGEvent 키는 닿는다.** CGEvent 키는 입력기까지 지나므로 한글 조합도 실제로 만든다 — 손 타이핑과 같은 이벤트 시퀀스를 확인했다(→ [한글 IME](korean-ime.md)). `mise run verify-native`가 실제 입력 + WebDriver/접근성 단언으로 네 가지를 검증한다 — **표준 창 버튼 세로 중앙 정렬**(접근성 좌표), **드래그 불변식**(띠는 창을 끌고 본문은 안 끈다, CGEvent 실제 드래그), **전체화면 토글 클릭**(네이티브 띠 통과), **한글 조합 확정 Enter**(개행 하나 — 실행 전에 입력 소스를 한국어로 둔다). **유리 투과**는 `screencapture`로 캡처는 되나 균일한 바탕화면에서 glass-on/off를 픽셀로 구분하지 못해(통제 배경 필요) 아직 수동이다. 모두 frontmost·화면 좌표에 의존해 **헤드리스 CI가 아니라 로컬 스크립트 검증**이다 — 남은 유리 검증의 형식화는 [네이티브 E2E 열린 결정](implementation-plan.md)이 추적한다. **frontmost가 필요하므로 실행 전 사용자에게 알린다** — 앱을 최상위로 세우고 실제 입력을 보내는 동안 사용자가 마우스·키보드·창을 건드리면 좌표가 어긋나 실패한다. 무엇을·언제 하는지 전달하고 사용자가 화면을 비워둘 수 있게 한 뒤 돌린다.
 

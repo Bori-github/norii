@@ -774,14 +774,20 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
   await openSettings.click();
   await (await browser.$('[data-testid="settings-dialog"]')).waitForExist({ timeout: 10_000 });
 
+  // 표시 여부는 isDisplayed()가 아니라 DOM(hidden)으로 본다 — 간헐 어긋남의 우회
+  // (→ testing.md#성숙도-주의).
+  const panelHidden = (testId: string) =>
+    browser.execute(
+      (id: string) => document.querySelector(`[data-testid="${id}"]`)?.closest("[hidden]") !== null,
+      testId,
+    );
+
   // 여는 분류는 일반이다.
-  expect(await (await browser.$('[data-testid="settings-autosave"]')).isDisplayed()).toBe(true);
-  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(
-    false,
-  );
+  expect(await panelHidden("settings-autosave")).toBe(false);
+  expect(await panelHidden("settings-theme-system")).toBe(true);
 
   await (await browser.$('[data-testid="settings-nav-appearance"]')).click();
-  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(true);
+  expect(await panelHidden("settings-theme-system")).toBe(false);
 
   await (await browser.$('[data-testid="settings-nav-general"]')).click();
   await selectOption("settings-autosave", "30s");
@@ -879,10 +885,22 @@ it("세션 복원 — 다시 띄우면 열려 있던 탭이 돌아온다", async
     expect(stored.recentFiles?.some((entry) => entry.endsWith("session-b.md"))).toBe(true);
   }
 
+  // 리로드 전 화면도 아래 탭 단언을 이미 만족한다 — 표식 없이 기다리면 대기가 옛
+  // 페이지에서 통과하고, 다음 테스트의 execute가 아직 리로드 중인 페이지에서 돌아
+  // noriiE2e가 없다(실측: 간헐 실패, → testing.md#성숙도-주의).
   await browser.execute(() => {
+    (window as Window & { noriiOldPage?: boolean }).noriiOldPage = true;
     location.reload();
     return null;
   });
+  await browser.waitUntil(
+    async () =>
+      browser.execute(
+        () =>
+          !(window as Window & { noriiOldPage?: boolean }).noriiOldPage && Boolean(window.noriiE2e),
+      ),
+    { timeout: 20_000, interval: 500, timeoutMsg: "리로드된 새 페이지가 준비되지 않았다" },
+  );
 
   await browser.waitUntil(
     async () => {
