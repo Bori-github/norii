@@ -22,15 +22,17 @@ const emptyClass = css({
   color: "text.muted",
 });
 
+const headingClass = css({ fontSize: "md", fontWeight: "semibold", textAlign: "center" });
+
 const columnClass = css({
   display: "flex",
   flexDirection: "column",
-  gap: "2",
-  width: "60",
+  gap: "1",
+  width: "80",
 });
 
-// 단축키를 오른쪽 끝에 둔다. 정렬은 안쪽 span이 맡는다 — recipe가 정한 justifyContent를
-// className으로 덮지 않는다(→ button.tsx).
+const rowClass = css({ width: "100%" });
+
 const actionClass = css({
   display: "flex",
   alignItems: "center",
@@ -38,20 +40,27 @@ const actionClass = css({
   width: "100%",
 });
 
-const shortcutClass = css({ color: "text.muted", fontSize: "xs" });
+const shortcutClass = css({
+  fontFamily: "editor",
+  fontSize: "xs",
+  color: "text.muted",
+  paddingBlock: "0.5",
+  paddingInline: "1.5",
+  borderRadius: "sm",
+  background: "bg.hover",
+});
 
-const recentLabelClass = css({ fontSize: "xs", color: "text.muted" });
+const recentLabelClass = css({ fontSize: "xs", color: "text.muted", paddingInline: "2" });
 
 const recentListClass = css({
   display: "flex",
   flexDirection: "column",
+  gap: "1",
   listStyle: "none",
   margin: 0,
   padding: 0,
 });
 
-// 목록 항목은 파일명만 표시하고 전체 경로는 title로 남긴다. 왼쪽 정렬은 안쪽 span이
-// 맡는다(→ actionClass와 같은 이유).
 const recentItemClass = css({
   width: "100%",
   "& span": {
@@ -67,18 +76,31 @@ export function EmptyState() {
   const recentFiles = useWorkspaceStore((state) => state.recentFiles);
   return (
     <div className={emptyClass} data-testid="empty-state">
-      <strong>{STRINGS.emptyStateTitle}</strong>
+      <strong className={headingClass}>{STRINGS.emptyStateTitle}</strong>
       <div className={columnClass}>
-        <Button data-testid="empty-open-folder" onClick={() => void openFolderInteractive()}>
+        <Button
+          variant="accent"
+          data-testid="empty-open-folder"
+          onClick={() => void openFolderInteractive()}
+        >
           {STRINGS.openFolderButtonLabel}
         </Button>
-        <Button data-testid="empty-open-file" onClick={() => void openFileInteractive()}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={rowClass}
+          data-testid="empty-open-file"
+          onClick={() => void openFileInteractive()}
+        >
           <span className={actionClass}>
             {STRINGS.emptyStateOpenFileLabel}
             <kbd className={shortcutClass}>{STRINGS.emptyStateOpenFileShortcut}</kbd>
           </span>
         </Button>
         <Button
+          variant="ghost"
+          size="sm"
+          className={rowClass}
           data-testid="empty-new-doc"
           onClick={() => useDocumentStore.getState().addUntitledTab()}
         >
