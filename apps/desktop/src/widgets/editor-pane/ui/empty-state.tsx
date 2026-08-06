@@ -40,14 +40,22 @@ const actionClass = css({
   width: "100%",
 });
 
-const shortcutClass = css({
+const shortcutGroupClass = css({ display: "flex", alignItems: "center", gap: "1" });
+
+const shortcutKeyClass = css({
   fontFamily: "editor",
   fontSize: "xs",
-  color: "text.muted",
+  color: "accent.fg",
   paddingBlock: "0.5",
-  paddingInline: "1.5",
+  paddingInline: "1",
+  minWidth: "5",
+  textAlign: "center",
   borderRadius: "sm",
-  background: "bg.hover",
+  background: "accent",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "accent.pressed",
+  borderBottomWidth: "2px",
 });
 
 const recentLabelClass = css({ fontSize: "xs", color: "text.muted", paddingInline: "2" });
@@ -72,6 +80,18 @@ const recentItemClass = css({
   },
 });
 
+function ShortcutKeys({ keys }: { keys: string }) {
+  return (
+    <span className={shortcutGroupClass}>
+      {[...keys].map((key) => (
+        <kbd key={key} className={shortcutKeyClass}>
+          {key}
+        </kbd>
+      ))}
+    </span>
+  );
+}
+
 export function EmptyState() {
   const recentFiles = useWorkspaceStore((state) => state.recentFiles);
   return (
@@ -94,7 +114,7 @@ export function EmptyState() {
         >
           <span className={actionClass}>
             {STRINGS.emptyStateOpenFileLabel}
-            <kbd className={shortcutClass}>{STRINGS.emptyStateOpenFileShortcut}</kbd>
+            <ShortcutKeys keys={STRINGS.emptyStateOpenFileShortcut} />
           </span>
         </Button>
         <Button
@@ -106,7 +126,7 @@ export function EmptyState() {
         >
           <span className={actionClass}>
             {STRINGS.emptyStateNewDocLabel}
-            <kbd className={shortcutClass}>{STRINGS.emptyStateNewDocShortcut}</kbd>
+            <ShortcutKeys keys={STRINGS.emptyStateNewDocShortcut} />
           </span>
         </Button>
       </div>
