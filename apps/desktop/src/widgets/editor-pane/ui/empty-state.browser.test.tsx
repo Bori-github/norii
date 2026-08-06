@@ -32,28 +32,12 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 }));
 
 import { resetTabTextRegistry, useDocumentStore } from "@entities/document";
-import { useWorkspaceStore } from "@entities/workspace";
-import type { FileContent } from "@shared/ipc";
 
 import { EmptyState } from "./empty-state";
-
-function fileContent(path: string): FileContent {
-  return {
-    path,
-    text: "본문",
-    encoding: "utf-8",
-    hasBom: false,
-    eol: "lf",
-    eolMixed: false,
-    hash: "h",
-    mtime: 0,
-  };
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
   useDocumentStore.setState({ tabs: [], activeTabId: null });
-  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [], recentFiles: [] });
   resetTabTextRegistry();
 });
 
@@ -100,33 +84,5 @@ describe("빈 상태 버튼", () => {
       expect(showOpenDialog).toHaveBeenCalledTimes(1);
       expect(showOpenFolderDialog).toHaveBeenCalledTimes(1);
     });
-  });
-});
-
-// 집행: document-model.md#빈-탭--탭바는-비지-않는다 — "recentFiles를 파일명으로 표시하고,
-//       누르면 그 파일을 연다. 목록이 비면 표시하지 않는다".
-// 왜: 최근 파일을 표시하는 곳은 이 화면뿐이다 — 표시가 없으면 저장·복원(세션)만 있고
-//     쓰는 곳이 없다.
-// 보장: 목록의 파일명 표시(전체 경로는 title), 클릭 → 그 파일이 탭으로 열림, 빈 목록은 미표시.
-// 경계: 목록의 순서·상한은 workspace-store 테스트, 없는 경로의 필터링은 Rust 소관.
-describe("최근 파일 목록", () => {
-  it("파일명으로 표시하고 누르면 그 파일을 연다", async () => {
-    useWorkspaceStore.setState({ recentFiles: ["/vault/notes/회고.md", "/vault/할일.md"] });
-    openFile.mockResolvedValue(fileContent("/vault/notes/회고.md"));
-    const { getByTestId, getByTitle } = render(<EmptyState />);
-
-    const items = [...getByTestId("recent-files").querySelectorAll("button")];
-    expect(items.map((item) => item.textContent)).toEqual(["회고.md", "할일.md"]);
-    expect(getByTitle("/vault/notes/회고.md")).toBeTruthy();
-
-    fireEvent.click(items[0] as HTMLButtonElement);
-    await waitFor(() => {
-      expect(useDocumentStore.getState().tabs[0]?.filePath).toBe("/vault/notes/회고.md");
-    });
-  });
-
-  it("목록이 비면 표시하지 않는다", () => {
-    const { queryByTestId } = render(<EmptyState />);
-    expect(queryByTestId("recent-files")).toBeNull();
   });
 });

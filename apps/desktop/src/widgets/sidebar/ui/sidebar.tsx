@@ -14,6 +14,7 @@ import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
 import { EntryContextMenu } from "./entry-context-menu";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 import { EntryNameInput } from "./entry-name-input";
+import { RecentFilesSection } from "./recent-files-section";
 import { TreeItem } from "./tree-item";
 
 // 사이드바는 유리(크롬)다 — 탭바·상태바와 같은 표면 역할(→ DESIGN.md 표면 표).
@@ -205,6 +206,7 @@ export function Sidebar() {
             {STRINGS.openFolderButtonLabel}
           </Button>
         </div>
+        <RecentFilesSection />
         <div className={footerClass}>
           <SettingsButton />
         </div>
@@ -264,6 +266,7 @@ export function Sidebar() {
         {edit?.mode === "create" && edit.dir === rootDir && <EntryNameInput edit={edit} />}
       </ul>
       {menu !== null && <EntryContextMenu key={menu.target?.path ?? ""} menu={menu} />}
+      <RecentFilesSection />
       <div className={footerClass}>
         <SettingsButton />
       </div>

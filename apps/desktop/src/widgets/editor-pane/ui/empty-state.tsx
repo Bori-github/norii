@@ -1,11 +1,9 @@
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
-import { useWorkspaceStore } from "@entities/workspace";
-import { openFileInteractive, openPathInTab } from "@features/open-file";
+import { openFileInteractive } from "@features/open-file";
 import { openFolderInteractive } from "@features/open-folder";
 import { STRINGS } from "@shared/config";
-import { entryNameOf } from "@shared/lib";
 import { Button } from "@shared/ui";
 
 // 빈 상태(탭 0개) — 구성의 단일 출처: document-model.md#빈-탭--탭바는-비지-않는다.
@@ -58,28 +56,6 @@ const shortcutKeyClass = css({
   borderBottomWidth: "2px",
 });
 
-const recentLabelClass = css({ fontSize: "xs", color: "text.muted", paddingInline: "2" });
-
-const recentListClass = css({
-  display: "flex",
-  flexDirection: "column",
-  gap: "1",
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-});
-
-const recentItemClass = css({
-  width: "100%",
-  "& span": {
-    width: "100%",
-    textAlign: "left",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-});
-
 function ShortcutKeys({ keys }: { keys: string }) {
   return (
     <span className={shortcutGroupClass}>
@@ -93,7 +69,6 @@ function ShortcutKeys({ keys }: { keys: string }) {
 }
 
 export function EmptyState() {
-  const recentFiles = useWorkspaceStore((state) => state.recentFiles);
   return (
     <div className={emptyClass} data-testid="empty-state">
       <strong className={headingClass}>{STRINGS.emptyStateTitle}</strong>
@@ -130,26 +105,6 @@ export function EmptyState() {
           </span>
         </Button>
       </div>
-      {recentFiles.length > 0 && (
-        <div className={columnClass}>
-          <span className={recentLabelClass}>{STRINGS.recentFilesLabel}</span>
-          <ul className={recentListClass} data-testid="recent-files">
-            {recentFiles.map((path) => (
-              <li key={path}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={recentItemClass}
-                  title={path}
-                  onClick={() => void openPathInTab(path)}
-                >
-                  <span>{entryNameOf(path)}</span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

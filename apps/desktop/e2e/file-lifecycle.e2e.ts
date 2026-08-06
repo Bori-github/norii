@@ -235,11 +235,12 @@ it("빈 상태 — 버튼이 뜨고 새 문서 버튼이 Untitled 탭을 연다"
 });
 
 // 집행: document-model.md#최근-파일 — 연 파일이 목록에 올라간다.
-//       document-model.md#빈-탭--탭바는-비지-않는다 — 파일명으로 표시하고 누르면 연다.
-// 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 빈 상태에서 목록 표시 → 클릭 → 다시 열기의
+//       표시·클릭 열기 규칙도 같은 절이 소유한다.
+// 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 목록 표시 → 클릭 → 다시 열기의
 //     끝단 배선은 실앱에서만 확인된다.
-// 보장: 파일을 열었다 닫으면 빈 상태에 그 파일명이 뜨고, 누르면 같은 파일이 다시 열린다.
-it("빈 상태 — 닫은 파일이 최근 파일에 남고 누르면 다시 열린다", async () => {
+// 보장: 파일을 열었다 닫으면 사이드바 최근 파일 영역에 그 파일명이 뜨고, 누르면 같은
+//       파일이 다시 열린다.
+it("최근 파일 — 닫은 파일이 사이드바 목록에 남고 누르면 다시 열린다", async () => {
   const filePath = path.join(SCOPE_ROOT, "recent-데모.md");
   await writeFile(filePath, "# 최근 파일 데모\n", "utf8");
 
@@ -247,13 +248,22 @@ it("빈 상태 — 닫은 파일이 최근 파일에 남고 누르면 다시 열
   await waitActiveTab(filePath);
   await closeActiveTab(); // 편집하지 않았다 — 확인 없이 닫힌다.
 
-  await (await browser.$('[data-testid="empty-state"]')).waitForExist({ timeout: 5_000 });
+  await (await browser.$('[data-testid="recent-files"]')).waitForExist({ timeout: 5_000 });
   // 자손 결합 + 부분 텍스트(`[…] button*=`)는 이 드라이버가 파싱하지 못한다 — 탭이 닫혀
   // 이 이름은 최근 파일 목록에만 있으므로 버튼 텍스트만으로 잡는다.
   const item = await browser.$("button*=recent-데모.md");
   await item.waitForExist({ timeout: 5_000 });
 
-  await item.click();
+  // 합성 클릭 — 위 새 문서 버튼과 같은 우회(→ testing.md#성숙도-주의).
+  await browser.execute(() => {
+    const buttons = [...document.querySelectorAll('[data-testid="recent-files"] button')];
+    (
+      buttons.find((b) => b.textContent?.includes("recent-데모.md")) as
+        | HTMLButtonElement
+        | undefined
+    )?.click();
+    return null;
+  });
   await waitActiveTab(filePath);
 });
 
