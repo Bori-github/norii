@@ -15,6 +15,10 @@ export const BUTTON_STYLES = {
     cursor: "pointer",
     whiteSpace: "nowrap",
     layerStyle: "focusOutside",
+    transitionProperty: "background-color, border-color, color",
+    transitionDuration: "fast",
+    transitionTimingFunction: "out",
+    _motionReduce: { transition: "none" },
     _disabled: {
       cursor: "not-allowed",
       background: "bg.hover",

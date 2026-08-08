@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, waitFor } from "@testing-library/react";
 import { userEvent } from "vitest/browser";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
@@ -53,5 +53,8 @@ it("비활성 탭은 호버하면 배경이 바뀐다", async () => {
 
   await userEvent.hover(inactive);
 
-  expect(getComputedStyle(inactive).backgroundColor).not.toBe(before);
+  // 배경은 전환된다(→ decisions/motion.md) — 즉시 값이 아니라 전환 완료를 기다린다.
+  await waitFor(() => {
+    expect(getComputedStyle(inactive).backgroundColor).not.toBe(before);
+  });
 });
