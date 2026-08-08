@@ -35,6 +35,10 @@ const headerClass = css({
   color: "text.muted",
   cursor: "pointer",
   layerStyle: "focusInside",
+  transitionProperty: "color",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
   _hover: { color: "text" },
 });
 
@@ -44,16 +48,38 @@ const chevronClass = css({
   height: "3.5",
   transitionProperty: "transform",
   transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
   '[aria-expanded="true"] > &': { transform: "rotate(90deg)" },
+});
+
+// 접기/펼치기 전환 규칙 → decisions/motion.md.
+const collapseClass = css({
+  display: "grid",
+  gridTemplateRows: "1fr",
+  minHeight: 0,
+  overflow: "hidden",
+  transitionProperty: "grid-template-rows, visibility",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
+  '&[data-collapsed="true"]': { gridTemplateRows: "0fr", visibility: "hidden" },
 });
 
 // 안쪽 여백은 포커스 링의 자리다 — overflow가 잘라내는 면이라 여백이 바깥 링보다
 // 좁으면 링이 가장자리에서 잘린다(링 크기 → panda.config layerStyles).
+// 여백은 상자의 최소 높이로 남는다(→ decisions/motion.md).
 const listClass = css({
   margin: 0,
   padding: "1.5",
   listStyle: "none",
+  minHeight: 0,
   overflowY: "auto",
+  transitionProperty: "padding",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
+  '[data-collapsed="true"] > &': { paddingBlock: 0 },
 });
 
 const itemClass = css({
@@ -122,7 +148,7 @@ export function RecentFilesSection() {
         <ChevronRightIcon className={chevronClass} />
         {STRINGS.recentFilesLabel}
       </button>
-      {!collapsed && (
+      <div className={collapseClass} data-collapsed={collapsed} aria-hidden={collapsed}>
         <ul
           ref={listRef}
           className={listClass}
@@ -146,7 +172,7 @@ export function RecentFilesSection() {
             </li>
           ))}
         </ul>
-      )}
+      </div>
     </section>
   );
 }

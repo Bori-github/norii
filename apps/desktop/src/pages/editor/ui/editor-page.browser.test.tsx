@@ -248,25 +248,30 @@ describe("스크롤 동기화 (EditorPage 통합)", () => {
 
 // 집행: document-model.md#파일-트리-사이드바 — 접으면 화면에서 사라진다.
 //
-// 왜: 폭 0이나 숨김 속성으로 구현하면 빈 띠·잔여 테두리가 남는다. 사라짐을 DOM 부재로 못박는다.
-// 보장: 상태바 토글로 접으면 사이드바가 트리에서 사라지고, 다시 누르면 돌아온다.
+// 왜: 사이드바는 접혀도 DOM에서 사라지지 않고 숨김 속성(aria-hidden)으로 감춰진다
+//     (→ decisions/motion.md). 스토어 테스트는 토글이 스토어 값을 바꾸는 것까지만 보므로,
+//     그 값이 사이드바 요소의 숨김 속성으로 이어지는지는 렌더된 화면에서만 확인된다.
+// 보장: 상태바 토글로 접으면 사이드바가 숨김 상태(aria-hidden)가 되고, 다시 누르면 돌아온다.
 // 경계: 단축키(Cmd+B)는 앱 루트의 전역 리스너가 등록하므로 여기 범위가 아니다 —
 //       리스너는 toggleSidebar를 부를 뿐이고 그 전이는 sidebar-store 테스트가 고정한다.
+//       이 파일은 Panda 생성 CSS를 싣지 않아(→ 파일 머리) 접힌 뒤 폭·테두리가 실제로
+//       0이 되는지는 여기서 못 본다 — 그 단언(빈 띠·잔여 테두리 없음)은 실앱 E2E가 한다.
 describe("사이드바 접기 (EditorPage 배선)", () => {
-  it("타이틀 스트립 토글이 사이드바를 없앴다 되돌린다", async () => {
+  it("타이틀 스트립 토글이 사이드바를 숨겼다 되돌린다", async () => {
     useSidebarStore.setState({ visible: true });
-    const { getByTestId, queryByTestId } = render(<EditorPage />);
+    const { getByTestId } = render(<EditorPage />);
 
-    expect(queryByTestId("sidebar")).not.toBeNull();
+    const sidebar = getByTestId("sidebar");
+    expect(sidebar.getAttribute("aria-hidden")).toBe("false");
 
     fireEvent.click(getByTestId("sidebar-toggle"));
     await waitFor(() => {
-      expect(queryByTestId("sidebar")).toBeNull();
+      expect(sidebar.getAttribute("aria-hidden")).toBe("true");
     });
 
     fireEvent.click(getByTestId("sidebar-toggle"));
     await waitFor(() => {
-      expect(queryByTestId("sidebar")).not.toBeNull();
+      expect(sidebar.getAttribute("aria-hidden")).toBe("false");
     });
   });
 });

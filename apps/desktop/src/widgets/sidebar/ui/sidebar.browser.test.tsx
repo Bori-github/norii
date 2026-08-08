@@ -482,19 +482,20 @@ describe("최근 파일 영역", () => {
     });
   });
 
-  it("헤더으로 접으면 목록이 숨고 다시 펼치면 돌아온다", () => {
+  it("헤더로 접으면 목록이 숨고 다시 펼치면 돌아온다", () => {
     useWorkspaceStore.setState({ recentFiles: ["/vault/a.md"] });
-    const { getByTestId, queryByTestId } = render(<Sidebar />);
+    const { getByTestId } = render(<Sidebar />);
 
     const toggle = getByTestId("recent-files-toggle");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
 
     fireEvent.click(toggle);
-    expect(queryByTestId("recent-files")).toBeNull();
+    // 단언은 즉시 반영되는 상태 속성으로 한다(→ testing.md#성숙도-주의).
+    expect(getByTestId("recent-files").parentElement?.dataset.collapsed).toBe("true");
     expect(getByTestId("recent-files-toggle").getAttribute("aria-expanded")).toBe("false");
 
     fireEvent.click(getByTestId("recent-files-toggle"));
-    expect(queryByTestId("recent-files")).not.toBeNull();
+    expect(getByTestId("recent-files").parentElement?.dataset.collapsed).toBe("false");
   });
 
   // 집행: document-model.md#최근-파일 — "목록은 하나의 Tab 정지점이다(roving
