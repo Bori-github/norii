@@ -27,6 +27,15 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 const SCOPE_ROOT = process.env.NORII_E2E_SCOPE_ROOT ?? "/tmp/norii-e2e";
 const WEBDRIVER_PORT = Number(process.env.TAURI_WEBDRIVER_PORT ?? "4445");
 
+// 데모 녹화 감속(→ development-commands.md#pr-데모-영상-demo--upload-demo) — 동작 앞에서만
+// 쉬고 대기 폴링에는 걸지 않는다.
+const SLOWMO_MS = Number(process.env.NORII_E2E_SLOWMO_MS ?? "0");
+async function slowmo(): Promise<void> {
+  if (SLOWMO_MS > 0) {
+    await new Promise((resolve) => setTimeout(resolve, SLOWMO_MS));
+  }
+}
+
 // 사이드바 시나리오들이 공유하는 트리 루트 — 세 테스트가 같은 워크스페이스 상태를 이어받는다.
 const TREE_ROOT = path.join(SCOPE_ROOT, "tree");
 const TREE_NOTES = path.join(TREE_ROOT, "notes");
@@ -56,6 +65,24 @@ beforeAll(async () => {
     capabilities: {},
     logLevel: "error",
   });
+  if (SLOWMO_MS > 0) {
+    browser.overwriteCommand(
+      "click",
+      async function (origClick: () => Promise<void>) {
+        await slowmo();
+        return origClick();
+      },
+      true,
+    );
+    browser.overwriteCommand(
+      "addValue",
+      async function (origAddValue: (value: string) => Promise<void>, value: string) {
+        await slowmo();
+        return origAddValue(value);
+      },
+      true,
+    );
+  }
   // 세션 파일을 지운 뒤 리로드해야 탭 0개에서 출발한다(→ .claude/docs/testing.md).
   // 설정 파일은 여기서 못 지운다 — plugin-store가 값을 앱 프로세스 메모리에 들고 있어
   // 파일을 지워도 앱이 그대로 다시 쓴다. 앱을 띄우는 dev-webdriver가 미리 지운다.
@@ -84,6 +111,7 @@ afterAll(async () => {
 // execute 콜백은 항상 null을 반환한다 — 이 플러그인은 Promise·undefined 반환값을
 // 직렬화하지 못한다("unsupported type"). 열기 완료는 반환값이 아니라 DOM 변화로 기다린다.
 async function openInApp(filePath: string): Promise<void> {
+  await slowmo();
   await browser.execute((p: string) => {
     void window.noriiE2e?.openPath(p);
     return null;
@@ -91,6 +119,7 @@ async function openInApp(filePath: string): Promise<void> {
 }
 
 async function openFolderInApp(root: string): Promise<void> {
+  await slowmo();
   await browser.execute((p: string) => {
     void window.noriiE2e?.openFolder(p);
     return null;
@@ -100,6 +129,7 @@ async function openFolderInApp(root: string): Promise<void> {
 // WebDriver의 선택은 이 WebKit 드라이버에서 React의 onChange를 호출하지 않는다(합성 keydown과
 // 같은 한계 → 파일 머리).
 async function selectOption(testId: string, value: string): Promise<void> {
+  await slowmo();
   await browser.execute(
     (id: string, next: string) => {
       const element = document.querySelector(`[data-testid="${id}"]`) as HTMLSelectElement | null;
@@ -119,6 +149,7 @@ async function selectOption(testId: string, value: string): Promise<void> {
 // keys()는 세션의 활성 요소로 가고, 활성 요소는 창 상태에 좌우된다
 // (→ testing.md#성숙도-주의) — 요소를 특정해 디스패치한다.
 async function pressEnterOn(testId: string): Promise<void> {
+  await slowmo();
   await browser.execute((id: string) => {
     document
       .querySelector(`[data-testid="${id}"]`)
@@ -188,6 +219,7 @@ async function waitTreeItem(name: string): Promise<void> {
 // 만든 직후엔 트리가 watch_tree로 리렌더 중이라 한 번의 디스패치가 리렌더와 겹쳐 놓칠 수
 // 있다(진단으로 확인). 메뉴가 열릴 때까지 재디스패치한다.
 async function openMenuFor(name: string): Promise<void> {
+  await slowmo();
   await browser.waitUntil(
     async () => {
       await rightClickTreeItem(name);
@@ -208,6 +240,7 @@ it("스모크 — 실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다
 
 // 합성 Cmd+W — 전역 핸들러 경유 탭 닫기(수정자 키 합성 불가 한계와 우회는 파일 머리).
 async function closeActiveTab(): Promise<void> {
+  await slowmo();
   await browser.execute(() => {
     window.dispatchEvent(
       new KeyboardEvent("keydown", { key: "w", metaKey: true, bubbles: true, cancelable: true }),
@@ -252,7 +285,7 @@ it("빈 상태 — 버튼이 뜨고 새 문서 버튼이 Untitled 탭을 연다"
 // 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 목록 표시 → 클릭 → 다시 열기의
 //     끝단 배선은 실앱에서만 확인된다.
 // 보장: 파일을 열었다 닫으면 사이드바 최근 파일 영역에 그 파일명이 뜨고, 누르면 같은
-//       파일이 다시 열린다.
+//       파일이 다시 열린다. 헤더 버튼이 목록을 접고 다시 펼친다.
 it("최근 파일 — 닫은 파일이 사이드바 목록에 남고 누르면 다시 열린다", async () => {
   const filePath = path.join(SCOPE_ROOT, "recent-데모.md");
   await writeFile(filePath, "# 최근 파일 데모\n", "utf8");
@@ -278,6 +311,27 @@ it("최근 파일 — 닫은 파일이 사이드바 목록에 남고 누르면 �
     return null;
   });
   await waitActiveTab(filePath);
+
+  // 집행: document-model.md#최근-파일 — 헤더로 접고 펼친다.
+  const recentExpanded = () =>
+    browser.execute(
+      () =>
+        document
+          .querySelector('[data-testid="recent-files-toggle"]')
+          ?.getAttribute("aria-expanded") === "true",
+    );
+  expect(await recentExpanded()).toBe(true);
+  const recentToggle = await browser.$('[data-testid="recent-files-toggle"]');
+  await recentToggle.click();
+  await browser.waitUntil(async () => !(await recentExpanded()), {
+    timeout: 5_000,
+    timeoutMsg: "헤더로 최근 파일이 접히지 않았다",
+  });
+  await recentToggle.click();
+  await browser.waitUntil(recentExpanded, {
+    timeout: 5_000,
+    timeoutMsg: "헤더로 최근 파일이 다시 펼쳐지지 않았다",
+  });
 });
 
 // 집행: file-lifecycle.md#자동-저장 — 저장 대기가 생긴 시점부터 고른 간격에 저장한다.
