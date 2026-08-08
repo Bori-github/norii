@@ -116,6 +116,19 @@ async function selectOption(testId: string, value: string): Promise<void> {
   );
 }
 
+// keys()는 세션의 활성 요소로 가고, 활성 요소는 창 상태에 좌우된다
+// (→ testing.md#성숙도-주의) — 요소를 특정해 디스패치한다.
+async function pressEnterOn(testId: string): Promise<void> {
+  await browser.execute((id: string) => {
+    document
+      .querySelector(`[data-testid="${id}"]`)
+      ?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+      );
+    return null;
+  }, testId);
+}
+
 /** 열기는 완료를 기다리지 않는다 — 활성 탭이 바뀐 뒤에 타이핑해야 직전 탭에 쳐지지 않는다. */
 async function waitActiveTab(filePath: string): Promise<void> {
   // 탭 신원은 canonical 경로다 — /tmp는 /private/tmp 링크라 그대로 비교하면 같아지지 않는다.
@@ -638,34 +651,61 @@ it("접기 — 거터 클릭으로 접히고 placeholder 클릭으로 펼쳐진�
 
 // 집행: document-model.md#파일-트리-사이드바 · editor-strategy.md 단축키 계약 — 사이드바
 //       접기/열기. 타이틀 스트립 토글 버튼의 클릭 경로를 검증한다.
-// 왜: 접힘은 언마운트다 — 클릭으로 사이드바(트리)가 DOM에서 사라졌다 돌아오는 마운트/언마운트
-//     배선은 스토어 단위 테스트가 못 본다.
+// 왜: 접힘은 폭 전환 + 숨김이다(→ decisions/motion.md) — 클릭이 상태 속성(aria-hidden)까지
+//     반영되는 배선은 스토어 단위 테스트가 못 본다.
 // 경계: Cmd+B 단축키(수정자 키 합성 불가)·접힘 상태 영속화는 이 테스트 밖이다. 앞 사이드바
-//       시나리오가 연 트리를 전제로 이어받는다.
-it("사이드바 접기 — 토글 버튼으로 트리가 숨겨지고 다시 나타난다", async () => {
-  const tree = await browser.$('[data-testid="file-tree"]');
-  await tree.waitForExist({ timeout: 5_000 });
+//       시나리오가 연 트리를 전제로 이어받는다. 시각적 숨김 완료는 전환 뒤라 상태 속성으로
+//       단언한다.
+it("사이드바 접기 — 토글 버튼으로 숨겨지고 다시 나타난다", async () => {
+  const sidebarHidden = () =>
+    browser.execute(
+      () =>
+        document.querySelector('[data-testid="sidebar"]')?.getAttribute("aria-hidden") === "true",
+    );
+  expect(await sidebarHidden()).toBe(false);
 
   const toggle = await browser.$('[data-testid="sidebar-toggle"]');
   await toggle.click();
-  await tree.waitForExist({
-    reverse: true,
+  await browser.waitUntil(sidebarHidden, {
     timeout: 5_000,
-    timeoutMsg: "접기 후 트리가 사라지지 않았다",
+    timeoutMsg: "접기 후 사이드바가 숨겨지지 않았다",
   });
+  // 접힘의 최종 상태는 빈 띠·잔여 테두리가 없어야 한다 — 폭·오른쪽 테두리 0.
+  // 전환 완료 대기는 창 상태에 좌우된다(→ testing.md#성숙도-주의) — 전환을 끄고 단언한다.
+  const residue = await browser.execute(() => {
+    const sidebar = document.querySelector('[data-testid="sidebar"]');
+    if (!(sidebar instanceof HTMLElement)) {
+      return null;
+    }
+    sidebar.style.transition = "none";
+    const result = {
+      width: sidebar.getBoundingClientRect().width,
+      border: getComputedStyle(sidebar).borderRightWidth,
+    };
+    sidebar.style.removeProperty("transition");
+    return result;
+  });
+  expect(residue).toEqual({ width: 0, border: "0px" });
 
   await toggle.click();
-  await tree.waitForExist({ timeout: 5_000, timeoutMsg: "펼침 후 트리가 돌아오지 않았다" });
+  await browser.waitUntil(async () => !(await sidebarHidden()), {
+    timeout: 5_000,
+    timeoutMsg: "펼침 후 사이드바가 돌아오지 않았다",
+  });
 });
 
 // 집행: editor-strategy.md 단축키 계약 — 사이드바 접기/열기 `Cmd+B`.
 // 왜: 이 플러그인은 수정자 키를 합성 못 하지만, 앱 전역 핸들러(window keydown capture)가
 //     isTrusted를 안 봐 합성 KeyboardEvent로 발동한다 — 단축키의 핸들러+동작 배선을 실앱에서
 //     고정한다(실제 OS 키 라우팅만 수동, → testing.md#성숙도-주의).
-// 보장: Cmd(Meta)+B 합성 keydown으로 트리가 언마운트되고, 다시 누르면 돌아온다.
+// 보장: Cmd(Meta)+B 합성 keydown으로 사이드바가 숨겨지고, 다시 누르면 돌아온다.
 it("사이드바 접기 — Cmd+B(합성 keydown)로 여닫힌다", async () => {
-  const tree = await browser.$('[data-testid="file-tree"]');
-  await tree.waitForExist({ timeout: 5_000 });
+  const sidebarHidden = () =>
+    browser.execute(
+      () =>
+        document.querySelector('[data-testid="sidebar"]')?.getAttribute("aria-hidden") === "true",
+    );
+  expect(await sidebarHidden()).toBe(false);
 
   const cmdB = () =>
     browser.execute(() => {
@@ -676,14 +716,16 @@ it("사이드바 접기 — Cmd+B(합성 keydown)로 여닫힌다", async () => 
     });
 
   await cmdB();
-  await tree.waitForExist({
-    reverse: true,
+  await browser.waitUntil(sidebarHidden, {
     timeout: 5_000,
-    timeoutMsg: "Cmd+B로 트리가 사라지지 않았다",
+    timeoutMsg: "Cmd+B로 사이드바가 숨겨지지 않았다",
   });
 
   await cmdB();
-  await tree.waitForExist({ timeout: 5_000, timeoutMsg: "Cmd+B로 트리가 돌아오지 않았다" });
+  await browser.waitUntil(async () => !(await sidebarHidden()), {
+    timeout: 5_000,
+    timeoutMsg: "Cmd+B로 사이드바가 돌아오지 않았다",
+  });
 });
 
 // 집행: document-model.md#파일-트리-사이드바 — 사이드바 항목 조작(만들기·이름 변경·삭제)과
@@ -710,7 +752,7 @@ it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크
   await input.waitForExist({ timeout: 5_000 });
   await input.clearValue();
   await input.addValue("ops-회의록");
-  await browser.keys("Enter");
+  await pressEnterOn("entry-name-input");
 
   const createdPath = path.join(opsRoot, "ops-회의록.md");
   await browser.waitUntil(async () => existsSync(createdPath), {
@@ -733,7 +775,7 @@ it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크
   await renameInput.waitForExist({ timeout: 5_000 });
   await renameInput.clearValue();
   await renameInput.addValue("ops-결산");
-  await browser.keys("Enter");
+  await pressEnterOn("entry-name-input");
 
   const renamedPath = path.join(opsRoot, "ops-결산.md");
   await browser.waitUntil(async () => existsSync(renamedPath) && !existsSync(createdPath), {
@@ -803,6 +845,13 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
   // 뒤 시나리오가 기다리는 시간 안에 저장이 나가도록 기본값으로 되돌린다.
   await selectOption("settings-autosave", "5s");
   await (await browser.$('[data-testid="settings-close"]')).click();
+  // 닫힘 전환이 끝나야 다이얼로그가 내려간다 — 다음 시나리오의 열기와 겹치지 않게 기다린다.
+  await (
+    await browser.$('[data-testid="settings-dialog"]')
+  ).waitForExist({
+    reverse: true,
+    timeout: 5_000,
+  });
 });
 
 // 집행: design/decisions/color-palette.md — 액센트는 테마와 무관하게 한 색이다.
@@ -850,6 +899,12 @@ it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
 
   await (await browser.$('[data-testid="settings-theme-system"]')).click();
   await (await browser.$('[data-testid="settings-close"]')).click();
+  await (
+    await browser.$('[data-testid="settings-dialog"]')
+  ).waitForExist({
+    reverse: true,
+    timeout: 5_000,
+  });
 });
 
 // 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.
