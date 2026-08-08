@@ -131,10 +131,12 @@ export default defineConfig({
         },
       },
 
-      // 다이얼로그 진입 — 상태 변화를 설명하는 모션만 둔다(→ DESIGN.md 모션).
       keyframes: {
         dialogIn: {
           from: { opacity: "0", transform: "translateY(6px) scale(0.99)" },
+        },
+        dialogOut: {
+          to: { opacity: "0", transform: "translateY(4px) scale(0.99)" },
         },
       },
 

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { css } from "styled-system/css";
 
 import { Button } from "./button";
@@ -21,28 +22,34 @@ const actionsClass = css({
 export function ConfirmDialog() {
   const pending = useConfirmStore((state) => state.pending);
   const settle = useConfirmStore((state) => state.settle);
+  // Dialog는 닫힘 전환이 끝날 때까지 마운트를 유지한다(→ ./dialog)
+  const lastPending = useRef(pending);
+  if (pending) {
+    lastPending.current = pending;
+  }
+  const shown = pending ?? lastPending.current;
 
-  if (!pending) {
+  if (!shown) {
     return null;
   }
   return (
     <Dialog
-      open
+      open={pending !== null}
       data-testid="confirm-dialog"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-body"
       onCancel={() => settle(false)} // Esc — settle이 중복 호출을 무시하므로 close와 겹쳐도 안전.
     >
-      <strong id="confirm-dialog-title">{pending.title}</strong>
+      <strong id="confirm-dialog-title">{shown.title}</strong>
       <p id="confirm-dialog-body" className={bodyClass}>
-        {pending.body}
+        {shown.body}
       </p>
       <div className={actionsClass}>
         <Button data-testid="confirm-cancel" onClick={() => settle(false)}>
-          {pending.cancelLabel}
+          {shown.cancelLabel}
         </Button>
         <Button variant="accent" data-testid="confirm-accept" onClick={() => settle(true)}>
-          {pending.confirmLabel}
+          {shown.confirmLabel}
         </Button>
       </div>
     </Dialog>
