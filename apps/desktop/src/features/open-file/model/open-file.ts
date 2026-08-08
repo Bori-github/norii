@@ -42,7 +42,7 @@ export async function openPathInTab(
   try {
     const file = await ipc.openFile(path);
     useDocumentStore.getState().openFileTab(file, focusEditor);
-    // 최근 파일은 canonical 경로다 — 요청 문자열이 아니라 열기 결과를 올린다
+    // 최근 파일은 canonical 경로다 — 요청 문자열이 아니라 열기 결과를 추가한다
     // (→ document-model.md#최근-파일).
     useWorkspaceStore.getState().noteRecentFile(file.path);
   } catch (error) {

@@ -206,7 +206,7 @@ fn set_window_blur_radius(window: tauri::WebviewWindow, radius: u32);
 
 ```rust
 #[tauri::command]
-fn load_session() -> Result<Option<Session>, AppError>;
+async fn load_session() -> Result<Option<Session>, AppError>;
 // 지난 세션을 읽고, 그 안의 경로(루트 폴더·탭)를 허용 루트로 등록한다 — 재시작 뒤에도
 // 다이얼로그 없이 그 파일을 열 수 있게 하는 유일한 통로다(→ 권한).
 // 파일이 없거나 JSON이 깨졌으면 None — 손으로 고칠 수 있는 파일이라 읽기 실패는 오류가 아니다.
@@ -215,7 +215,7 @@ fn load_session() -> Result<Option<Session>, AppError>;
 // 활성 탭이 걸러지면 active는 빈다 — 프론트가 남은 첫 탭을 활성으로 만든다(→ document-model.md#세션-복원).
 
 #[tauri::command]
-fn save_session(session: Session) -> Result<(), AppError>;
+async fn save_session(session: Session) -> Result<(), AppError>;
 // 지금 세션을 덮어쓴다(원자적 쓰기). 이미 허용된 경로만 기록한다 — 웹뷰가 넘긴 경로가
 // 다음 부팅의 허용 루트가 되는 길을 막는다.
 
@@ -296,7 +296,6 @@ encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
 plugin-store         설정 저장(→ file-lifecycle.md#설정-저장)
-plugin-window-state  창 크기·위치 저장·복원 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
 

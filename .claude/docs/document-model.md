@@ -37,12 +37,11 @@ interface TreeNode {
 interface WorkspaceState {
   rootDir: string | null;    // 사이드바에 표시할 루트 폴더 (다이얼로그가 반환한 canonical 경로)
   fileTree: TreeNode[];      // read_dir(한 단계 목록) 결과를 프론트가 조립한 트리
-                             // 폴더 펼침 상태는 트리 데이터가 아니라 에디터 표현 상태로
-                             // 스토어가 별도 보유한다 — 영속화하지 않는다(접힘 영속화와 동일 원칙)
-  tabs: Tab[];
-  activeTabId: string | null;
-  recentFiles: string[];      // 최근에 연 파일 (→ #최근-파일)
+  expandedDirs: string[];    // 펼쳐진 폴더 — 에디터 표현 상태라 영속화하지 않는다(접힘 영속화와 동일 원칙)
+  recentFiles: string[];     // 최근에 연 파일 (→ #최근-파일)
 }
+
+// 탭 목록·활성 탭(tabs·activeTabId)은 별도 스토어가 갖는다(→ #다중-탭-규칙)
 ```
 
 상태는 Zustand 스토어(`apps/desktop`)가 소유한다. **CM6의 `EditorState`는 스토어에 넣지 않는다** — 큰 불변 객체라 스토어에 두면 비용이 크다. 탭별 에디터 인스턴스가 자체 보유하고, 스토어는 메타데이터(dirty·경로·제목)만 추적한다.
@@ -50,7 +49,7 @@ interface WorkspaceState {
 ## 파일 트리 (사이드바)
 
 - 사이드바는 위에서부터 **파일 트리 · 최근 파일 · 설정** 영역이다. 최근 파일 영역의 규칙은 [최근 파일](#최근-파일)이 소유한다.
-- 루트 폴더를 열면 Rust `read_dir`가 루트 **한 단계**를 반환하고, 폴더를 펼칠 때마다 그 폴더 한 단계를 다시 읽는다(레벨별 lazy — VS Code와 동일, → [Rust 커맨드 계약](rust-commands.md)).
+- 루트 폴더를 열면 Rust `read_dir`가 루트 **한 단계**를 반환하고, 폴더를 처음 펼칠 때 그 폴더 한 단계를 읽는다 — 재펼침은 캐시를 쓴다(레벨별 lazy — VS Code와 동일, → [Rust 커맨드 계약](rust-commands.md)).
 - 트리에는 **디렉터리 전부와 `.md`/`.markdown` 파일만** 표시한다. 필터·정렬·숨김·심볼릭 링크의 결정론적 규칙은 [Rust 커맨드 계약](rust-commands.md)의 `read_dir` 반환 규칙을 단일 출처로 둔다.
 - 중첩 폴더 = 중첩 페이지. 접기/펼치기.
 - 파일 클릭 → 탭으로 연다. 활성 파일은 `aria-selected`로 표시한다. 클릭은 포커스를 트리에 남겨 방향키 탐색을 잇고, 편집 진입(에디터로 포커스)은 `Enter`가 맡는다.
@@ -112,8 +111,8 @@ interface WorkspaceState {
 
 `recentFiles`는 최근에 연 파일의 canonical 경로 목록이다 — 최신이 앞이다.
 
-- **올리는 시점** — 사용자가 파일을 열 때(열기 다이얼로그·파일 트리·최근 파일 목록) · 저장 다이얼로그가 새 경로를 확정할 때(Untitled 첫 저장·다른 이름으로 저장). 경로는 `open_file`/`save_file`이 반환한 canonical 값이다(탭 신원 규칙과 같다). **세션 복원은 목록을 바꾸지 않는다** — 재시작은 사용자가 파일을 연 것이 아니다.
-- 이미 목록에 있는 경로는 맨 앞으로 옮긴다. **10개**를 넘으면 뒤에서 버린다.
+- **추가하는 시점** — 사용자가 파일을 열 때(열기 다이얼로그·파일 트리·최근 파일 목록·사이드바 새 파일 만들기) · 저장 다이얼로그가 새 경로를 확정할 때(Untitled 첫 저장·다른 이름으로 저장). 경로는 `open_file`/`save_file`이 반환한 canonical 값이다(탭 신원 규칙과 같다). **세션 복원은 목록을 바꾸지 않는다** — 재시작은 사용자가 파일을 연 것이 아니다.
+- 이미 목록에 있는 경로는 맨 앞으로 옮긴다. **10개**를 넘으면 마지막 항목을 제거한다.
 - 영속화는 `session.json`이다(→ [Rust 커맨드 계약](rust-commands.md#세션)). `load_session`이 지금 없는 경로를 걸러 돌려주고, 남은 경로를 파일 단위 허용 루트로 등록한다 — 재시작 뒤 다이얼로그 없이 다시 여는 근거다.
 
 표시 자리는 사이드바의 최근 파일 영역이다(→ [파일 트리](#파일-트리-사이드바)).
@@ -124,15 +123,14 @@ interface WorkspaceState {
 
 ## 세션 복원
 
-마지막 세션을 재시작 때 되살린다. 저장 자리는 셋이다.
+마지막 세션을 재시작 때 복원한다. 두 파일에 나눠 저장한다.
 
 ```text
 탭 목록·활성 탭·루트 폴더·탭별 자리·최근 파일   session.json — Rust가 소유(→ rust-commands.md#세션)
-창 크기·위치                        plugin-window-state
 뷰 모드·사이드바 접힘                설정 파일(→ file-lifecycle.md#설정-저장)
 ```
 
-**탭 경로가 Rust 파일에 사는 이유는 경로 스코프다**(→ [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)). 세 자리 모두 `.md`가 아니라 앱 config다(→ [파일 생명주기 정책](file-lifecycle.md#앱-상태는-md에-넣지-않는다)).
+**탭 경로를 Rust가 소유하는 파일에 저장하는 이유는 경로 스코프다**(→ [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)). 두 파일 모두 `.md`가 아니라 앱 config다(→ [파일 생명주기 정책](file-lifecycle.md#앱-상태는-md에-넣지-않는다)).
 
 ```text
 쓰는 시점    탭·루트·최근 파일이 바뀔 때 디바운스 + 창을 닫기 전(→ file-lifecycle.md#종료-방어)

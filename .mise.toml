@@ -94,7 +94,7 @@ dir = "apps/desktop"
 run = "pnpm test:e2e"
 
 [tasks.verify-native]
-description = "네이티브 검증(표준 창 버튼 중앙·드래그 불변식·전체화면 토글 클릭) — 실제 OS 입력이라 앱을 최상위로 세운다(dev-webdriver 필요, 로컬 전용)"
+description = "네이티브 검증(표준 창 버튼 중앙·드래그 불변식·전체화면 토글 클릭·한글 조합 확정 입력) — 실제 OS 입력이라 앱을 최상위로 세운다(dev-webdriver 필요, 로컬 전용)"
 dir = "apps/desktop"
 run = "node e2e/verify-native.mjs"
 

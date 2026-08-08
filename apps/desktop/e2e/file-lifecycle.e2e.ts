@@ -280,7 +280,7 @@ it("빈 상태 — 버튼이 뜨고 새 문서 버튼이 Untitled 탭을 연다"
   await (await browser.$('[data-testid="empty-state"]')).waitForExist({ timeout: 5_000 });
 });
 
-// 집행: document-model.md#최근-파일 — 연 파일이 목록에 올라간다.
+// 집행: document-model.md#최근-파일 — 연 파일이 목록에 추가된다.
 //       표시·클릭 열기 규칙도 같은 절이 소유한다.
 // 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 목록 표시 → 클릭 → 다시 열기의
 //     끝단 배선은 실앱에서만 확인된다.
