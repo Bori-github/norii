@@ -27,6 +27,9 @@ pub struct Session {
     pub root_dir: Option<String>,
     pub tabs: Vec<SessionTab>,
     pub active: Option<u32>,
+    /// 옛 세션 파일에는 이 필드가 없다(→ rust-commands.md#세션).
+    #[serde(default)]
+    pub recent_files: Vec<String>,
 }
 
 #[tauri::command]
@@ -99,10 +102,16 @@ fn remap(session: &Session, map: impl Fn(&str, PathKind) -> Option<String>) -> S
             ..tab.clone()
         });
     }
+    let recent_files = session
+        .recent_files
+        .iter()
+        .filter_map(|path| map(path, PathKind::File))
+        .collect();
     Session {
         root_dir,
         tabs,
         active,
+        recent_files,
     }
 }
 
@@ -166,6 +175,7 @@ mod tests {
             root_dir: Some(dir.path().to_string_lossy().into_owned()),
             tabs: vec![tab(doc.to_str().unwrap())],
             active: Some(0),
+            recent_files: vec![],
         };
 
         write_session(&scope, &file, &session).unwrap();
@@ -215,6 +225,7 @@ mod tests {
                 tab(kept.to_str().unwrap()),
             ],
             active: Some(1),
+            recent_files: vec![],
         };
         fs::write(&file, serde_json::to_vec(&stored).unwrap()).unwrap();
 
@@ -244,6 +255,7 @@ mod tests {
             root_dir: Some(doc.to_string_lossy().into_owned()),
             tabs: vec![tab(dir.path().to_str().unwrap())],
             active: Some(0),
+            recent_files: vec![],
         };
         fs::write(&file, serde_json::to_vec(&stored).unwrap()).unwrap();
 
@@ -274,6 +286,7 @@ mod tests {
                 tab(kept.to_str().unwrap()),
             ],
             active: Some(0),
+            recent_files: vec![],
         };
         fs::write(&file, serde_json::to_vec(&stored).unwrap()).unwrap();
 
@@ -285,9 +298,69 @@ mod tests {
             root_dir: None,
             tabs: vec![tab(kept.to_str().unwrap())],
             active: Some(9),
+            recent_files: vec![],
         };
         fs::write(&file, serde_json::to_vec(&out_of_range).unwrap()).unwrap();
         assert_eq!(read_session(&scope, &file).unwrap().active, None);
+    }
+
+    // 집행: rust-commands.md#세션 — recent_files는 파일 경로만, 순서 보존, 허용 등록.
+    // 왜: 최근 파일은 재시작 뒤 다이얼로그 없이 다시 여는 통로다(→ document-model.md#최근-파일) —
+    //     허용 등록이 없으면 목록을 눌러도 Permission으로 거부된다.
+    // 보장: 왕복이 순서를 보존하고 각 경로가 허용된다. 없는 경로·디렉터리는 빠지고 허용되지 않는다.
+    // 경계: 상한·갱신 시점은 프론트가 강제한다(→ document-model.md#최근-파일).
+    #[test]
+    fn 최근_파일이_왕복하고_없는_경로와_디렉터리는_빠진다() {
+        let (dir, scope) = scoped_tempdir();
+        let first = dir.path().join("a.md");
+        let second = dir.path().join("b.md");
+        fs::write(&first, "본문").unwrap();
+        fs::write(&second, "본문").unwrap();
+        let file = dir.path().join(SESSION_FILE);
+        write_session(
+            &scope,
+            &file,
+            &Session {
+                root_dir: None,
+                tabs: vec![],
+                active: None,
+                recent_files: vec![
+                    first.to_string_lossy().into_owned(),
+                    second.to_string_lossy().into_owned(),
+                    dir.path().join("사라진.md").to_string_lossy().into_owned(),
+                    dir.path().to_string_lossy().into_owned(),
+                ],
+            },
+        )
+        .unwrap();
+
+        let fresh = FileScope::default();
+        let restored = read_session(&fresh, &file).expect("세션을 읽는다");
+
+        let canonical_first = fs::canonicalize(&first).unwrap();
+        let canonical_second = fs::canonicalize(&second).unwrap();
+        assert_eq!(
+            restored.recent_files,
+            vec![
+                canonical_first.to_string_lossy().into_owned(),
+                canonical_second.to_string_lossy().into_owned(),
+            ]
+        );
+        assert!(fresh.ensure_allowed(&canonical_first).is_ok());
+        assert!(fresh.ensure_allowed(&canonical_second).is_ok());
+    }
+
+    // 왜: recent_files 필드는 기존 사용자의 session.json에 없다 — 없다고 세션 전체를
+    //     버리면(read_session의 None) 재시작 때 열려 있던 탭을 잃는다.
+    // 보장: 필드가 없는 세션 파일도 읽히고 최근 파일은 빈 목록이다.
+    #[test]
+    fn 필드가_없는_옛_세션은_빈_목록으로_읽힌다() {
+        let (dir, scope) = scoped_tempdir();
+        let file = dir.path().join(SESSION_FILE);
+        fs::write(&file, r#"{"rootDir":null,"tabs":[],"active":null}"#).unwrap();
+
+        let restored = read_session(&scope, &file).expect("세션을 읽는다");
+        assert!(restored.recent_files.is_empty());
     }
 
     // 집행: rust-commands.md#권한-capabilities — 허용 루트는 웹뷰가 선언하지 못한다.
@@ -314,6 +387,7 @@ mod tests {
                     tab(inside.to_str().unwrap()),
                 ],
                 active: Some(1),
+                recent_files: vec![outside.to_string_lossy().into_owned()],
             },
         )
         .unwrap();
@@ -323,6 +397,7 @@ mod tests {
         assert_eq!(restored.tabs.len(), 1);
         assert_eq!(restored.active, Some(0));
         assert!(restored.root_dir.is_none());
+        assert!(restored.recent_files.is_empty());
         assert!(fresh
             .ensure_allowed(&fs::canonicalize(&outside).unwrap())
             .is_err());

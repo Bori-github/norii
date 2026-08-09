@@ -14,13 +14,15 @@ export const commands = {
 	watchPaths: (paths: string[]) => typedError<number, AppError>(__TAURI_INVOKE("watch_paths", { paths })),
 	watchTree: (root: string | null) => typedError<null, AppError>(__TAURI_INVOKE("watch_tree", { root })),
 	showOpenDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_dialog")),
-	showSaveDialog: (defaultName: string) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName })),
+	showSaveDialog: (defaultName: string, startDir: string | null) => typedError<string | null, AppError>(__TAURI_INVOKE("show_save_dialog", { defaultName, startDir })),
 	showOpenFolderDialog: () => typedError<string | null, AppError>(__TAURI_INVOKE("show_open_folder_dialog")),
 	setWindowBlurRadius: (radius: number) => __TAURI_INVOKE<void>("set_window_blur_radius", { radius }),
 	loadSession: () => typedError<{
 	rootDir: string | null,
 	tabs: SessionTab[],
 	active: number | null,
+	/**  옛 세션 파일에는 이 필드가 없다(→ rust-commands.md#세션). */
+	recentFiles?: string[],
 } | null, AppError>(__TAURI_INVOKE("load_session")),
 	saveSession: (session: Session) => typedError<null, AppError>(__TAURI_INVOKE("save_session", { session })),
 };
@@ -67,6 +69,8 @@ export type Session = {
 	rootDir: string | null,
 	tabs: SessionTab[],
 	active: number | null,
+	/**  옛 세션 파일에는 이 필드가 없다(→ rust-commands.md#세션). */
+	recentFiles?: string[],
 };
 
 export type SessionTab = {

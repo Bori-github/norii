@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { RECENT_FILES_LIMIT } from "@shared/config";
 import type { TreeNode } from "@shared/ipc";
 
 // 파일 트리 상태 — 구조: .claude/docs/document-model.md#파일-트리-사이드바,
@@ -16,6 +17,8 @@ interface WorkspaceState {
   fileTree: FileTreeNode[];
   /** 펼쳐진 폴더 경로 — 에디터 표현 상태다. 영속화하지 않는다(→ editor-strategy.md 접힘 영속화와 동일 원칙). */
   expandedDirs: string[];
+  /** 최근에 연 파일 (→ document-model.md#최근-파일). */
+  recentFiles: string[];
 }
 
 interface WorkspaceActions {
@@ -29,6 +32,10 @@ interface WorkspaceActions {
    * (→ document-model.md#파일-트리-사이드바). dirPath가 rootDir이면 루트 레벨을 갱신한다.
    */
   refreshLevel(dirPath: string, entries: TreeNode[]): void;
+  /** 최근 파일에 올린다 — 규칙은 document-model.md#최근-파일. */
+  noteRecentFile(path: string): void;
+  /** 세션 복원 전용 — 목록을 통째로 세운다(→ document-model.md#최근-파일). */
+  setRecentFiles(paths: string[]): void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
@@ -112,6 +119,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
   rootDir: null,
   fileTree: [],
   expandedDirs: [],
+  recentFiles: [],
 
   openRoot(rootDir, entries) {
     set({
@@ -144,6 +152,20 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set) => ({
           expandedDirs.length === state.expandedDirs.length ? state.expandedDirs : expandedDirs,
       };
     });
+  },
+
+  noteRecentFile(path) {
+    set((state) => {
+      if (state.recentFiles[0] === path) {
+        return state;
+      }
+      const rest = state.recentFiles.filter((entry) => entry !== path);
+      return { recentFiles: [path, ...rest].slice(0, RECENT_FILES_LIMIT) };
+    });
+  },
+
+  setRecentFiles(paths) {
+    set({ recentFiles: paths.slice(0, RECENT_FILES_LIMIT) });
   },
 
   setExpanded(dirPath, expanded) {

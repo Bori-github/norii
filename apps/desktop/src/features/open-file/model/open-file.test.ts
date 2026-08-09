@@ -26,6 +26,7 @@ vi.mock("@tauri-apps/plugin-log", () => ({
 }));
 
 import { getTabText, resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import type { FileContent } from "@shared/ipc";
 import { IpcError } from "@shared/ipc";
 import { useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -48,6 +49,7 @@ function fileContent(overrides: Partial<FileContent> = {}): FileContent {
 
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
+  useWorkspaceStore.setState({ recentFiles: [] });
   useConfirmStore.setState({ pending: null });
   useNoticeStore.setState({ notices: [] });
   resetTabTextRegistry();
@@ -73,6 +75,25 @@ describe("openPathInTab", () => {
     const { tabs, activeTabId } = useDocumentStore.getState();
     expect(tabs.filter((tab) => tab.filePath !== null)).toHaveLength(1);
     expect(activeTabId).toBe(existing);
+  });
+
+  // 집행: document-model.md#최근-파일 — 열기가 목록을 올리고, 경로는 canonical 값이다.
+  // 왜: 요청 문자열(별칭 표기)을 올리면 같은 파일이 목록에 두 항목으로 남는다.
+  // 보장: 새로 열기·기존 탭 합류 모두 최근 파일 맨 앞에 올라가고, 값은 열기 결과의 경로다.
+  // 경계: 삽입·이동·상한 규칙은 workspace-store 테스트가, 열기 실패는 목록을 바꾸지 않는
+  //       것을 아래에서 함께 본다.
+  it("열기는 canonical 경로를 최근 파일에 올리고, 실패는 올리지 않는다", async () => {
+    openFile.mockResolvedValueOnce(fileContent({ path: "/private/tmp/doc.md" }));
+    await openPathInTab("/tmp/doc.md");
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/private/tmp/doc.md"]);
+
+    // 이미 열린 파일 — IPC 없이 합류해도 목록은 갱신된다.
+    await openPathInTab("/private/tmp/doc.md");
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/private/tmp/doc.md"]);
+
+    openFile.mockRejectedValueOnce(new IpcError("io", "읽기 실패"));
+    await openPathInTab("/tmp/broken.md");
+    expect(useWorkspaceStore.getState().recentFiles).toEqual(["/private/tmp/doc.md"]);
   });
 });
 

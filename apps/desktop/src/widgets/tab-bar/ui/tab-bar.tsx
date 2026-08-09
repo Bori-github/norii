@@ -46,6 +46,10 @@ const tabClass = css({
   borderColor: "transparent",
   borderRadius: "md",
   layerStyle: "focusInside",
+  transitionProperty: "background-color, border-color, box-shadow",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
   _hover: { background: "bg.hover" },
   '&[aria-selected="true"]': {
     background: "bg.paper",

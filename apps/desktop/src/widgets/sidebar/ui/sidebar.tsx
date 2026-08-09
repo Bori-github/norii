@@ -5,7 +5,9 @@ import { useWorkspaceStore } from "@entities/workspace";
 import { openPathInTab } from "@features/open-file";
 import { openFolderInteractive, toggleDir } from "@features/open-folder";
 import { SettingsButton } from "@features/toggle-settings";
+import { useSidebarStore } from "@features/toggle-sidebar";
 import { STRINGS } from "@shared/config";
+import { entryNameOf } from "@shared/lib";
 import { Button, FilePlusIcon, FolderPlusIcon, IconButton } from "@shared/ui";
 
 import { openEntryMenu, useContextMenuStore } from "../model/context-menu-store";
@@ -13,22 +15,30 @@ import { startCreate, useEntryEditStore } from "../model/entry-edit-store";
 import { EntryContextMenu } from "./entry-context-menu";
 import { setTreeNavCurrent, useTreeNavStore } from "../model/tree-nav-store";
 import { EntryNameInput } from "./entry-name-input";
+import { RecentFilesSection } from "./recent-files-section";
 import { TreeItem } from "./tree-item";
 
 // 사이드바는 유리(크롬)다 — 탭바·상태바와 같은 표면 역할(→ DESIGN.md 표면 표).
 // 트리는 파일시스템의 위계를 보여줄 뿐이다 — 전체 인덱싱이 아니라 단순 트리 표시
 // (→ document-model.md#파일-트리-사이드바 · 비목표 경계).
 
+// 접기/펼치기 전환 규칙 → decisions/motion.md.
 const sidebarClass = css({
   display: "flex",
   flexDirection: "column",
   width: "60",
   flexShrink: 0,
   minHeight: 0,
+  overflow: "hidden",
   background: "bg.chrome",
   borderRightWidth: "1px",
   borderRightStyle: "solid",
   borderRightColor: "border",
+  transitionProperty: "width, border-right-width, visibility",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
+  '&[data-collapsed="true"]': { width: 0, borderRightWidth: 0, visibility: "hidden" },
 });
 
 const headerClass = css({
@@ -87,9 +97,11 @@ const emptyClass = css({
   textAlign: "center",
 });
 
-function folderNameOf(path: string): string {
-  const name = path.split(/[/\\]/).at(-1);
-  return name && name.length > 0 ? name : path;
+// 접힌 폴더의 하위는 DOM에 남지만 숨김이다(→ tree-item).
+function visibleTreeItems(root: HTMLElement | null): HTMLElement[] {
+  return [...(root?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [])].filter(
+    (el) => el.closest('[data-collapsed="true"]') === null,
+  );
 }
 
 // 정지점을 index로 옮기고 포커스한다(범위는 [0, 끝]으로 물린다).
@@ -105,7 +117,7 @@ function focusAt(list: HTMLElement[], index: number): void {
 // DOM 순서(곧 보이는 순서)로 알 수 있어, 노드마다 핸들러를 달지 않아도 이웃을 찾을 수 있다.
 function useTreeKeyboard(treeRef: React.RefObject<HTMLUListElement | null>) {
   return function onKeyDown(event: React.KeyboardEvent): void {
-    const list = [...(treeRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [])];
+    const list = visibleTreeItems(treeRef.current);
     if (list.length === 0) {
       return;
     }
@@ -177,6 +189,7 @@ function useTreeKeyboard(treeRef: React.RefObject<HTMLUListElement | null>) {
 }
 
 export function Sidebar() {
+  const visible = useSidebarStore((state) => state.visible);
   const rootDir = useWorkspaceStore((state) => state.rootDir);
   const fileTree = useWorkspaceStore((state) => state.fileTree);
   const currentPath = useTreeNavStore((state) => state.currentPath);
@@ -188,11 +201,10 @@ export function Sidebar() {
   // Tab 정지점은 항상 하나여야 한다 — currentPath가 접혀 사라지거나 아직 없으면 첫 노드로
   // 자가 복구한다. 정지점이 이미 있으면 아무것도 하지 않아 반복되지 않는다.
   useEffect(() => {
-    const list = treeRef.current?.querySelectorAll<HTMLElement>('[role="treeitem"]');
-    if (!list || list.length === 0) {
+    const nodes = visibleTreeItems(treeRef.current);
+    if (nodes.length === 0) {
       return;
     }
-    const nodes = [...list];
     const hasStop = nodes.some((el) => el.tabIndex === 0);
     const first = nodes[0];
     if (!hasStop && first) {
@@ -202,13 +214,20 @@ export function Sidebar() {
 
   if (rootDir === null) {
     return (
-      <nav className={sidebarClass} aria-label={STRINGS.sidebarTreeLabel} data-testid="sidebar">
+      <nav
+        className={sidebarClass}
+        aria-label={STRINGS.sidebarTreeLabel}
+        aria-hidden={!visible}
+        data-collapsed={!visible}
+        data-testid="sidebar"
+      >
         <div className={emptyClass}>
           <span>{STRINGS.sidebarEmptyBody}</span>
           <Button data-testid="open-folder" onClick={() => void openFolderInteractive()}>
             {STRINGS.openFolderButtonLabel}
           </Button>
         </div>
+        <RecentFilesSection />
         <div className={footerClass}>
           <SettingsButton />
         </div>
@@ -217,10 +236,16 @@ export function Sidebar() {
   }
 
   return (
-    <nav className={sidebarClass} aria-label={STRINGS.sidebarTreeLabel} data-testid="sidebar">
+    <nav
+      className={sidebarClass}
+      aria-label={STRINGS.sidebarTreeLabel}
+      aria-hidden={!visible}
+      data-collapsed={!visible}
+      data-testid="sidebar"
+    >
       <div className={headerClass}>
         <span className={headerNameClass} title={rootDir}>
-          {folderNameOf(rootDir)}
+          {entryNameOf(rootDir)}
         </span>
         <div className={headerActionsClass}>
           <IconButton
@@ -268,6 +293,7 @@ export function Sidebar() {
         {edit?.mode === "create" && edit.dir === rootDir && <EntryNameInput edit={edit} />}
       </ul>
       {menu !== null && <EntryContextMenu key={menu.target?.path ?? ""} menu={menu} />}
+      <RecentFilesSection />
       <div className={footerClass}>
         <SettingsButton />
       </div>

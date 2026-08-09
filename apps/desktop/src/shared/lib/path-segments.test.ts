@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { pathSegmentsWithinRoot } from "./path-segments";
+import { entryNameOf, pathSegmentsWithinRoot } from "./path-segments";
+
+// 왜: 탭 제목·사이드바 헤더·최근 파일 목록이 같은 규칙으로 이름을 만들어야 한다 —
+//     따로 구현하면 같은 파일이 자리마다 다른 이름으로 보일 수 있다.
+// 보장: 마지막 구분자 뒤가 이름이고, 양쪽 구분자(/·\)를 다루며, 이름이 비면 경로 그대로다.
+// 경계: 확장자 표시 여부는 사용처가 정한다 — 이 함수는 항목 이름만 만든다.
+describe("경로의 마지막 항목 이름", () => {
+  it("파일명과 폴더명을 돌려준다", () => {
+    expect(entryNameOf("/글/회고/회고.md")).toBe("회고.md");
+    expect(entryNameOf("/글/회고")).toBe("회고");
+    expect(entryNameOf("\\\\?\\C:\\글\\회고.md")).toBe("회고.md");
+  });
+
+  it("이름이 비면 경로 그대로 돌려준다", () => {
+    expect(entryNameOf("/")).toBe("/");
+  });
+});
 
 // 왜: 상태 바의 경로는 "연 폴더 안 어디"만 답한다. 기준이 없거나 맞지 않을 때 다른 규칙으로
 //     답하면 같은 표기가 상황마다 다른 뜻이 된다.

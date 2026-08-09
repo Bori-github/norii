@@ -6,6 +6,7 @@ import {
   useDocumentStore,
 } from "@entities/document";
 import type { Tab } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { STRINGS } from "@shared/config";
 import { ipc, isIpcError } from "@shared/ipc";
 import { notifyIpcError, useConfirmStore, useNoticeStore } from "@shared/ui";
@@ -119,6 +120,8 @@ async function performSave(
     try {
       picked = await ipc.showSaveDialog(
         path === null ? STRINGS.untitledDefaultFileName : tab.title,
+        // 폴더가 열려 있으면 다이얼로그가 그 루트에서 시작한다(→ rust-commands.md#다이얼로그).
+        useWorkspaceStore.getState().rootDir,
       );
     } catch (error) {
       notifyIpcError(STRINGS.saveFailedTitle, error);
@@ -160,6 +163,8 @@ async function performSave(
     // 탭 신원은 저장이 실제로 쓴 canonical 경로다(→ document-model.md#다중-탭-규칙).
     if (tab.filePath !== result.path) {
       useDocumentStore.getState().assignPath(tabId, result.path);
+      // 이 분기는 다이얼로그가 새 경로를 확정했을 때만 탄다(→ document-model.md#최근-파일).
+      useWorkspaceStore.getState().noteRecentFile(result.path);
     }
     commitSaveSuccess(tabId, tab, text, result.hash);
     return "saved";

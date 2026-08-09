@@ -27,6 +27,15 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 const SCOPE_ROOT = process.env.NORII_E2E_SCOPE_ROOT ?? "/tmp/norii-e2e";
 const WEBDRIVER_PORT = Number(process.env.TAURI_WEBDRIVER_PORT ?? "4445");
 
+// 데모 녹화 감속(→ development-commands.md#pr-데모-영상-demo--upload-demo) — 동작 앞에서만
+// 쉬고 대기 폴링에는 걸지 않는다.
+const SLOWMO_MS = Number(process.env.NORII_E2E_SLOWMO_MS ?? "0");
+async function slowmo(): Promise<void> {
+  if (SLOWMO_MS > 0) {
+    await new Promise((resolve) => setTimeout(resolve, SLOWMO_MS));
+  }
+}
+
 // 사이드바 시나리오들이 공유하는 트리 루트 — 세 테스트가 같은 워크스페이스 상태를 이어받는다.
 const TREE_ROOT = path.join(SCOPE_ROOT, "tree");
 const TREE_NOTES = path.join(TREE_ROOT, "notes");
@@ -56,6 +65,24 @@ beforeAll(async () => {
     capabilities: {},
     logLevel: "error",
   });
+  if (SLOWMO_MS > 0) {
+    browser.overwriteCommand(
+      "click",
+      async function (origClick: () => Promise<void>) {
+        await slowmo();
+        return origClick();
+      },
+      true,
+    );
+    browser.overwriteCommand(
+      "addValue",
+      async function (origAddValue: (value: string) => Promise<void>, value: string) {
+        await slowmo();
+        return origAddValue(value);
+      },
+      true,
+    );
+  }
   // 세션 파일을 지운 뒤 리로드해야 탭 0개에서 출발한다(→ .claude/docs/testing.md).
   // 설정 파일은 여기서 못 지운다 — plugin-store가 값을 앱 프로세스 메모리에 들고 있어
   // 파일을 지워도 앱이 그대로 다시 쓴다. 앱을 띄우는 dev-webdriver가 미리 지운다.
@@ -84,6 +111,7 @@ afterAll(async () => {
 // execute 콜백은 항상 null을 반환한다 — 이 플러그인은 Promise·undefined 반환값을
 // 직렬화하지 못한다("unsupported type"). 열기 완료는 반환값이 아니라 DOM 변화로 기다린다.
 async function openInApp(filePath: string): Promise<void> {
+  await slowmo();
   await browser.execute((p: string) => {
     void window.noriiE2e?.openPath(p);
     return null;
@@ -91,6 +119,7 @@ async function openInApp(filePath: string): Promise<void> {
 }
 
 async function openFolderInApp(root: string): Promise<void> {
+  await slowmo();
   await browser.execute((p: string) => {
     void window.noriiE2e?.openFolder(p);
     return null;
@@ -100,6 +129,7 @@ async function openFolderInApp(root: string): Promise<void> {
 // WebDriver의 선택은 이 WebKit 드라이버에서 React의 onChange를 호출하지 않는다(합성 keydown과
 // 같은 한계 → 파일 머리).
 async function selectOption(testId: string, value: string): Promise<void> {
+  await slowmo();
   await browser.execute(
     (id: string, next: string) => {
       const element = document.querySelector(`[data-testid="${id}"]`) as HTMLSelectElement | null;
@@ -114,6 +144,20 @@ async function selectOption(testId: string, value: string): Promise<void> {
     testId,
     value,
   );
+}
+
+// keys()는 세션의 활성 요소로 가고, 활성 요소는 창 상태에 좌우된다
+// (→ testing.md#성숙도-주의) — 요소를 특정해 디스패치한다.
+async function pressEnterOn(testId: string): Promise<void> {
+  await slowmo();
+  await browser.execute((id: string) => {
+    document
+      .querySelector(`[data-testid="${id}"]`)
+      ?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+      );
+    return null;
+  }, testId);
 }
 
 /** 열기는 완료를 기다리지 않는다 — 활성 탭이 바뀐 뒤에 타이핑해야 직전 탭에 쳐지지 않는다. */
@@ -175,6 +219,7 @@ async function waitTreeItem(name: string): Promise<void> {
 // 만든 직후엔 트리가 watch_tree로 리렌더 중이라 한 번의 디스패치가 리렌더와 겹쳐 놓칠 수
 // 있다(진단으로 확인). 메뉴가 열릴 때까지 재디스패치한다.
 async function openMenuFor(name: string): Promise<void> {
+  await slowmo();
   await browser.waitUntil(
     async () => {
       await rightClickTreeItem(name);
@@ -191,6 +236,102 @@ it("스모크 — 실제 앱이 뜨고 시작 화면(빈 상태)이 렌더된다
   const emptyState = await browser.$('[data-testid="empty-state"]');
   await emptyState.waitForExist({ timeout: 15_000 });
   expect(await emptyState.isExisting()).toBe(true);
+});
+
+// 합성 Cmd+W — 전역 핸들러 경유 탭 닫기(수정자 키 합성 불가 한계와 우회는 파일 머리).
+async function closeActiveTab(): Promise<void> {
+  await slowmo();
+  await browser.execute(() => {
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "w", metaKey: true, bubbles: true, cancelable: true }),
+    );
+    return null;
+  });
+}
+
+// 집행: document-model.md#빈-탭--탭바는-비지-않는다 — 버튼(폴더 열기가 첫 자리),
+//       새 문서 버튼은 Cmd+N과 같은 길(경로 없는 Untitled 탭).
+// 왜: 버튼→feature→스토어 배선이 실앱에서 이어지는지는 여기서만 확인된다(브라우저 테스트는
+//     IPC를 모킹한다).
+// 보장: 버튼의 존재·순서, 새 문서 클릭 → Untitled 탭, 닫으면 빈 상태 복귀.
+// 경계: 파일 열기·폴더 열기 버튼은 네이티브 다이얼로그를 열므로 클릭하지 않는다(수동 검증) —
+//       같은 feature 경로(openFileInteractive·openFolderInteractive)의 다이얼로그 이후는
+//       E2E 훅 시나리오들이 덮는다. 첫 실행(세션 없음)이라 최근 파일 목록은 없어야 한다.
+it("빈 상태 — 버튼이 뜨고 새 문서 버튼이 Untitled 탭을 연다", async () => {
+  const ids = await browser.execute(() =>
+    [...document.querySelectorAll('[data-testid="empty-state"] button')].map(
+      (button) => (button as HTMLElement).dataset.testid ?? "",
+    ),
+  );
+  expect(ids.filter((id) => id.startsWith("empty-"))).toEqual([
+    "empty-open-folder",
+    "empty-open-file",
+    "empty-new-doc",
+  ]);
+  expect(await (await browser.$('[data-testid="recent-files"]')).isExisting()).toBe(false);
+
+  await (await browser.$('[data-testid="empty-new-doc"]')).click();
+  await (await browser.$('[role="tab"]*=Untitled')).waitForExist({ timeout: 5_000 });
+  // 경로 없는 문서다 — 활성 탭 경로가 비어 있어야 한다(실파일 즉시 생성이 아니다).
+  expect(await browser.execute(() => window.noriiE2e?.activeTabPath() ?? null)).toBeNull();
+
+  // 편집 전 Untitled는 확인 없이 닫힌다 — 빈 상태로 돌아온다.
+  await closeActiveTab();
+  await (await browser.$('[data-testid="empty-state"]')).waitForExist({ timeout: 5_000 });
+});
+
+// 집행: document-model.md#최근-파일 — 연 파일이 목록에 추가된다.
+//       표시·클릭 열기 규칙도 같은 절이 소유한다.
+// 왜: 저장(세션)·갱신(스토어)이 각자 옳아도, 목록 표시 → 클릭 → 다시 열기의
+//     끝단 배선은 실앱에서만 확인된다.
+// 보장: 파일을 열었다 닫으면 사이드바 최근 파일 영역에 그 파일명이 뜨고, 누르면 같은
+//       파일이 다시 열린다. 헤더 버튼이 목록을 접고 다시 펼친다.
+it("최근 파일 — 닫은 파일이 사이드바 목록에 남고 누르면 다시 열린다", async () => {
+  const filePath = path.join(SCOPE_ROOT, "recent-데모.md");
+  await writeFile(filePath, "# 최근 파일 데모\n", "utf8");
+
+  await openInApp(filePath);
+  await waitActiveTab(filePath);
+  await closeActiveTab(); // 편집하지 않았다 — 확인 없이 닫힌다.
+
+  await (await browser.$('[data-testid="recent-files"]')).waitForExist({ timeout: 5_000 });
+  // 자손 결합 + 부분 텍스트(`[…] button*=`)는 이 드라이버가 파싱하지 못한다 — 탭이 닫혀
+  // 이 이름은 최근 파일 목록에만 있으므로 버튼 텍스트만으로 잡는다.
+  const item = await browser.$("button*=recent-데모.md");
+  await item.waitForExist({ timeout: 5_000 });
+
+  // 합성 클릭 — 위 새 문서 버튼과 같은 우회(→ testing.md#성숙도-주의).
+  await browser.execute(() => {
+    const buttons = [...document.querySelectorAll('[data-testid="recent-files"] button')];
+    (
+      buttons.find((b) => b.textContent?.includes("recent-데모.md")) as
+        | HTMLButtonElement
+        | undefined
+    )?.click();
+    return null;
+  });
+  await waitActiveTab(filePath);
+
+  // 집행: document-model.md#최근-파일 — 헤더로 접고 펼친다.
+  const recentExpanded = () =>
+    browser.execute(
+      () =>
+        document
+          .querySelector('[data-testid="recent-files-toggle"]')
+          ?.getAttribute("aria-expanded") === "true",
+    );
+  expect(await recentExpanded()).toBe(true);
+  const recentToggle = await browser.$('[data-testid="recent-files-toggle"]');
+  await recentToggle.click();
+  await browser.waitUntil(async () => !(await recentExpanded()), {
+    timeout: 5_000,
+    timeoutMsg: "헤더로 최근 파일이 접히지 않았다",
+  });
+  await recentToggle.click();
+  await browser.waitUntil(recentExpanded, {
+    timeout: 5_000,
+    timeoutMsg: "헤더로 최근 파일이 다시 펼쳐지지 않았다",
+  });
 });
 
 // 집행: file-lifecycle.md#자동-저장 — 저장 대기가 생긴 시점부터 고른 간격에 저장한다.
@@ -564,34 +705,61 @@ it("접기 — 거터 클릭으로 접히고 placeholder 클릭으로 펼쳐진�
 
 // 집행: document-model.md#파일-트리-사이드바 · editor-strategy.md 단축키 계약 — 사이드바
 //       접기/열기. 타이틀 스트립 토글 버튼의 클릭 경로를 검증한다.
-// 왜: 접힘은 언마운트다 — 클릭으로 사이드바(트리)가 DOM에서 사라졌다 돌아오는 마운트/언마운트
-//     배선은 스토어 단위 테스트가 못 본다.
+// 왜: 접힘은 폭 전환 + 숨김이다(→ decisions/motion.md) — 클릭이 상태 속성(aria-hidden)까지
+//     반영되는 배선은 스토어 단위 테스트가 못 본다.
 // 경계: Cmd+B 단축키(수정자 키 합성 불가)·접힘 상태 영속화는 이 테스트 밖이다. 앞 사이드바
-//       시나리오가 연 트리를 전제로 이어받는다.
-it("사이드바 접기 — 토글 버튼으로 트리가 숨겨지고 다시 나타난다", async () => {
-  const tree = await browser.$('[data-testid="file-tree"]');
-  await tree.waitForExist({ timeout: 5_000 });
+//       시나리오가 연 트리를 전제로 이어받는다. 시각적 숨김 완료는 전환 뒤라 상태 속성으로
+//       단언한다.
+it("사이드바 접기 — 토글 버튼으로 숨겨지고 다시 나타난다", async () => {
+  const sidebarHidden = () =>
+    browser.execute(
+      () =>
+        document.querySelector('[data-testid="sidebar"]')?.getAttribute("aria-hidden") === "true",
+    );
+  expect(await sidebarHidden()).toBe(false);
 
   const toggle = await browser.$('[data-testid="sidebar-toggle"]');
   await toggle.click();
-  await tree.waitForExist({
-    reverse: true,
+  await browser.waitUntil(sidebarHidden, {
     timeout: 5_000,
-    timeoutMsg: "접기 후 트리가 사라지지 않았다",
+    timeoutMsg: "접기 후 사이드바가 숨겨지지 않았다",
   });
+  // 접힘의 최종 상태는 빈 띠·잔여 테두리가 없어야 한다 — 폭·오른쪽 테두리 0.
+  // 전환 완료 대기는 창 상태에 좌우된다(→ testing.md#성숙도-주의) — 전환을 끄고 단언한다.
+  const residue = await browser.execute(() => {
+    const sidebar = document.querySelector('[data-testid="sidebar"]');
+    if (!(sidebar instanceof HTMLElement)) {
+      return null;
+    }
+    sidebar.style.transition = "none";
+    const result = {
+      width: sidebar.getBoundingClientRect().width,
+      border: getComputedStyle(sidebar).borderRightWidth,
+    };
+    sidebar.style.removeProperty("transition");
+    return result;
+  });
+  expect(residue).toEqual({ width: 0, border: "0px" });
 
   await toggle.click();
-  await tree.waitForExist({ timeout: 5_000, timeoutMsg: "펼침 후 트리가 돌아오지 않았다" });
+  await browser.waitUntil(async () => !(await sidebarHidden()), {
+    timeout: 5_000,
+    timeoutMsg: "펼침 후 사이드바가 돌아오지 않았다",
+  });
 });
 
 // 집행: editor-strategy.md 단축키 계약 — 사이드바 접기/열기 `Cmd+B`.
 // 왜: 이 플러그인은 수정자 키를 합성 못 하지만, 앱 전역 핸들러(window keydown capture)가
 //     isTrusted를 안 봐 합성 KeyboardEvent로 발동한다 — 단축키의 핸들러+동작 배선을 실앱에서
 //     고정한다(실제 OS 키 라우팅만 수동, → testing.md#성숙도-주의).
-// 보장: Cmd(Meta)+B 합성 keydown으로 트리가 언마운트되고, 다시 누르면 돌아온다.
+// 보장: Cmd(Meta)+B 합성 keydown으로 사이드바가 숨겨지고, 다시 누르면 돌아온다.
 it("사이드바 접기 — Cmd+B(합성 keydown)로 여닫힌다", async () => {
-  const tree = await browser.$('[data-testid="file-tree"]');
-  await tree.waitForExist({ timeout: 5_000 });
+  const sidebarHidden = () =>
+    browser.execute(
+      () =>
+        document.querySelector('[data-testid="sidebar"]')?.getAttribute("aria-hidden") === "true",
+    );
+  expect(await sidebarHidden()).toBe(false);
 
   const cmdB = () =>
     browser.execute(() => {
@@ -602,14 +770,16 @@ it("사이드바 접기 — Cmd+B(합성 keydown)로 여닫힌다", async () => 
     });
 
   await cmdB();
-  await tree.waitForExist({
-    reverse: true,
+  await browser.waitUntil(sidebarHidden, {
     timeout: 5_000,
-    timeoutMsg: "Cmd+B로 트리가 사라지지 않았다",
+    timeoutMsg: "Cmd+B로 사이드바가 숨겨지지 않았다",
   });
 
   await cmdB();
-  await tree.waitForExist({ timeout: 5_000, timeoutMsg: "Cmd+B로 트리가 돌아오지 않았다" });
+  await browser.waitUntil(async () => !(await sidebarHidden()), {
+    timeout: 5_000,
+    timeoutMsg: "Cmd+B로 사이드바가 돌아오지 않았다",
+  });
 });
 
 // 집행: document-model.md#파일-트리-사이드바 — 사이드바 항목 조작(만들기·이름 변경·삭제)과
@@ -636,7 +806,7 @@ it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크
   await input.waitForExist({ timeout: 5_000 });
   await input.clearValue();
   await input.addValue("ops-회의록");
-  await browser.keys("Enter");
+  await pressEnterOn("entry-name-input");
 
   const createdPath = path.join(opsRoot, "ops-회의록.md");
   await browser.waitUntil(async () => existsSync(createdPath), {
@@ -659,7 +829,7 @@ it("사이드바 조작 — 만들기·이름 변경·삭제가 실제 디스크
   await renameInput.waitForExist({ timeout: 5_000 });
   await renameInput.clearValue();
   await renameInput.addValue("ops-결산");
-  await browser.keys("Enter");
+  await pressEnterOn("entry-name-input");
 
   const renamedPath = path.join(opsRoot, "ops-결산.md");
   await browser.waitUntil(async () => existsSync(renamedPath) && !existsSync(createdPath), {
@@ -700,14 +870,20 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
   await openSettings.click();
   await (await browser.$('[data-testid="settings-dialog"]')).waitForExist({ timeout: 10_000 });
 
+  // 표시 여부는 isDisplayed()가 아니라 DOM(hidden)으로 본다 — 간헐 어긋남의 우회
+  // (→ testing.md#성숙도-주의).
+  const panelHidden = (testId: string) =>
+    browser.execute(
+      (id: string) => document.querySelector(`[data-testid="${id}"]`)?.closest("[hidden]") !== null,
+      testId,
+    );
+
   // 여는 분류는 일반이다.
-  expect(await (await browser.$('[data-testid="settings-autosave"]')).isDisplayed()).toBe(true);
-  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(
-    false,
-  );
+  expect(await panelHidden("settings-autosave")).toBe(false);
+  expect(await panelHidden("settings-theme-system")).toBe(true);
 
   await (await browser.$('[data-testid="settings-nav-appearance"]')).click();
-  expect(await (await browser.$('[data-testid="settings-theme-system"]')).isDisplayed()).toBe(true);
+  expect(await panelHidden("settings-theme-system")).toBe(false);
 
   await (await browser.$('[data-testid="settings-nav-general"]')).click();
   await selectOption("settings-autosave", "30s");
@@ -723,6 +899,13 @@ it("설정 창 — 메뉴로 분류를 바꾸고 고른 자동 저장 간격이 
   // 뒤 시나리오가 기다리는 시간 안에 저장이 나가도록 기본값으로 되돌린다.
   await selectOption("settings-autosave", "5s");
   await (await browser.$('[data-testid="settings-close"]')).click();
+  // 닫힘 전환이 끝나야 다이얼로그가 내려간다 — 다음 시나리오의 열기와 겹치지 않게 기다린다.
+  await (
+    await browser.$('[data-testid="settings-dialog"]')
+  ).waitForExist({
+    reverse: true,
+    timeout: 5_000,
+  });
 });
 
 // 집행: design/decisions/color-palette.md — 액센트는 테마와 무관하게 한 색이다.
@@ -770,6 +953,12 @@ it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
 
   await (await browser.$('[data-testid="settings-theme-system"]')).click();
   await (await browser.$('[data-testid="settings-close"]')).click();
+  await (
+    await browser.$('[data-testid="settings-dialog"]')
+  ).waitForExist({
+    reverse: true,
+    timeout: 5_000,
+  });
 });
 
 // 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.
@@ -798,11 +987,29 @@ it("세션 복원 — 다시 띄우면 열려 있던 탭이 돌아온다", async
     },
     { timeout: 10_000, interval: 300, timeoutMsg: "세션 파일에 두 탭이 남지 않았다" },
   );
+  // 최근 파일도 같은 파일에 실린다(→ rust-commands.md#세션 recent_files).
+  {
+    const raw = await readFile(await appConfigFile("session.json"), "utf8");
+    const stored = JSON.parse(raw) as { recentFiles?: string[] };
+    expect(stored.recentFiles?.some((entry) => entry.endsWith("session-b.md"))).toBe(true);
+  }
 
+  // 리로드 전 화면도 아래 탭 단언을 이미 만족한다 — 표식 없이 기다리면 대기가 옛
+  // 페이지에서 통과하고, 다음 테스트의 execute가 아직 리로드 중인 페이지에서 돌아
+  // noriiE2e가 없다(실측: 간헐 실패, → testing.md#성숙도-주의).
   await browser.execute(() => {
+    (window as Window & { noriiOldPage?: boolean }).noriiOldPage = true;
     location.reload();
     return null;
   });
+  await browser.waitUntil(
+    async () =>
+      browser.execute(
+        () =>
+          !(window as Window & { noriiOldPage?: boolean }).noriiOldPage && Boolean(window.noriiE2e),
+      ),
+    { timeout: 20_000, interval: 500, timeoutMsg: "리로드된 새 페이지가 준비되지 않았다" },
+  );
 
   await browser.waitUntil(
     async () => {

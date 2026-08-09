@@ -50,6 +50,7 @@ import type { FileContent, TreeNode } from "@shared/ipc";
 import { useConfirmStore } from "@shared/ui";
 
 import { useEntryEditStore } from "../model/entry-edit-store";
+import { useRecentSectionStore } from "../model/recent-section-store";
 import { resetTreeNav } from "../model/tree-nav-store";
 import { Sidebar } from "../index";
 
@@ -86,7 +87,8 @@ function fileContent(path: string): FileContent {
 }
 
 beforeEach(() => {
-  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [] });
+  useWorkspaceStore.setState({ rootDir: null, fileTree: [], expandedDirs: [], recentFiles: [] });
+  useRecentSectionStore.setState({ collapsed: false });
   useDocumentStore.setState({ tabs: [], activeTabId: null });
   resetTreeNav();
   resetTabTextRegistry();
@@ -454,5 +456,80 @@ describe("Sidebar 컨텍스트 메뉴", () => {
 
     fireEvent.keyDown(getByTestId("entry-context-menu"), { key: "ArrowDown" });
     expect(document.activeElement).toBe(items[1]);
+  });
+});
+
+// 집행: document-model.md#최근-파일 — 파일명 표시·클릭 열기·접고 펼치기·
+//       빈 목록 미표시·폴더 없이도 표시.
+// 왜: 이 배선이 끊기면 최근 파일이 세션에 저장만 되고 화면에는 나오지 않는다.
+// 보장: 목록의 파일명 표시(전체 경로는 title), 클릭 → 탭 열림, 헤더 토글로 목록이
+//       숨고 다시 보임, 빈 목록은 영역 미표시, 트리가 있어도 영역이 뜬다.
+// 경계: 목록의 순서·상한은 workspace-store 테스트, 없는 경로의 필터링은 Rust 소관.
+//       접힘의 비영속은 스토어가 세션 저장에 실리지 않는 것으로 성립한다(별도 검증 없음).
+describe("최근 파일 영역", () => {
+  it("파일명으로 표시하고 누르면 그 파일을 연다", async () => {
+    useWorkspaceStore.setState({ recentFiles: ["/vault/notes/회고.md", "/vault/할일.md"] });
+    openFile.mockResolvedValue(fileContent("/vault/notes/회고.md"));
+    const { getByTestId, getByTitle } = render(<Sidebar />);
+
+    const items = [...getByTestId("recent-files").querySelectorAll("button")];
+    expect(items.map((item) => item.textContent)).toEqual(["회고.md", "할일.md"]);
+    expect(getByTitle("/vault/notes/회고.md")).toBeTruthy();
+
+    fireEvent.click(items[0] as HTMLButtonElement);
+    await waitFor(() => {
+      expect(useDocumentStore.getState().tabs[0]?.filePath).toBe("/vault/notes/회고.md");
+    });
+  });
+
+  it("헤더로 접으면 목록이 숨고 다시 펼치면 돌아온다", () => {
+    useWorkspaceStore.setState({ recentFiles: ["/vault/a.md"] });
+    const { getByTestId } = render(<Sidebar />);
+
+    const toggle = getByTestId("recent-files-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(toggle);
+    // 단언은 즉시 반영되는 상태 속성으로 한다(→ testing.md#성숙도-주의).
+    expect(getByTestId("recent-files").parentElement?.dataset.collapsed).toBe("true");
+    expect(getByTestId("recent-files-toggle").getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(getByTestId("recent-files-toggle"));
+    expect(getByTestId("recent-files").parentElement?.dataset.collapsed).toBe("false");
+  });
+
+  // 집행: document-model.md#최근-파일 — "목록은 하나의 Tab 정지점이다(roving
+  //       tabindex) — ↑↓·Home/End로 항목을 옮기고 Enter로 연다".
+  // 왜: 항목마다 Tab 정지점이면 목록이 찰수록 트리(1 정지점)를 지나 설정까지 가는 Tab 횟수가
+  //     늘고, 바로 위 트리와 탐색 방식이 어긋난다.
+  // 보장: 정지점은 하나뿐이고 방향키·Home/End가 포커스를 옮긴다.
+  // 경계: Enter 활성화는 버튼 기본 동작(브라우저 소관)이라 클릭 테스트가 같은 경로를 덮는다.
+  it("목록은 Tab 정지점 하나이고 방향키로 항목을 옮긴다", () => {
+    useWorkspaceStore.setState({ recentFiles: ["/vault/a.md", "/vault/b.md", "/vault/c.md"] });
+    const { getByTestId } = render(<Sidebar />);
+
+    const buttons = [...getByTestId("recent-files").querySelectorAll("button")];
+    expect(buttons.map((button) => button.tabIndex)).toEqual([0, -1, -1]);
+
+    (buttons[0] as HTMLButtonElement).focus();
+    fireEvent.keyDown(buttons[0] as HTMLButtonElement, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[1]);
+    expect((buttons[1] as HTMLButtonElement).tabIndex).toBe(0); // 정지점이 따라온다.
+
+    fireEvent.keyDown(buttons[1] as HTMLButtonElement, { key: "End" });
+    expect(document.activeElement).toBe(buttons[2]);
+    fireEvent.keyDown(buttons[2] as HTMLButtonElement, { key: "Home" });
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it("목록이 비면 영역이 없고, 트리가 있어도 영역이 뜬다", () => {
+    const { queryByTestId, rerender, getByTestId } = render(<Sidebar />);
+    expect(queryByTestId("recent-files-section")).toBeNull();
+
+    useWorkspaceStore.getState().openRoot("/vault", [README_FILE]);
+    useWorkspaceStore.setState({ recentFiles: ["/vault/readme.md"] });
+    rerender(<Sidebar />);
+    expect(getByTestId("file-tree")).toBeTruthy();
+    expect(getByTestId("recent-files-section")).toBeTruthy();
   });
 });

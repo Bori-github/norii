@@ -90,6 +90,7 @@ mise run docs-drift   # 계약 문서 ↔ 코드 기계 대조 (scripts/docs-dri
 사용자에게 보이는 동작이 바뀐 PR에는 데모 영상을 붙인다(→ [/pr 커맨드](../commands/pr.md)). **E2E 시나리오를 그대로 녹화**하는 것이 규칙이다 — 별도 데모 스크립트를 두면 테스트와 데모가 따로 낡는다. E2E가 늘면 데모도 자동으로 풍부해진다.
 
 - `mise run demo`(`scripts/record-demo.sh`) — 앱 창을 논리 좌표에 배치하고 `mise run e2e`를 실행하며 그 화면을 녹화한다. **좌표 주의**: WebDriver의 창 크기는 Retina 픽셀이고 `screencapture -R`은 논리 좌표다 — 섞으면 창 밖이 찍힌다. 그래서 창 배치는 AppleScript(논리 좌표)로 한다.
+- `NORII_E2E_SLOWMO_MS=1000 mise run demo` — 동작(클릭·입력·훅 트리거)마다 지정 밀리초를 쉬어 사람이 볼 속도로 녹화한다. 대기 폴링에는 걸리지 않는다.
 - `mise run upload-demo <파일>`(`scripts/upload-attachment.sh`) — GitHub 자산 CDN에 올려 URL을 받는다. **리포에 영상 바이너리를 커밋하지 않기 위한 유일한 경로**다. 인증은 `agent-browser` 브라우저 프로필에 저장되며, 첫 실행에서 로그인이 없으면 스크립트가 한 줄 안내를 출력한다(이후 자동).
 - 전제: macOS **화면 기록 권한**(시스템 설정 → 개인정보 보호), `jq`, `agent-browser`. 권한·도구가 없으면 스크립트가 이유를 출력하고 멈춘다.
 

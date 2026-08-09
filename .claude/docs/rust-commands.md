@@ -174,9 +174,13 @@ async fn watch_tree(root: Option<String>) -> Result<(), AppError>;
 async fn show_open_dialog() -> Result<Option<String>, AppError>;
 
 #[tauri::command]
-async fn show_save_dialog(default_name: String) -> Result<Option<String>, AppError>;
+async fn show_save_dialog(default_name: String, start_dir: Option<String>) -> Result<Option<String>, AppError>;
 // 두 다이얼로그 모두 Markdown 필터(.md·.markdown — read_dir 필터와 동일 집합)를 걸고,
 // 취소하면 None을 반환한다. 선택된 경로는 허용 루트로 등록된다(→ 권한)
+// start_dir가 존재하는 디렉터리면 다이얼로그가 거기서 시작하고, 이때 default_name은 파일명
+// 기본값으로 제안되지 않는다(rfd 제약 → dialog_commands.rs). start_dir이 없으면 OS가 정한
+// 위치에서 열고 default_name을 제안한다. 웹뷰는 사이드바 루트를 넘긴다(폴더를 열지 않았으면
+// None). 시작 위치일 뿐 허용과 무관하다 — 허용 루트 등록은 사용자가 선택한 경로로만 한다
 
 #[tauri::command]
 async fn show_open_folder_dialog() -> Result<Option<String>, AppError>;
@@ -203,7 +207,7 @@ fn set_window_blur_radius(window: tauri::WebviewWindow, radius: u32);
 
 ```rust
 #[tauri::command]
-fn load_session() -> Result<Option<Session>, AppError>;
+async fn load_session() -> Result<Option<Session>, AppError>;
 // 지난 세션을 읽고, 그 안의 경로(루트 폴더·탭)를 허용 루트로 등록한다 — 재시작 뒤에도
 // 다이얼로그 없이 그 파일을 열 수 있게 하는 유일한 통로다(→ 권한).
 // 파일이 없거나 JSON이 깨졌으면 None — 손으로 고칠 수 있는 파일이라 읽기 실패는 오류가 아니다.
@@ -212,7 +216,7 @@ fn load_session() -> Result<Option<Session>, AppError>;
 // 활성 탭이 걸러지면 active는 빈다 — 프론트가 남은 첫 탭을 활성으로 만든다(→ document-model.md#세션-복원).
 
 #[tauri::command]
-fn save_session(session: Session) -> Result<(), AppError>;
+async fn save_session(session: Session) -> Result<(), AppError>;
 // 지금 세션을 덮어쓴다(원자적 쓰기). 이미 허용된 경로만 기록한다 — 웹뷰가 넘긴 경로가
 // 다음 부팅의 허용 루트가 되는 길을 막는다.
 
@@ -220,6 +224,9 @@ struct Session {
   root_dir: Option<String>,   // 사이드바 루트. 없으면 폴더를 열지 않은 세션
   tabs: Vec<SessionTab>,      // 경로 있는 탭만 — Untitled는 복원 대상이 아니다
   active: Option<u32>,        // 활성 탭의 tabs 인덱스
+  recent_files: Vec<String>,  // 최근 파일, 최신이 앞 — 갱신 시점·상한은
+                              //   document-model.md#최근-파일이 소유한다.
+                              //   필드가 없는 옛 세션 파일은 빈 목록으로 읽는다
 }
 
 struct SessionTab {
@@ -236,6 +243,7 @@ struct SessionTab {
 자리            종류        허용하면 열리는 범위
 root_dir        디렉터리    그 폴더 아래 전부
 tabs[].path     파일        그 파일 하나
+recent_files[]  파일        그 파일 하나
 ```
 
 `canonicalize` 후의 실제 종류로 판정한다 — 문서처럼 보이지만 디렉터리를 가리키는 심볼릭 링크도 탭 자리에서 거부된다.
@@ -289,7 +297,6 @@ encoding_rs          인코딩 변환 (레거시 → UTF-8, BOM)
 chardetng            인코딩 감지 (→ file-lifecycle.md 열기 파이프라인)
 plugin-dialog        show_open_dialog / show_save_dialog
 plugin-store         설정 저장(→ file-lifecycle.md#설정-저장)
-plugin-window-state  창 크기·위치 저장·복원 (→ document-model.md)
 plugin-log           통합 로깅 (→ error-handling.md)
 ```
 

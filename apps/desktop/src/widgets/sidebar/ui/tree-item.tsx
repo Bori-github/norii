@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
@@ -44,6 +44,10 @@ const rowClass = css({
   cursor: "pointer",
   whiteSpace: "nowrap",
   userSelect: "none",
+  transitionProperty: "background-color",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
   _hover: { background: "bg.hover" },
 });
 
@@ -53,11 +57,26 @@ const chevronClass = css({
   height: "3.5",
   transitionProperty: "transform",
   transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
   // 자기 li의 펼침만 본다 — `>` 사슬로 조상(펼친 부모)의 셰브론까지 도는 것을 막는다.
   '[aria-expanded="true"] > [data-row] > &': { transform: "rotate(90deg)" },
 });
 
 const nameClass = css({ overflow: "hidden", textOverflow: "ellipsis" });
+
+// 접기/펼치기 전환 규칙 → decisions/motion.md.
+const childrenCollapseClass = css({
+  display: "grid",
+  gridTemplateRows: "1fr",
+  minHeight: 0,
+  overflow: "hidden",
+  transitionProperty: "grid-template-rows, visibility",
+  transitionDuration: "fast",
+  transitionTimingFunction: "out",
+  _motionReduce: { transition: "none" },
+  '&[data-collapsed="true"]': { gridTemplateRows: "0fr", visibility: "hidden" },
+});
 
 const symlinkBadgeClass = css({ flexShrink: 0, fontSize: "xs", opacity: 0.7 });
 
@@ -69,6 +88,8 @@ const groupClass = css({
   margin: 0,
   padding: 0,
   marginLeft: "19px",
+  // 0fr 트랙이 내용 최소 높이 아래로 줄 수 있어야 접힘이 닫힌다(→ childrenCollapseClass).
+  minHeight: 0,
   borderLeftWidth: "1px",
   borderLeftStyle: "solid",
   borderLeftColor: "border.muted",
@@ -92,6 +113,18 @@ export const TreeItem = memo(function TreeItem({
   const edit = useEntryEditStore((state) => state.edit);
   const creatingHere = edit?.mode === "create" && edit.dir === node.path;
   const renamingThis = edit?.mode === "rename" && edit.path === node.path;
+  // lazy 첫 펼침 처리 → decisions/motion.md의 예외.
+  const hasChildren = node.children !== undefined;
+  const [childrenEntered, setChildrenEntered] = useState(false);
+  useEffect(() => {
+    if (!hasChildren) {
+      setChildrenEntered(false);
+      return;
+    }
+    const timer = setTimeout(() => setChildrenEntered(true), 0);
+    return () => clearTimeout(timer);
+  }, [hasChildren]);
+  const childrenCollapsed = !expanded || !childrenEntered;
 
   const onContextMenu = (event: React.MouseEvent): void => {
     event.preventDefault();
@@ -141,13 +174,19 @@ export const TreeItem = memo(function TreeItem({
           <span className={nameClass}>{node.name}</span>
           {symlinkBadge}
         </div>
-        {expanded && node.children !== undefined && (
-          <ul role="group" className={groupClass}>
-            {creatingHere && edit !== null && <EntryNameInput edit={edit} />}
-            {node.children.map((child) => (
-              <TreeItem key={child.path} node={child} depth={depth + 1} />
-            ))}
-          </ul>
+        {node.children !== undefined && (
+          <div
+            className={childrenCollapseClass}
+            data-collapsed={childrenCollapsed}
+            aria-hidden={childrenCollapsed}
+          >
+            <ul role="group" className={groupClass}>
+              {creatingHere && edit !== null && <EntryNameInput edit={edit} />}
+              {node.children.map((child) => (
+                <TreeItem key={child.path} node={child} depth={depth + 1} />
+              ))}
+            </ul>
+          </div>
         )}
       </li>
     );
