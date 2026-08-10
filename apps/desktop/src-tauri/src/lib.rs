@@ -75,6 +75,13 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            // 아래 deny가 첫 등록이므로 그보다 앞에 있어야 한다(→ src/scope.rs의 set_asset_scope).
+            {
+                use tauri::Manager;
+                app.state::<scope::FileScope>()
+                    .set_asset_scope(app.asset_protocol_scope());
+            }
+
             // 창 유리 — 투명 창의 뒤 배경을 OS가 흐린다(→ src/window_glass.rs).
             // 그 위에 드래그 띠를 얹는다 — 오버레이 타이틀바에서 창을 끄는 유일한 길이다
             // (→ src/titlebar_drag.rs).
