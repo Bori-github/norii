@@ -94,7 +94,35 @@ const SANITIZE_CONFIG = {
   ADD_ATTR: ["encoding"],
 };
 
+export interface RenderOptions {
+  /**
+   * 이미지 `src`를 웹뷰가 실을 수 있는 값으로 바꾼다. `null`을 주면 `src`를 그대로 둔다.
+   * 경로 해석은 `resolveImagePath`가, URL 변환은 소비 측이 맡는다.
+   */
+  resolveImageSrc?: (src: string) => string | null;
+}
+
+// src를 sanitize 뒤에 바꾸는 이유는 preview-strategy.md#src는-sanitize-뒤에-바꾼다에 있다.
+function resolveImageSources(html: string, resolve: (src: string) => string | null): string {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  for (const image of template.content.querySelectorAll("img[src]")) {
+    const resolved = resolve(image.getAttribute("src") ?? "");
+    if (resolved !== null) {
+      image.setAttribute("src", resolved);
+    }
+  }
+  return template.innerHTML;
+}
+
 /** 마크다운 소스를 sanitize된 HTML 문자열로 렌더한다. */
-export function renderMarkdown(source: string): string {
-  return DOMPurify.sanitize(md.render(source), SANITIZE_CONFIG);
+export function renderMarkdown(source: string, options: RenderOptions = {}): string {
+  const html = DOMPurify.sanitize(md.render(source), SANITIZE_CONFIG);
+  const { resolveImageSrc } = options;
+  // 이미지가 없는 문서는 다시 파싱하지 않는다. "<img"가 속성값에 들어 있어도(직렬화가 속성값의
+  // <를 이스케이프하지 않는다) 아래 패스가 바꿀 것을 못 찾을 뿐이라 결과는 같다.
+  if (resolveImageSrc === undefined || !html.includes("<img")) {
+    return html;
+  }
+  return resolveImageSources(html, resolveImageSrc);
 }

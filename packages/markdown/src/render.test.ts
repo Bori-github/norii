@@ -136,3 +136,90 @@ describe("자동 링크 (linkify)", () => {
     expect(renderMarkdown("example.com 방문")).not.toContain("<a ");
   });
 });
+
+// resolver가 실제로 돌았는지 눈에 보이게 표시만 남기는 가짜 해석기다.
+const markResolved = (src: string) => `resolved:${src}`;
+
+// 집행: preview-strategy.md#src는-sanitize-뒤에-바꾼다
+//
+// 왜: DOMPurify는 asset:을 모르는 스킴으로 보고 그 src를 통째로 버린다. 허용목록을 넓혀
+//     파서가 먼저 심으면 **문서가 적은 asset URL도 함께 통과**하므로, 순서를 뒤집어
+//     sanitize를 마친 결과에서만 바꾼다.
+// 보장: resolver가 준 값으로 src가 바뀌고, resolver가 null을 주면 원래 값이 남는다.
+//       원시 HTML로 쓴 <img>도 같이 바뀌고, 문서가 적은 asset URL은 여전히 지워진다.
+// 경계: 경로를 어떻게 푸는지는 image-src.test.ts가 다룬다 — 여기서는 바꿔치기만 본다.
+describe("이미지 src 해석", () => {
+  it("마크다운 이미지의 src를 resolver 값으로 바꾼다", () => {
+    const html = renderMarkdown("![설명](./photo.png)", { resolveImageSrc: markResolved });
+    expect(html).toContain('src="resolved:./photo.png"');
+    expect(html).toContain('alt="설명"');
+  });
+
+  // 왜: markdown-it이 링크를 정규화하며 퍼센트 인코딩한다 — resolver가 받는 것은 문서에 적힌
+  //     원문이 아니다. resolveImagePath가 이것을 되돌리는 근거다(→ image-src.test.ts).
+  // 경계: 공백이 든 경로는 <>로 감싸야 이미지가 된다 — 그냥 쓰면 markdown-it이 이미지로
+  //       파싱하지 않는다(마크다운 문법이다, 프리뷰의 선택이 아니다).
+  it("resolver는 markdown-it이 인코딩한 src를 받는다", () => {
+    const received: string[] = [];
+    renderMarkdown("![](<./내 사진.png>)", {
+      resolveImageSrc: (src) => {
+        received.push(src);
+        return null;
+      },
+    });
+    expect(received).toEqual(["./%EB%82%B4%20%EC%82%AC%EC%A7%84.png"]);
+  });
+
+  it("원시 HTML로 쓴 img도 바꾼다 — 크기를 주려고 흔히 쓰는 표기다", () => {
+    const html = renderMarkdown('<img width="300" src="./사진.png">', {
+      resolveImageSrc: markResolved,
+    });
+    expect(html).toContain('src="resolved:./사진.png"');
+    expect(html).toContain('width="300"');
+  });
+
+  it("resolver가 null을 주면 src를 그대로 둔다", () => {
+    const html = renderMarkdown("![](https://example.com/a.png)", {
+      resolveImageSrc: () => null,
+    });
+    expect(html).toContain('src="https://example.com/a.png"');
+  });
+
+  it("resolver가 없으면 오늘과 같은 출력이다", () => {
+    const source = "# 제목\n\n![](./사진.png)\n\n| 표 |\n| --- |\n| 값 |";
+    expect(renderMarkdown(source, { resolveImageSrc: undefined })).toBe(renderMarkdown(source));
+  });
+
+  // 왜: 이미지가 있으면 sanitize된 HTML을 다시 파싱해 직렬화한다. 그 왕복이 무언가를 바꾸면
+  //     이미지를 넣었다는 이유만으로 표·체크박스·<details>가 조용히 달라진다.
+  // 보장: src 말고는 아무것도 바뀌지 않는다 — resolver가 null만 줄 때 출력이 완전히 같다.
+  it("이미지가 있어도 src 말고는 바뀌지 않는다", () => {
+    const source = [
+      "# 제목",
+      "",
+      "![](./사진.png)",
+      "",
+      "| 표 |",
+      "| --- |",
+      "| 값 |",
+      "",
+      "- [x] 완료",
+      "",
+      "<details><summary>접기</summary>",
+      "",
+      "본문",
+      "",
+      "</details>",
+    ].join("\n");
+    expect(renderMarkdown(source, { resolveImageSrc: () => null })).toBe(renderMarkdown(source));
+  });
+
+  // 왜: 이 방어가 사라지면 문서가 스스로 허용 루트 밖의 파일을 이미지로 실을 수 있다.
+  it("문서가 적은 asset URL은 resolver를 거치기 전에 지워진다", () => {
+    const html = renderMarkdown('<img src="asset://localhost/etc/passwd">', {
+      resolveImageSrc: markResolved,
+    });
+    expect(html).not.toContain("asset://");
+    expect(html).not.toContain("resolved:");
+  });
+});
