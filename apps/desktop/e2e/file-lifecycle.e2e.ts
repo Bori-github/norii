@@ -961,6 +961,59 @@ it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
   });
 });
 
+// 집행: preview-strategy.md#이미지 — 로컬 파일은 문서 폴더 기준으로 찾아 asset 프로토콜로 싣는다.
+// 왜: asset 프로토콜은 실제 Tauri 웹뷰에만 있다. 브라우저 테스트는 src 문자열까지만 볼 수 있어,
+//     그 주소가 진짜로 픽셀을 실어 오는지는 여기서만 증명된다. 스코프 미러링(FileScope →
+//     asset 스코프)이 끊기면 403이 되는데, 그것도 여기서만 드러난다.
+// 보장: 문서 옆 PNG가 asset 주소로 바뀌어 실제로 디코드되고(naturalWidth > 0), 같은 문서의
+//       없는 파일은 로드에 실패해 깨짐 표시가 붙는다.
+// 경계: 보이는 모습(폭 제한·흐린 alt 글자)은 examples/프리뷰-기본.md로 사람이 판정한다.
+//       깨짐 표시 이름은 use-image-loads의 BROKEN_IMAGE_ATTR와 짝이다(testid와 같은 계약).
+it("프리뷰 이미지 — 문서 옆 파일이 실제로 로드되고 없는 파일은 표시가 남는다", async () => {
+  const imagesDir = path.join(SCOPE_ROOT, "images");
+  await mkdir(imagesDir, { recursive: true });
+  // 1×1 PNG — 로드 성공 여부만 보므로 내용은 최소로 둔다.
+  await writeFile(
+    path.join(imagesDir, "그림.png"),
+    Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    ),
+  );
+  const doc = path.join(SCOPE_ROOT, "이미지-문서.md");
+  await writeFile(doc, "![있음](./images/그림.png)\n\n![없음](./images/없다.png)\n", "utf8");
+
+  await openInApp(doc);
+  await waitActiveTab(doc);
+
+  const images = await browser.waitUntil(
+    async () => {
+      const found = await browser.execute(() =>
+        [...document.querySelectorAll('[data-testid="preview-pane"] img')].map((node) => {
+          const image = node as HTMLImageElement;
+          return {
+            src: image.getAttribute("src") ?? "",
+            width: image.naturalWidth,
+            broken: image.hasAttribute("data-norii-broken"),
+          };
+        }),
+      );
+      // 둘 다 판정이 끝나야 한다 — 하나는 디코드되고 하나는 실패 표시가 붙는다.
+      const [loaded, missing] = found;
+      if (loaded === undefined || missing === undefined || found.length !== 2) {
+        return false;
+      }
+      return loaded.width > 0 && missing.broken ? { loaded, missing } : false;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "프리뷰 이미지 둘의 판정이 끝나지 않았다" },
+  );
+
+  // 상대 경로가 asset 주소로 바뀐 것까지 확인한다 — 그냥 뜬 것과 우리가 푼 것을 가른다.
+  expect(images.loaded.src.startsWith("asset:")).toBe(true);
+  expect(images.loaded.broken).toBe(false);
+  expect(images.missing.width).toBe(0);
+});
+
 // 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.
 // 왜: 세션 파일에 쓰는 것과 그것으로 화면을 되살리는 것은 다른 일이다. 단위 테스트는 앞만 본다.
 // 보장: 탭 둘을 연 뒤 웹뷰를 다시 띄우면 두 탭이 그대로 돌아오고 활성 탭이 유지된다.

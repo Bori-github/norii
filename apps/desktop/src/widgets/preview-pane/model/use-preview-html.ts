@@ -1,15 +1,32 @@
 import { useEffect, useState } from "react";
 
-import { renderMarkdown } from "@norii/markdown";
+import { renderMarkdown, resolveImagePath } from "@norii/markdown";
 
 import { getTabText, subscribeDocChanged } from "@entities/document";
+import { assetUrl } from "@shared/ipc";
 
 import { adaptiveDebounceMs, PREVIEW_DEBOUNCE_BASE_MS } from "../config";
+
+/**
+ * 문서가 있는 폴더 — 상대 경로 이미지의 기준이다. 경로 없는 문서(Untitled)는 null이다.
+ * 인자는 탭의 canonical 절대 경로다(→ rust-commands.md) — 구분자가 늘 `/`이고 앞이 루트다.
+ */
+function documentDirOf(filePath: string | null): string | null {
+  if (filePath === null) {
+    return null;
+  }
+  const cut = filePath.lastIndexOf("/");
+  return cut <= 0 ? "/" : filePath.slice(0, cut);
+}
 
 // 활성 탭의 sanitize된 프리뷰 HTML — 탭 전환은 즉시 렌더하고, 본문 변경(타이핑·교체)은
 // 적응형 디바운스로 모아 렌더한다(→ preview-strategy.md#디바운스).
 // paused(숨김) 동안은 렌더하지 않는다(→ preview-strategy.md#뷰-모드).
-export function usePreviewHtml(tabId: string | null, paused = false): string {
+export function usePreviewHtml(
+  tabId: string | null,
+  filePath: string | null,
+  paused = false,
+): string {
   const [html, setHtml] = useState("");
 
   useEffect(() => {
@@ -20,11 +37,18 @@ export function usePreviewHtml(tabId: string | null, paused = false): string {
     if (paused) {
       return;
     }
+    // 경로 해석은 packages/markdown이, 기준 폴더와 URL 변환은 앱이 맡는다
+    // (→ preview-strategy.md#경로-해석).
+    const docDir = documentDirOf(filePath);
+    const resolveImageSrc = (src: string) => {
+      const resolved = resolveImagePath(docDir, src);
+      return resolved === null ? null : assetUrl(resolved);
+    };
     // 직전 렌더 소요로 다음 디바운스를 정한다 — 큰 문서일수록 간격을 벌려 타이핑 버벅임을 막는다.
     let debounceMs = PREVIEW_DEBOUNCE_BASE_MS;
     const renderNow = () => {
       const start = performance.now();
-      const rendered = renderMarkdown(getTabText(tabId) ?? "");
+      const rendered = renderMarkdown(getTabText(tabId) ?? "", { resolveImageSrc });
       debounceMs = adaptiveDebounceMs(performance.now() - start);
       setHtml(rendered);
     };
@@ -47,7 +71,7 @@ export function usePreviewHtml(tabId: string | null, paused = false): string {
         clearTimeout(timer);
       }
     };
-  }, [tabId, paused]);
+  }, [tabId, filePath, paused]);
 
   return html;
 }

@@ -1,5 +1,7 @@
 // Public API — Tauri IPC의 단일 진입점. invoke를 컴포넌트 곳곳에 흩뿌리지 않는다
 // (→ .claude/docs/frontend-architecture.md#tauri-ipc의-자리).
+import { convertFileSrc } from "@tauri-apps/api/core";
+
 import type { Eol, Session } from "./bindings";
 import { commands } from "./bindings";
 import { unwrapIpcResult } from "./unwrap";
@@ -37,6 +39,14 @@ export const ipc = {
   loadSession: () => unwrapIpcResult(commands.loadSession()),
   saveSession: (session: Session) => unwrapIpcResult(commands.saveSession(session)),
 };
+
+/**
+ * 파일 경로를 웹뷰가 실을 수 있는 asset URL로 바꾼다 — 프리뷰의 로컬 이미지가 쓴다.
+ * 읽을 수 있는 경로는 Rust의 허용 루트가 정한다(→ .claude/docs/rust-commands.md#권한-capabilities).
+ */
+export function assetUrl(path: string): string {
+  return convertFileSrc(path);
+}
 
 export { IpcError, isIpcError } from "./ipc-error";
 export type { IpcErrorKind } from "./ipc-error";
