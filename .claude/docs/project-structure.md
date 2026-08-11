@@ -78,7 +78,7 @@ norii/
   packages/
     editor/                  CodeMirror 6 래퍼 — 확장 구성·폴딩·테마. 플랫폼 무관
     markdown/                프리뷰 파이프라인 — markdown-it + DOMPurify + 스크롤 매핑
-    ui/                      공유 React 컴포넌트 — 버튼·탭바·트리 등
+    ui/                      Panda preset과 공유 React 컴포넌트
     tsconfig/                공유 TS/린트 설정
 ```
 

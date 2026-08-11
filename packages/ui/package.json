@@ -5,9 +5,12 @@
   "description": "디자인 시스템 — Panda preset(토큰·recipe)과 플랫폼 무관 프레젠테이션 컴포넌트 (→ .claude/docs/project-structure.md)",
   "type": "module",
   "exports": {
-    "./panda-preset": "./src/panda-preset.ts"
+    "./panda-preset": "./src/panda-preset.ts",
+    "./panda-scale": "./src/panda-scale.ts"
   },
   "scripts": {
+    "codegen": "panda codegen",
+    "postinstall": "panda codegen --silent",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

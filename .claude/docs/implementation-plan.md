@@ -77,7 +77,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **투명도 줄이기 존중 경로** — `prefers-reduced-transparency`를 Safari가 어느 버전에서도 지원하지 않아(실측: macOS 13.4 WKWebView에서 `no-preference`도 false) CSS로는 읽을 수 없다 — macOS 접근성 값(`NSWorkspace`)을 Rust가 읽어 부팅 표식으로 내릴지, 그리고 그 값과 사용자가 고른 유리 불투명도 중 어느 쪽이 이길지 (→ [창 표면 계약](design/window-chrome.md#표식은-첫-렌더-전에-심는다) · [유리](design/decisions/glass.md))
 - **떠 있는 면 흐림** — 투명 창에서 `backdrop-filter` 미동작 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ [유리](design/decisions/glass.md))
 - **프리뷰 코드면 토큰** — 코드 블록 배경이 상태 배경(bg.hover)을 빌려 쓴다(bg.canvas는 유리에서 투명해져 못 씀) — 종이 위 "옅게 눌린 면"(bg.inset류) 토큰 추가 여부, M8 (→ [디자인 시스템](design/design-system.md) · [표면](design/decisions/surface.md))
-- **UI 패키지의 styled-system 생성** — `packages/ui`의 컴포넌트가 `styled-system/css`를 import할 때 그 생성물을 패키지가 따로 만들지, 소비 측 것을 가리킬지 (→ [디자인 시스템](design/design-system.md) · [파일/폴더 구조](project-structure.md#패키지-경계))
 
 ### 테스트 · 도구
 

@@ -21,6 +21,19 @@ apps/desktop/panda.config.ts     앱 설정 — 추출 대상 · 생성물 위�
 
 앱은 `panda.config.ts`의 `presets`로 preset을 확장한다. **preset은 함수다** — `bg.chrome`이 쓰는 기본 알파를 앱에서 받는다. 그 값은 `shared/config/glass.ts`가 소유하는데, preset이 그 파일을 import하면 패키지가 플랫폼 중립을 잃는다.
 
+## codegen은 두 번 돈다
+
+`packages/ui`의 컴포넌트가 `css()`를 쓰므로 패키지도 자기 `styled-system`을 만든다. 앱은 그것을 쓰지 않고, 대신 **패키지 소스를 자기 `include`에 넣어** 같은 규칙을 자기 CSS에 담는다.
+
+```text
+packages/ui/panda.config.ts    패키지용 — 컴포넌트가 import할 css()·타입을 만든다
+apps/desktop/panda.config.ts   include에 ../../packages/ui/src를 더해 CSS 규칙을 담는다
+```
+
+**두 설정의 스케일이 갈리면 같은 스타일이 다른 클래스 이름을 얻는다.** 그래서 지우는 단계 목록은 `panda-scale.ts` 한 곳에 두고 양쪽이 가져다 쓴다. `config:resolved` 훅 자체는 preset 안에서 실행되지 않아 각 설정이 따로 건다.
+
+`turbo.json`이 `typecheck`·`test`·`build` 앞에 `codegen`을 세운다.
+
 ## 왜 Panda CSS인가
 
 - **디자인 시스템용 프레임워크** — 토큰·시맨틱 토큰·recipe(컴포넌트 변형)를 1급으로 제공한다. DS를 밑바닥부터 조립하지 않는다.

@@ -1,6 +1,7 @@
 import { defineConfig } from "@pandacss/dev";
 import pandaPreset from "@pandacss/dev/presets";
 import { createNoriiPreset } from "@norii/ui/panda-preset";
+import { OMITTED_SCALE_PATHS } from "@norii/ui/panda-scale";
 
 import { GLASS_OPACITY_DEFAULT } from "./src/shared/config/glass";
 
@@ -10,8 +11,9 @@ export default defineConfig({
   // spacing·shadows·fontWeights 같은 프리셋 토큰이 통째로 사라진다.
   presets: [pandaPreset, createNoriiPreset({ glassOpacity: GLASS_OPACITY_DEFAULT })],
 
-  // 스타일 추출 대상 — FSD 레이어 전체.
-  include: ["./src/**/*.{ts,tsx}"],
+  // 스타일 추출 대상 — FSD 레이어 전체와 @norii/ui의 컴포넌트 소스.
+  // 패키지 소스를 넣지 않으면 그 안에서만 쓰인 스타일이 앱 CSS에 나오지 않는다.
+  include: ["./src/**/*.{ts,tsx}", "../../packages/ui/src/**/*.{ts,tsx}"],
   exclude: [],
 
   // CSS 리셋 포함.
@@ -22,14 +24,7 @@ export default defineConfig({
   hooks: {
     "config:resolved": ({ config, utils }) =>
       // omit의 반환 타입(Omit<UserConfig, string>)이 훅 시그니처와 안 맞아 원형으로 되돌린다.
-      utils.omit(config, [
-        ...["2xs", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"].map(
-          (step) => `theme.tokens.fontSizes.${step}`,
-        ),
-        ...["none", "tight", "snug", "normal", "relaxed", "loose"].map(
-          (step) => `theme.tokens.lineHeights.${step}`,
-        ),
-      ]) as typeof config,
+      utils.omit(config, OMITTED_SCALE_PATHS) as typeof config,
   },
 
   // 앱 전역 표면 — 시맨틱 토큰으로 배경·글자·높이를 잡는다.
