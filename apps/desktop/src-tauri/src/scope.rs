@@ -26,12 +26,16 @@ impl FileScope {
     }
 
     /// canonicalize된 경로를 허용 루트로 추가한다(파일이면 그 파일만, 폴더면 하위 트리 전체).
+    /// asset 스코프에는 다른 경로를 등록한다(→ .claude/docs/rust-commands.md#권한-capabilities).
     pub fn allow(&self, canonical_root: PathBuf) {
         self.mirror_to_asset(|asset| {
             if canonical_root.is_dir() {
-                asset.allow_directory(&canonical_root, true)
-            } else {
-                asset.allow_file(&canonical_root)
+                return asset.allow_directory(&canonical_root, true);
+            }
+            match canonical_root.parent() {
+                // 부모가 파일시스템 루트인 경우 폴더째 등록하면 디스크 전체가 열린다.
+                Some(parent) if parent.parent().is_some() => asset.allow_directory(parent, true),
+                _ => asset.allow_file(&canonical_root),
             }
         });
         self.roots
@@ -148,7 +152,7 @@ mod tests {
         ));
     }
 
-    // 아래 셋은 프리뷰 이미지가 지나는 asset 프로토콜 스코프를 본다.
+    // 아래는 프리뷰 이미지가 지나는 asset 프로토콜 스코프를 본다.
     //
     // 집행: rust-commands.md#권한-capabilities — 허용 루트 목록이 두 스코프의 단일 출처다.
     // 왜: 두 스코프가 갈라지면 파일 커맨드가 막는 경로를 이미지로 읽을 수 있다. Tauri가
@@ -182,11 +186,11 @@ mod tests {
         ));
     }
 
-    // 왜: 세션 복원은 폴더가 아니라 파일 경로를 허용한다. 이때 폴더째 열면 그 파일의 이웃이
-    //     전부 이미지로 읽힌다 — 파일 커맨드가 주지 않는 권한이 이미지에만 생긴다.
-    // 보장: 파일을 허용하면 그 파일만 열리고 같은 폴더의 다른 파일은 열리지 않는다.
+    // 왜: 폴더 없이 파일 하나만 여는 길(다이얼로그·최근 파일·세션 복원)에서 파일만 등록하면
+    //     문서와 같은 폴더에 둔 이미지가 렌더되지 않는다.
+    // 보장: 그 파일이 있는 폴더의 하위 트리까지 들어가고, 폴더 밖은 들어가지 않는다.
     #[test]
-    fn 허용한_파일은_그_파일만_asset_스코프에_들어간다() {
+    fn 허용한_파일은_그_폴더가_asset_스코프에_들어간다() {
         let (scope, asset) = asset_scope_fixture();
         let dir = tempfile::tempdir().expect("임시 폴더");
         let root = fs::canonicalize(dir.path()).expect("canonicalize");
@@ -196,7 +200,40 @@ mod tests {
         scope.allow(file.clone());
 
         assert!(asset.is_allowed(&file));
-        assert!(!asset.is_allowed(root.join("이웃.png")));
+        assert!(asset.is_allowed(root.join("이웃.png")));
+        assert!(asset.is_allowed(root.join("하위/사진.png")));
+        assert!(!asset.is_allowed(
+            root.parent()
+                .expect("임시 폴더에는 부모가 있다")
+                .join("밖.png")
+        ));
+    }
+
+    // 왜: 두 스코프가 함께 넓어지면 파일 하나를 연 것으로 그 폴더 전체를 읽고 쓸 수 있다.
+    #[test]
+    fn 허용한_파일의_이웃은_파일_커맨드에서_거부된다() {
+        let scope = FileScope::default();
+        scope.allow(PathBuf::from("/tmp/vault/문서.md"));
+
+        assert!(scope
+            .ensure_allowed(Path::new("/tmp/vault/문서.md"))
+            .is_ok());
+        assert!(matches!(
+            scope.ensure_allowed(Path::new("/tmp/vault/이웃.md")),
+            Err(AppError::Permission(_))
+        ));
+    }
+
+    // 왜: 파일시스템 루트에 둔 문서의 부모는 루트다 — 폴더째 등록하면 디스크 전체가 이미지로
+    //     읽힌다.
+    #[test]
+    fn 루트에_있는_파일은_그_파일만_등록한다() {
+        let (scope, asset) = asset_scope_fixture();
+
+        scope.allow(PathBuf::from("/문서.md"));
+
+        assert!(asset.is_allowed("/문서.md"));
+        assert!(!asset.is_allowed("/이웃.png"));
     }
 
     // 보장: 거부 디렉터리는 허용 루트 하위에 있어도 asset 스코프에서 거부된다
