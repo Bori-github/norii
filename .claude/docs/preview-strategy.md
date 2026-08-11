@@ -64,29 +64,50 @@ DOMPurify는 옵션이 아니라 **필수**다. 마크다운은 원시 HTML을 �
 
 ## 이미지
 
-`![](./사진.png)`과 원시 HTML의 `<img>`를 프리뷰에 렌더한다. 로컬 파일은 문서가 있는 폴더를 기준으로 찾는다.
+마크다운 이미지(`![](./사진.png)`)와 원시 HTML의 `<img>`를 프리뷰에 렌더한다.
+
+### 읽는 범위
+
+사이드바로 연 폴더와 문서가 있는 폴더의 하위 트리를 읽는다. 폴더를 열지 않아도 문서와 같은 폴더의 이미지는 렌더된다. 그 밖의 경로는 읽지 않는다.
+
+- 범위를 만드는 방법 — [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)
+- 넓힌 범위의 위험 — [보안 — 이미지](security.md#이미지-asset-프로토콜)
 
 ### 경로 해석
 
-```text
-스킴이 있다 (https: · data: …)   src를 그대로 둔다
-문서 경로가 없다 (Untitled)       src를 그대로 둔다 — 기준 폴더가 없다
-그 밖 (상대·절대 경로)            문서 폴더 기준의 절대 경로로 바꾸고 asset URL로 만든다
-```
+| `src` | 처리 |
+|---|---|
+| 스킴이 있는 경우 (`https:` · `data:` …) | 그대로 둔다 |
+| `/`로 시작하는 경우 | 연 폴더 기준으로 해석한다. 폴더를 열지 않은 경우 그대로 둔다 |
+| 그 밖의 상대 경로인 경우 | 문서가 있는 폴더 기준으로 해석한다 |
+| 문서 경로가 없는 경우 (Untitled) | 그대로 둔다 |
 
-- 로컬 파일은 **Tauri asset 프로토콜**로 읽는다 — 읽을 수 있는 경로는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 정한다.
-- **퍼센트 인코딩을 먼저 푼다** — markdown-it이 `![](내 사진.png)`을 `%EB%82%B4…`로 정규화해 넘긴다.
-- **`.`·`..`를 정규화해 없앤다** — asset 프로토콜이 `..`이 든 경로를 거부한다.
-- `?`·`#`가 붙은 로컬 경로는 그 기호까지 파일명으로 취급되어 찾지 못한다.
-- 경로를 URL로 바꾸는 것은 소비 측(`apps/desktop`)이 넘긴다 — `packages/markdown`은 Tauri API를 부르지 않는다(→ [파일/폴더 구조](project-structure.md)).
+- 로컬 파일은 Tauri asset 프로토콜로 읽는다.
+- 퍼센트 인코딩은 해석 전에 푼다. markdown-it이 `![](내 사진.png)`을 `%EB%82%B4…`로 정규화해 넘긴다.
+- `.`·`..`는 정규화해 없앤다. asset 프로토콜이 `..`이 든 경로를 거부한다.
+- `?`·`#`가 붙은 경로는 그 기호까지 파일명으로 취급한다.
+- 해석한 경로를 URL로 바꾸는 것은 `apps/desktop`이 맡는다. `packages/markdown`은 Tauri API를 부르지 않는다(→ [파일/폴더 구조](project-structure.md)).
+- 같은 분기를 쓰는 구현 — [VS Code `markdownEngine.ts` `#toResourceUri`](https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/src/markdownEngine.ts)
+
+### 해석하는 속성
+
+| 속성 | 대상 |
+|---|---|
+| `img[src]` | 마크다운 이미지와 원시 HTML |
+| `img[srcset]` | 해상도별 후보 목록. 값이 있으면 브라우저가 `src`보다 먼저 쓴다 |
+| `source[srcset]` | `<picture>` 안의 후보 목록 |
+
+- `srcset` 값은 `경로 1x, 경로 2x` 꼴이므로 후보마다 따로 해석한다.
+- `src`만 바꾸면 `srcset`이 있는 이미지는 같은 폴더에 파일이 있어도 렌더되지 않는다.
+- 후보가 `asset:`으로 시작하면 그 후보를 버린다. 경로 해석은 스킴이 있는 값을 그대로 두므로, 버리지 않으면 문서가 적은 `asset://…`가 그대로 남는다.
 
 ### src는 sanitize 뒤에 바꾼다
 
 DOMPurify는 `asset:`을 모르는 스킴으로 보고 그 `src`를 통째로 버린다. 허용목록(`ALLOWED_URI_REGEXP`)에 `asset:`을 더하면 **문서가 적은 `asset://…`도 함께 통과한다** — 문서는 못 믿는 입력이므로 그 길을 열지 않는다.
 
-그래서 sanitize를 마친 결과에서 `img[src]`만 바꾼다. 상대 경로(`./a.png`)는 기본 허용목록을 통과하므로 이 지점까지 살아서 오고, 문서가 직접 적은 `asset://…`는 sanitize가 이미 지웠다.
+그래서 sanitize를 마친 결과에서 위 [해석하는 속성](#해석하는-속성)의 값만 바꾼다. 상대 경로(`./a.png`)는 기본 허용목록을 통과하므로 이 지점까지 살아서 오고, 문서가 `src`에 직접 적은 `asset://…`는 sanitize가 이미 지웠다.
 
-- 바뀌는 것은 norii가 계산한 `src` 값뿐이다. 태그와 다른 속성은 sanitize 결과 그대로다.
+- 바뀌는 것은 norii가 계산한 값뿐이다. 태그와 나머지 속성은 sanitize 결과 그대로다.
 - 마크다운 이미지와 원시 HTML의 `<img>`가 함께 해석된다 — `<img width="300" src="./a.png">`처럼 크기를 주는 표기는 markdown-it 토큰이 아니라 원시 HTML이다.
 
 ### 원격 이미지

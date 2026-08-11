@@ -40,13 +40,22 @@ connect-src 'self';                     local-first → 외부 연결 없음 (�
 
 ### 2. 경로 스코프 (capabilities + 커맨드 검증)
 
-파일시스템 접근은 사용자가 다이얼로그로 선택했거나 연 루트 폴더 하위로 제한한다. **단, 파일 I/O는 커스텀 `std::fs` 커맨드라 capabilities가 경로를 자동 제한하지 못한다** — 실제 경로 스코프는 커맨드가 canonicalize + 허용 루트 검증으로 강제하고, capabilities는 커맨드·플러그인 노출을 제한한다. 두 층의 단일 출처는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이다.
+파일 커맨드의 접근은 사용자가 다이얼로그로 선택했거나 연 루트 폴더 하위로 제한한다(이미지는 아래 [이미지](#이미지-asset-프로토콜)가 따로 정한다). **단, 파일 I/O는 커스텀 `std::fs` 커맨드라 capabilities가 경로를 자동 제한하지 못한다** — 실제 경로 스코프는 커맨드가 canonicalize + 허용 루트 검증으로 강제하고, capabilities는 커맨드·플러그인 노출을 제한한다. 두 층의 단일 출처는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이다.
 
 #### 이미지 (asset 프로토콜)
 
-프리뷰의 로컬 이미지는 파일 커맨드가 아니라 Tauri asset 프로토콜로 읽는다. 이 통로도 같은 허용 루트로 제한하며, 그 방법은 위 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 소유한다.
+프리뷰의 로컬 이미지는 Tauri asset 프로토콜로 읽는다. 읽는 범위는 위 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 정한다.
 
-**문서는 asset URL을 위조하지 못한다.** 문서가 적은 `asset://…`는 프리뷰에 닿기 전에 DOMPurify가 지운다(→ [프리뷰 전략](preview-strategy.md#src는-sanitize-뒤에-바꾼다)) — 남는 asset URL은 norii가 문서 폴더 기준으로 계산한 것뿐이다.
+**파일 하나만 연 경우**(열기 다이얼로그·최근 파일·세션 복원) **이미지의 읽기 범위가 파일 커맨드보다 넓다.**
+
+- 범위 밖은 읽지 못한다.
+- 읽은 이미지는 화면에 렌더될 뿐 밖으로 나가지 않는다(`connect-src 'self'`).
+- 파일을 고치거나 지우지 못한다.
+- 남는 위험: 문서가 같은 폴더의 이미지를 지정해 화면에 렌더할 수 있다(`<img src="./영수증.png">`).
+
+VS Code도 같은 범위를 읽는다 — [`getMarkdownLocalResourceRoots`](https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/src/util/resources.ts).
+
+**문서가 적은 asset URL은 프리뷰에 닿지 않는다.** `src`에 적은 값은 DOMPurify가 지우고(→ [프리뷰 전략](preview-strategy.md#src는-sanitize-뒤에-바꾼다)), `srcset`의 후보는 렌더 파이프라인이 버린다(→ [프리뷰 전략 — 해석하는 속성](preview-strategy.md#해석하는-속성)). 남는 asset URL은 norii가 계산한 값뿐이다.
 
 #### 세션 파일
 
