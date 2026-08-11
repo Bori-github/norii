@@ -17,18 +17,6 @@ export default defineConfig({
   // CSS 리셋 포함.
   preflight: true,
 
-  // 다크 테마는 루트의 data-theme 속성으로 켠다(상태는 entities/theme이 소유하고 app이 적용한다).
-  // 기본 _dark(prefers-color-scheme 미디어) 대신 속성 기반으로 바꿔 앱이 테마를 완전히 제어한다.
-  conditions: {
-    extend: {
-      dark: '[data-theme="dark"] &',
-      // 창 유리가 켜졌는가 — "macOS인가"가 아니다. 유리를 끄면 macOS에서도 불투명 캔버스여야 한다
-      // (→ .claude/docs/design/window-chrome.md#웹-쪽-계약--캔버스만-갈라진다).
-      // dark 뒤에 정의해 두 조건이 겹칠 때 glass가 이긴다 — 유리가 켜지면 테마와 무관하게 투명이다.
-      glass: '[data-glass="on"] &',
-    },
-  },
-
   // 프리셋의 안 쓰는 크기·행간 단계를 지운다(→ decisions/typography).
   hooks: {
     "config:resolved": ({ config, utils }) =>
@@ -41,86 +29,6 @@ export default defineConfig({
           (step) => `theme.tokens.lineHeights.${step}`,
         ),
       ]) as typeof config,
-  },
-
-  theme: {
-    extend: {
-      tokens: {
-        fonts: {
-          // 이름은 역할로 짓는다 — "본문"이 UI 산문인지 에디터 텍스트인지 가리지 못하는 이름은 쓰지 않는다.
-          ui: {
-            value:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-          },
-          // 열 정렬이 의미를 갖는 구간(코드블록·표·들여쓰기)을 위한 고정폭(→ decisions/typography).
-          editor: {
-            value:
-              '"Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-          },
-          // 프리뷰 산문(→ decisions/typography).
-          prose: {
-            value:
-              '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-          },
-        },
-
-        // prose — 본문(md)에 대한 배수. 고정/배수의 경계는 decisions/typography가 소유한다.
-        fontSizes: {
-          prose: {
-            h1: { value: "2em" },
-            h2: { value: "1.5em" },
-            h3: { value: "1.25em" },
-            h4: { value: "1em" },
-            // h5≈h6은 의도다(→ decisions/typography).
-            h5: { value: "0.875em" },
-            h6: { value: "0.85em" },
-            code: { value: "0.875em" },
-            footnotes: { value: "0.875em" },
-            sup: { value: "0.75em" },
-            label: { value: "0.875em" },
-          },
-        },
-
-        lineHeights: {
-          ui: { value: "1.4" },
-          heading: { value: "1.3" },
-          editor: { value: "1.6" },
-          prose: { value: "1.8" },
-        },
-
-        // Panda 기본값(4·6·8px)보다 작게 잡는다(→ DESIGN.md 모서리).
-        radii: {
-          sm: { value: "2px" },
-          md: { value: "4px" },
-          lg: { value: "6px" },
-        },
-      },
-
-      keyframes: {
-        dialogIn: {
-          from: { opacity: "0", transform: "translateY(6px) scale(0.99)" },
-        },
-        dialogOut: {
-          to: { opacity: "0", transform: "translateY(4px) scale(0.99)" },
-        },
-      },
-
-      // 포커스 링 — 어디에 쓰고 왜 text인지는 decisions/color-palette가 소유한다.
-      // Panda 내장 focusRing 유틸은 안쪽 링을 offset 0으로 그리고 borderColor까지 바꿔 쓰지 않는다.
-      layerStyles: {
-        focusOutside: {
-          value: {
-            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "2px" },
-          },
-        },
-        // 링이 밖으로 나갈 자리가 없을 때만 쓴다 — 잘라내는 묶음 안이거나 여백이 링보다 좁은 곳.
-        focusInside: {
-          value: {
-            _focusVisible: { outline: "2px solid", outlineColor: "text", outlineOffset: "-2px" },
-          },
-        },
-      },
-    },
   },
 
   // 앱 전역 표면 — 시맨틱 토큰으로 배경·글자·높이를 잡는다.

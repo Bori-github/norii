@@ -13,8 +13,8 @@ norii는 프로젝트 내부에 디자인 시스템을 구축하고, 스타일�
 design/decisions/*.md            왜 그렇게 정했는가 — 맥락 · 기각한 대안 · 치르는 비용
 design/design-system.md          어떻게 구현하는가 — Panda 토큰 · recipe · 대비 게이트 (이 문서)
 design/window-chrome.md          창 설정의 실제 값 — transparent · 창 뒤 흐림 반경 · 폴백
-packages/ui/src/panda-preset.ts  색 값 — 팔레트·시맨틱의 실제 숫자. 문서가 아니라 코드가 소유한다.
-apps/desktop/panda.config.ts     앱 값 — 폰트·크기·행간·모서리 스케일과 조건·전역 CSS.
+packages/ui/src/panda-preset.ts  값 — 색·타이포·모서리와 조건·layerStyle. 문서가 아니라 코드가 소유한다.
+apps/desktop/panda.config.ts     앱 설정 — 추출 대상 · 생성물 위치 · 전역 CSS · 훅.
 ```
 
 **색·간격의 실제 값을 이 문서에 옮겨 적지 않는다.** 값이 두 곳에 살면 반드시 어긋난다.
@@ -146,9 +146,9 @@ buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defa
 ## FSD 배치
 
 ```text
-packages/ui            panda-preset.ts — 색 토큰
+packages/ui            panda-preset.ts — 토큰·조건·layerStyle
       │
-panda.config.ts        preset을 확장하고 앱 스케일·조건·recipe를 더한다 (apps/desktop)
+panda.config.ts        preset을 확장하고 추출 대상·전역 CSS·recipe를 더한다 (apps/desktop)
       │  (panda codegen)
 styled-system/         생성물 — 여기서 css()·recipe·토큰을 import
       │
@@ -157,7 +157,7 @@ shared/ui              styled-system로 만든 디자인 시스템 컴포넌트 
 widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소화)
 ```
 
-- 색 토큰은 `packages/ui`, 앱 스케일은 `panda.config.ts`. `shared`가 이를 감싸 앱에 노출한다.
+- 토큰 정의는 `packages/ui`. `shared`가 이를 감싸 앱에 노출한다.
 - `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
 
 ## 아이콘
