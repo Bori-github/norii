@@ -1,0 +1,74 @@
+import { IconGallery, IconItem, Meta } from "@storybook/addon-docs/blocks";
+
+import * as icons from "./index";
+
+<Meta title="Foundations/Icons" />
+
+export const ENTRIES = Object.entries(icons)
+  .filter(([name]) => name.endsWith("Icon"))
+  .toSorted(([a], [b]) => a.localeCompare(b));
+
+# Icons
+
+<code>{'import { CloseIcon } from "@norii/ui/icons";'}</code>
+
+<IconGallery>
+  {ENTRIES.map(([name, Icon]) => (
+    <IconItem key={name} name={name}>
+      <Icon style={{ width: 24, height: 24 }} />
+    </IconItem>
+  ))}
+</IconGallery>
+
+## 크기
+
+{[14, 16, 24].map((size) => (
+
+<div key={size} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+  <span style={{ fontSize: 11, fontFamily: "ui-monospace, monospace", width: 40 }}>{size}px</span>
+  {ENTRIES.slice(0, 10).map(([name, Icon]) => (
+    <Icon key={name} style={{ width: size, height: size }} />
+  ))}
+</div>
+))}
+
+## 색
+
+export const TOKENS = ["text", "text.muted", "status.danger", "text.mark"];
+
+export const CAPTION = { fontSize: 11, fontFamily: "ui-monospace, monospace" };
+
+{/* 문서 페이지에는 데코레이터가 돌지 않아 테마 툴바가 닿지 않는다. */}
+
+{["light", "dark"].map((theme) => (
+
+<div
+  key={theme}
+  data-theme={theme}
+  style={{
+    display: "flex",
+    gap: 24,
+    padding: 16,
+    marginBottom: 12,
+    background: "var(--colors-bg-canvas)",
+  }}
+>
+  <div style={{ ...CAPTION, color: "var(--colors-text-muted)", width: 40 }}>{theme}</div>
+  {TOKENS.map((token) => (
+    <div key={token}>
+      <span
+        style={{
+          color: `var(--colors-${token.replaceAll(".", "-")})`,
+          display: "inline-flex",
+          gap: 8,
+        }}
+      >
+        {ENTRIES.slice(0, 6).map(([name, Icon]) => (
+          <Icon key={name} style={{ width: 20, height: 20 }} />
+        ))}
+      </span>
+      <div style={{ ...CAPTION, color: "var(--colors-text-muted)", marginTop: 6 }}>{token}</div>
+    </div>
+  ))}
+</div>
+))}
