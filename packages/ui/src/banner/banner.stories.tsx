@@ -17,8 +17,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// 배너는 폭을 꽉 채우는 띠라 세로로 쌓아 두고 본다.
-// render가 다섯 조합을 직접 만들기 때문에 컨트롤은 아무것도 반영하지 않는다.
 export const 개요: Story = {
   args: { children: null },
   parameters: { controls: { disable: true } },

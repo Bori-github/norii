@@ -31,8 +31,7 @@ function Swatch({ token, note }: { token: string; note?: string }) {
   );
 }
 
-// 앱 설정의 불투명도 슬라이더와 같은 범위다(min 0 · max 1 · step 0.01).
-// 이 값은 --norii-glass-opacity로 들어가고 bg.chrome만 바꾼다.
+// 앱 설정의 불투명도 슬라이더와 같은 범위이기 때문에 min·max·step을 그 값으로 맞춤
 function OpacitySlider() {
   const [opacity, setOpacity] = useState(GLASS_OPACITY_DEFAULT.light);
 
@@ -62,8 +61,8 @@ function OpacitySlider() {
   );
 }
 
-// bg.chrome은 이 패키지의 컴포넌트가 쓰지 않는다 — 앱의 크롬(타이틀바·사이드바·탭바)이 쓴다.
-// 슬라이더의 효과를 보려면 그 토큰을 직접 칠한 면이 필요하므로 여기서 만든다.
+// bg.chrome은 이 패키지의 컴포넌트가 쓰지 않기 때문에(앱의 타이틀바·사이드바·탭바가 씀)
+// 슬라이더의 효과를 보이려고 그 토큰을 직접 칠한 면을 여기서 만듦
 export const 표면: Story = {
   render: () => (
     <>
@@ -74,7 +73,6 @@ export const 표면: Story = {
           style={{
             padding: 20,
             borderRadius: 6,
-            // 유리가 켜지면 캔버스가 투명해져 뒤가 비치는 것을 보이려고 격자를 깐다.
             backgroundImage:
               "repeating-conic-gradient(rgba(128,128,128,0.25) 0% 25%, transparent 0% 50%)",
             backgroundSize: "16px 16px",
@@ -96,7 +94,7 @@ export const 표면: Story = {
       <Section title="bg.canvas — 유리 유무로 갈리는 유일한 토큰">
         <Row>
           <Swatch token="bg.canvas" note="유리 끔" />
-          {/* 앱에서는 투명해진 자리를 OS가 창 뒤 바탕화면을 흐려 채운다 — 브라우저에는 그 흐림이 없다. */}
+          {/* 앱에서는 투명해진 자리를 OS가 창 뒤를 흐려 채우지만 브라우저에는 그 흐림이 없음 — 여기서는 투명까지만 보임 */}
           <div data-glass="on">
             <Swatch token="bg.canvas" note="유리 켬 · 투명" />
           </div>

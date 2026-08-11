@@ -17,7 +17,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// showModal()로 뜨기 때문에 두 크기를 동시에 띄울 수 없다 — 버튼으로 하나씩 연다.
 function Trigger({ size, body }: { size: "sm" | "lg"; body: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
@@ -63,7 +62,10 @@ export const 개요: Story = {
   ),
 };
 
-// 열고 닫으며 dialogIn·dialogOut 전환을 본다. prefers-reduced-motion에서는 전환 없이 닫힌다.
+/**
+ * 닫자마자 사라지면 회귀 — dialogOut이 끝날 때까지 남아야 함.
+ * prefers-reduced-motion에서는 전환 없이 닫히므로 그 설정에서는 판정 불가.
+ */
 export const 전환: Story = {
   args: { open: false, children: null },
   parameters: { controls: { disable: true } },

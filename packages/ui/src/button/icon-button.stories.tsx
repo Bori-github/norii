@@ -36,7 +36,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const 개요: Story = {
-  parameters: { controls: { exclude: ["variant", "size"] } },
+  argTypes: { variant: { control: false }, size: { control: false } },
   render: (args) => (
     <>
       {VARIANTS.map((variant) => (
@@ -54,9 +54,8 @@ export const 개요: Story = {
   ),
 };
 
-// 아이콘마다 획 수와 여백이 달라 같은 크기에서도 무게가 다르게 보인다.
 export const 여러_아이콘: Story = {
-  parameters: { controls: { exclude: ["children", "label"] } },
+  argTypes: { children: { control: false }, label: { control: false } },
   render: (args) => (
     <Row>
       {(
@@ -83,9 +82,8 @@ export const 여러_아이콘: Story = {
   ),
 };
 
-// toggle은 스위치 모양이 아니라 눌린 상태가 유지되는 버튼이다 — 사이드바 접기 버튼이 쓴다.
 export const 상태: Story = {
-  parameters: { controls: { exclude: ["variant", "disabled"] } },
+  argTypes: { variant: { control: false }, disabled: { control: false } },
   render: (args) => (
     <Row>
       <Cell label="ghost">

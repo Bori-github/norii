@@ -5,6 +5,7 @@ import { Cell, Grid, Row, Section } from "../../.storybook/grid";
 
 import * as icons from "./index";
 
+// 배럴에서 직접 읽기 때문에 아이콘을 더해도 이 파일은 손대지 않음
 const ENTRIES = Object.entries(icons as Record<string, ComponentType<SVGProps<SVGSVGElement>>>)
   .filter(([name]) => name.endsWith("Icon"))
   .toSorted(([a], [b]) => a.localeCompare(b));
@@ -19,8 +20,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// 배럴에서 직접 읽기 때문에 아이콘을 더하면 이 화면에 저절로 나온다.
-// 라벨은 export 이름 그대로다 — 보고 바로 import에 쓴다.
 export const 전체: Story = {
   render: () => (
     <>
@@ -38,7 +37,7 @@ export const 전체: Story = {
   ),
 };
 
-// 크기는 소비 측 CSS가 정한다 — 앱이 실제로 쓰는 세 값이다.
+/** 아이콘 자체에는 크기가 없기 때문에(viewBox만 있음) width·height를 CSS로 지정 */
 export const 크기: Story = {
   render: () => (
     <>
@@ -55,7 +54,7 @@ export const 크기: Story = {
   ),
 };
 
-// currentColor를 쓰기 때문에 품는 요소의 글자색을 따라간다.
+/** stroke가 currentColor이기 때문에 부모 요소의 글자색을 따라감 */
 export const 색_상속: Story = {
   render: () => (
     <Row>

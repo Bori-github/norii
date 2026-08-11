@@ -16,7 +16,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// 기준 요소에 position: relative가 없으면 엉뚱한 조상에 붙기 때문에 여기서 그 조건을 갖춘다.
 function Anchor({ children, width = 160 }: { children: ReactNode; width?: number }) {
   return (
     <div style={{ position: "relative", display: "inline-block", width, paddingBottom: 44 }}>
@@ -26,7 +25,7 @@ function Anchor({ children, width = 160 }: { children: ReactNode; width?: number
 }
 
 export const 개요: Story = {
-  parameters: { controls: { exclude: ["pointerX", "id"] } },
+  argTypes: { pointerX: { control: false }, id: { control: false } },
   render: (args) => (
     <>
       <Section title="꼭짓점 위치 (pointerX)">
