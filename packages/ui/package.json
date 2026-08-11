@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./icons": "./src/icons/index.ts",
     "./panda-preset": "./src/panda-preset.ts",
     "./panda-scale": "./src/panda-scale.ts"
   },
