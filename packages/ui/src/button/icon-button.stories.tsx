@@ -15,10 +15,14 @@ import {
   SettingsIcon,
 } from "../icons";
 
-import { IconButton } from "./button";
+import { BUTTON_STYLES, IconButton } from "./button";
 
-const VARIANTS = ["ghost", "outline", "accent", "toggle"] as const;
-const SIZES = ["2xs", "xs", "sm", "md"] as const;
+const VARIANTS = Object.keys(
+  BUTTON_STYLES.variants.variant,
+) as (keyof typeof BUTTON_STYLES.variants.variant)[];
+const SIZES = Object.keys(
+  BUTTON_STYLES.variants.size,
+) as (keyof typeof BUTTON_STYLES.variants.size)[];
 
 const meta = {
   title: "Button/IconButton",

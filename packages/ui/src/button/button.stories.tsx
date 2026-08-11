@@ -3,10 +3,14 @@ import { fn } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 
-import { Button } from "./button";
+import { BUTTON_STYLES, Button } from "./button";
 
-const VARIANTS = ["accent", "outline", "ghost", "toggle"] as const;
-const SIZES = ["2xs", "xs", "sm", "md"] as const;
+const VARIANTS = Object.keys(
+  BUTTON_STYLES.variants.variant,
+) as (keyof typeof BUTTON_STYLES.variants.variant)[];
+const SIZES = Object.keys(
+  BUTTON_STYLES.variants.size,
+) as (keyof typeof BUTTON_STYLES.variants.size)[];
 
 const meta = {
   title: "Button/Button",

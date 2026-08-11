@@ -4,14 +4,16 @@ import { Section } from "../../.storybook/grid";
 import { Button, IconButton } from "../button/button";
 import { CloseIcon } from "../icons";
 
-import { Banner, BannerBody } from "./banner";
+import { BANNER_STYLES, Banner, BannerBody } from "./banner";
+
+const TONES = Object.keys(BANNER_STYLES.variants.tone);
 
 const meta = {
   title: "Banner",
   component: Banner,
   subcomponents: { BannerBody },
   tags: ["autodocs"],
-  argTypes: { tone: { control: "inline-radio", options: ["default", "danger"] } },
+  argTypes: { tone: { control: "inline-radio", options: TONES } },
 } satisfies Meta<typeof Banner>;
 
 export default meta;
