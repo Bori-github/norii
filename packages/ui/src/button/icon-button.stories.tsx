@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 import {
@@ -106,4 +106,17 @@ export const 상태: Story = {
   ),
 };
 
-export const Playground: Story = { args: { variant: "ghost", size: "md" } };
+/**
+ * 화면에 글자가 없어 label이 유일한 접근성 이름이기 때문에, 그 이름으로 버튼을 찾을 수
+ * 있는지 확인해 둔다 — 이름이 사라지면 스크린리더에서 "버튼"으로만 읽힌다.
+ */
+export const Playground: Story = {
+  args: { variant: "ghost", size: "md" },
+  play: async ({ args, canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", { name: "닫기" });
+
+    await userEvent.click(button);
+
+    await expect(args.onClick).toHaveBeenCalled();
+  },
+};

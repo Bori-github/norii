@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 import { Button } from "../button/button";
@@ -65,9 +66,25 @@ export const 개요: Story = {
 /**
  * 닫자마자 사라지면 회귀 — dialogOut이 끝날 때까지 남아야 함.
  * prefers-reduced-motion에서는 전환 없이 닫히므로 그 설정에서는 판정 불가.
+ *
+ * 전환이 눈에 보이는지는 사람이 보지만, 열리고 닫히는 것 자체는 여기서 확인한다 —
+ * 전환을 기다리지 않고 언마운트하면 여는 것부터 깨진다.
  */
 export const 전환: Story = {
   args: { open: false, children: null },
   parameters: { controls: { disable: true } },
   render: () => <Trigger size="sm" body={<p>열고 닫으며 전환을 본다.</p>} />,
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+
+    await step("열기를 누르면 대화상자가 뜬다", async () => {
+      await userEvent.click(canvas.getByRole("button", { name: "열기" }));
+      await expect(await canvas.findByRole("dialog")).toBeVisible();
+    });
+
+    await step("취소를 누르면 전환이 끝난 뒤 사라진다", async () => {
+      await userEvent.click(canvas.getByRole("button", { name: "취소" }));
+      await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+  },
 };

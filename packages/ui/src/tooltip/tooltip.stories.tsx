@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
+import { expect, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 
@@ -78,6 +79,10 @@ export const 개요: Story = {
   ),
 };
 
+/**
+ * id를 넘기지 않으면 문구가 보이기만 하고 스크린리더에는 닿지 않기 때문에, 연결이 실제로
+ * 되는지 확인해 둔다 — 눈으로는 두 경우가 똑같아 보인다.
+ */
 export const Playground: Story = {
   render: (args) => (
     <Anchor>
@@ -90,4 +95,9 @@ export const Playground: Story = {
       <Tooltip {...args} id="tip" />
     </Anchor>
   ),
+  play: async ({ args, canvasElement }) => {
+    const input = within(canvasElement).getByRole("textbox", { name: "파일 이름" });
+
+    await expect(input).toHaveAccessibleDescription(String(args.children));
+  },
 };

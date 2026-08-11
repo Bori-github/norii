@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 
@@ -64,4 +64,17 @@ export const 개요: Story = {
   ),
 };
 
-export const Playground: Story = {};
+/**
+ * 감싸는 요소를 하나 더 두는 구조라 이벤트가 새지 않는지 확인해 둔다 — 고르면 값이 바뀌고
+ * onChange가 불린다.
+ */
+export const Playground: Story = {
+  play: async ({ args, canvasElement }) => {
+    const select = within(canvasElement).getByRole("combobox");
+
+    await userEvent.selectOptions(select, "euc-kr");
+
+    await expect(select).toHaveValue("euc-kr");
+    await expect(args.onChange).toHaveBeenCalled();
+  },
+};
