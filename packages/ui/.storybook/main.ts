@@ -10,6 +10,15 @@ const config: StorybookConfig = {
   // norii는 local-first라 빌드가 밖으로 아무것도 보내지 않는다.
   core: { disableTelemetry: true },
 
+  typescript: {
+    // 기본 react-docgen은 props별 TSDoc을 읽지 못해 Docs의 표가 설명 없이 나온다.
+    reactDocgen: "react-docgen-typescript",
+    reactDocgenTypescriptOptions: {
+      // 상속받은 HTML 속성까지 표에 들어가면 우리가 정한 props가 묻힌다.
+      propFilter: (prop) => !prop.parent || !prop.parent.fileName.includes("node_modules"),
+    },
+  },
+
   viteFinal: (viteConfig) => ({
     ...viteConfig,
     resolve: {
