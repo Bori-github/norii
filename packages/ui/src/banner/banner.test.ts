@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BANNER_STYLES } from "./banner";
+import { BANNER_BODY_STYLE, BANNER_STYLES } from "./banner";
 
 // 왜: 배너는 알림·충돌·삭제됨 세 곳이 각자 div와 클래스를 조립하고 있었다. 한 컴포넌트에서
 //     나오게 하고, 배너가 지켜야 할 것(종이 면·아래 경계선·danger는 왼쪽 띠)을 여기서 막는다.
@@ -19,6 +19,14 @@ describe("배너 껍데기", () => {
   it("본문이 남는 자리를 채우고 액션은 오른쪽에 남는다", () => {
     expect(base.display).toBe("flex");
     expect(base.alignItems).toBe("center");
+  });
+
+  // 액션이 둘인 배너를 267px에서 재니 둘째 버튼이 상자 밖으로 나가 누를 수 없었다. 본문만
+  // 계속 줄어 279px에서는 한 줄에 한 글자가 됐다. 충돌 배너가 그 모양이라 버튼을 못 누르면
+  // 어느 쪽을 남길지 고를 수 없다.
+  it("자리가 모자라면 본문을 더 줄이지 않고 액션을 아랫줄로 내린다", () => {
+    expect(base.flexWrap).toBe("wrap");
+    expect(BANNER_BODY_STYLE.minWidth).toBe("14ch");
   });
 });
 

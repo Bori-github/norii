@@ -67,6 +67,27 @@ export const 개요: Story = {
   ),
 };
 
+/** 좁아지면 액션이 아랫줄로 내려가는 것 — 버튼이 상자 밖으로 잘리면 회귀 */
+export const 좁은_폭: Story = {
+  args: { children: null },
+  parameters: { controls: { disable: true } },
+  render: () => (
+    <>
+      {[400, 280, 240].map((width) => (
+        <Section key={width} title={`${width}px`}>
+          <div style={{ width }}>
+            <Banner tone="danger">
+              <BannerBody>파일이 밖에서 바뀌었습니다 — 어느 쪽을 남길지 고르세요.</BannerBody>
+              <Button size="sm">편집 중인 것</Button>
+              <Button size="sm">디스크의 것</Button>
+            </Banner>
+          </div>
+        </Section>
+      ))}
+    </>
+  ),
+};
+
 export const Playground: Story = {
   args: {
     tone: "default",

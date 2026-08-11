@@ -15,6 +15,8 @@ export const BANNER_STYLES = {
     borderBottomColor: "border",
     fontSize: "sm",
     whiteSpace: "pre-line",
+    // 자리가 모자라면 액션이 상자 밖으로 나가 누를 수 없기 때문에 아랫줄로 내림
+    flexWrap: "wrap",
   },
   variants: {
     tone: {
@@ -28,8 +30,12 @@ export const BANNER_STYLES = {
   defaultVariants: { tone: "default" },
 } as const;
 
+// flex만 두면 본문이 한 글자 폭까지 줄어 wrap이 걸리지 않기 때문에 하한을 둠.
+// ch는 숫자 0의 폭이라 글자 수와 다름 — 14ch는 123px, 한글로 10자.
+export const BANNER_BODY_STYLE = { flex: 1, minWidth: "14ch" } as const;
+
 const bannerRecipe = cva(BANNER_STYLES);
-const bodyClass = css({ flex: 1 });
+const bodyClass = css(BANNER_BODY_STYLE);
 
 export interface BannerProps extends HTMLAttributes<HTMLDivElement> {
   /** `danger`면 왼쪽에 빨간 띠를 더함. 기본값은 `default` */
