@@ -13,10 +13,13 @@ norii는 프로젝트 내부에 디자인 시스템을 구축하고, 스타일�
 design/decisions/*.md            왜 그렇게 정했는가 — 맥락 · 기각한 대안 · 치르는 비용
 design/design-system.md          어떻게 구현하는가 — Panda 토큰 · recipe · 대비 게이트 (이 문서)
 design/window-chrome.md          창 설정의 실제 값 — transparent · 창 뒤 흐림 반경 · 폴백
-apps/desktop/panda.config.ts     값 — 팔레트·스케일의 실제 숫자. 문서가 아니라 코드가 소유한다.
+packages/ui/src/panda-preset.ts  색 값 — 팔레트·시맨틱의 실제 숫자. 문서가 아니라 코드가 소유한다.
+apps/desktop/panda.config.ts     앱 값 — 폰트·크기·행간·모서리 스케일과 조건·전역 CSS.
 ```
 
 **색·간격의 실제 값을 이 문서에 옮겨 적지 않는다.** 값이 두 곳에 살면 반드시 어긋난다.
+
+앱은 `panda.config.ts`의 `presets`로 preset을 확장한다. **preset은 함수다** — `bg.chrome`이 쓰는 기본 알파를 앱에서 받는다. 그 값은 `shared/config/glass.ts`가 소유하는데, preset이 그 파일을 import하면 패키지가 플랫폼 중립을 잃는다.
 
 ## 왜 Panda CSS인가
 
@@ -114,7 +117,7 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.900}' } }
 ```
 
-(단계 번호는 형태를 보이려는 예시다 — 실제 값의 단일 출처는 `panda.config.ts`다.)
+(단계 번호는 형태를 보이려는 예시다 — 실제 색 값의 단일 출처는 `panda-preset.ts`다.)
 
 **에디터도 같은 토큰을 공유한다.** CodeMirror 6 테마는 JS 객체이므로, Panda가 생성한 토큰 값을 CM6 테마에 주입해 **앱 UI와 에디터가 하나의 토큰 출처**를 쓴다. 이 단일화가 [에디터 전략](../editor-strategy.md)의 "테마는 앱 테마와 단일 소스 공유" 원칙을 실현한다.
 
@@ -143,7 +146,9 @@ buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defa
 ## FSD 배치
 
 ```text
-panda.config.ts        토큰·시맨틱 토큰·recipe·조건의 단일 출처 (apps/desktop)
+packages/ui            panda-preset.ts — 색 토큰
+      │
+panda.config.ts        preset을 확장하고 앱 스케일·조건·recipe를 더한다 (apps/desktop)
       │  (panda codegen)
 styled-system/         생성물 — 여기서 css()·recipe·토큰을 import
       │
@@ -152,7 +157,7 @@ shared/ui              styled-system로 만든 디자인 시스템 컴포넌트 
 widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소화)
 ```
 
-- 토큰 정의는 `panda.config.ts` 한 곳. `shared`가 이를 감싸 앱에 노출한다.
+- 색 토큰은 `packages/ui`, 앱 스케일은 `panda.config.ts`. `shared`가 이를 감싸 앱에 노출한다.
 - `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
 
 ## 아이콘

@@ -77,6 +77,7 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **투명도 줄이기 존중 경로** — `prefers-reduced-transparency`를 Safari가 어느 버전에서도 지원하지 않아(실측: macOS 13.4 WKWebView에서 `no-preference`도 false) CSS로는 읽을 수 없다 — macOS 접근성 값(`NSWorkspace`)을 Rust가 읽어 부팅 표식으로 내릴지, 그리고 그 값과 사용자가 고른 유리 불투명도 중 어느 쪽이 이길지 (→ [창 표면 계약](design/window-chrome.md#표식은-첫-렌더-전에-심는다) · [유리](design/decisions/glass.md))
 - **떠 있는 면 흐림** — 투명 창에서 `backdrop-filter` 미동작 보고(tauri#6876·#12804) — 불투명으로 시작하고 실측 후 채택 여부 결정 (→ [유리](design/decisions/glass.md))
 - **프리뷰 코드면 토큰** — 코드 블록 배경이 상태 배경(bg.hover)을 빌려 쓴다(bg.canvas는 유리에서 투명해져 못 씀) — 종이 위 "옅게 눌린 면"(bg.inset류) 토큰 추가 여부, M8 (→ [디자인 시스템](design/design-system.md) · [표면](design/decisions/surface.md))
+- **UI 패키지의 Panda 경계** — 토큰·recipe를 `packages/ui`의 preset으로 옮길 때 `styled-system` 생성물을 앱과 패키지 어느 쪽이 만들지, `config:resolved` 훅이 preset에 들어갈 수 있는지 (→ [디자인 시스템](design/design-system.md) · [파일/폴더 구조](project-structure.md#패키지-경계))
 
 ### 테스트 · 도구
 
@@ -87,6 +88,7 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **E2E 도구 재확인** — tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검(도입 자체는 확정, 재점검만 열림) (→ [테스트 전략](testing.md))
 - **tauri-specta 2.0** — rc 핀 → 정식 2.0 도달 시 재확인 (→ [기술 스택](tech-stack.md))
 - **i18n 도입** — 현재 미도입(UI 문자열은 shared/config 상수) — 다국어 필요 시 (→ [프론트엔드 아키텍처](frontend-architecture.md))
+- **Storybook 도입** — 도입 여부와 붙일 자리 — 시각 회귀는 Vitest browser 스크린샷이 맡고 있어, Storybook에 회귀를 얹으면 그 출처가 둘이 된다 (→ [테스트 전략](testing.md))
 
 ## 백로그 (실행만 남은 소규모 후속)
 
