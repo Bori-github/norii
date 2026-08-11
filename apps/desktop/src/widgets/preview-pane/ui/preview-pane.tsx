@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { openExternalLink } from "@features/open-link";
 import { useViewModeStore } from "@features/switch-view-mode";
 import { STRINGS } from "@shared/config";
@@ -190,12 +191,14 @@ const contentClass = css({
 // DOM 삽입과 갱신 타이밍(디바운스)뿐이다.
 export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
-  // 상대 경로 이미지의 기준 폴더는 활성 탭의 경로에서 나온다(→ preview-strategy.md#경로-해석).
+  // 이미지 경로의 두 기준 — 상대 경로는 활성 탭의 폴더, `/`는 연 폴더다
+  // (→ preview-strategy.md#경로-해석).
   const activeFilePath = useDocumentStore(
     (state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.filePath ?? null,
   );
+  const rootDir = useWorkspaceStore((state) => state.rootDir);
   const viewMode = useViewModeStore((state) => state.mode);
-  const html = usePreviewHtml(activeTabId, activeFilePath, viewMode === "editor");
+  const html = usePreviewHtml(activeTabId, activeFilePath, rootDir, viewMode === "editor");
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 

@@ -4,19 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@app/index.css";
 
 import { resetTabTextRegistry, setTabText, useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { resetScrollSync } from "@features/scroll-sync";
 import { STRINGS } from "@shared/config";
 
 import { PreviewPane } from "../index";
 import { BROKEN_ALT_ATTR, BROKEN_IMAGE_ATTR } from "../model/use-image-loads";
 
-// 집행: preview-strategy.md#이미지 — 로컬 파일은 문서 폴더 기준으로 찾고 asset 프로토콜로 읽는다.
+// 집행: preview-strategy.md#경로-해석 — 상대 경로는 문서 폴더, `/`는 연 폴더 기준이다.
 //
-// 왜: 경로 해석은 packages/markdown이 하지만 **기준 폴더를 아는 것은 앱뿐**이다. 이 배선이
+// 왜: 경로 해석은 packages/markdown이 하지만 **두 기준 폴더를 아는 것은 앱뿐**이다. 이 배선이
 //     빠지면 문서 옆 이미지가 하나도 뜨지 않는다. 못 찾은 이미지를 그 자리에 알리는 것도
 //     이 계층의 몫이다.
-// 보장: 상대 경로가 활성 탭의 폴더 기준 asset URL이 되고, 경로 없는 문서(Untitled)와
-//       원격 주소는 건드리지 않으며, 로드에 실패한 이미지에 표시가 남는다.
+// 보장: 두 기준으로 푼 asset URL이 img에 실리고, 기준 폴더가 없는 경우와 원격 주소는 그대로
+//       두며, 로드에 실패한 이미지에 표시가 남는다.
 // 경계: asset URL이 실제로 파일을 읽어 오는지는 실앱 E2E가 본다 — 이 계층에 asset
 //       프로토콜은 없다(아래에서 변환 함수를 목으로 바꾼다). 경로 해석 규칙은
 //       packages/markdown의 image-src.test.ts가 다룬다.
@@ -30,6 +31,7 @@ vi.mock("@shared/ipc", async (importOriginal) => ({
 
 beforeEach(() => {
   useDocumentStore.setState({ tabs: [], activeTabId: null });
+  useWorkspaceStore.setState({ rootDir: null });
   resetTabTextRegistry();
   resetScrollSync();
 });
@@ -81,6 +83,22 @@ describe("프리뷰 이미지", () => {
     const { container } = render(<PreviewPane />);
     const image = await firstImage(container);
     expect(image.getAttribute("src")).toBe("./%EC%82%AC%EC%A7%84.png");
+  });
+
+  // 왜: 연 폴더는 문서와 다른 상태(workspace)에 있다 — 이 배선이 빠지면 기준이 null로 간다.
+  it("`/`로 시작하는 경우 연 폴더 기준으로 해석한다", async () => {
+    useWorkspaceStore.setState({ rootDir: "/vault" });
+    openSavedTabWith("![](/그림/사진.png)", "/vault/노트/문서.md");
+    const { container } = render(<PreviewPane />);
+    const image = await firstImage(container);
+    expect(image.getAttribute("src")).toBe(`asset://localhost${encodeURI("/vault/그림/사진.png")}`);
+  });
+
+  it("폴더를 열지 않은 경우 `/`로 시작하는 경로를 그대로 둔다", async () => {
+    openSavedTabWith("![](/그림/사진.png)", "/vault/노트/문서.md");
+    const { container } = render(<PreviewPane />);
+    const image = await firstImage(container);
+    expect(image.getAttribute("src")).toBe(encodeURI("/그림/사진.png"));
   });
 
   it("원격 주소는 그대로 둔다", async () => {

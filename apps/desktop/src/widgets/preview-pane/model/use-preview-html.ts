@@ -25,6 +25,7 @@ function documentDirOf(filePath: string | null): string | null {
 export function usePreviewHtml(
   tabId: string | null,
   filePath: string | null,
+  rootDir: string | null,
   paused = false,
 ): string {
   const [html, setHtml] = useState("");
@@ -39,9 +40,9 @@ export function usePreviewHtml(
     }
     // 경로 해석은 packages/markdown이, 기준 폴더와 URL 변환은 앱이 맡는다
     // (→ preview-strategy.md#경로-해석).
-    const docDir = documentDirOf(filePath);
+    const baseDirs = { docDir: documentDirOf(filePath), rootDir };
     const resolveImageSrc = (src: string) => {
-      const resolved = resolveImagePath(docDir, src);
+      const resolved = resolveImagePath(baseDirs, src);
       return resolved === null ? null : assetUrl(resolved);
     };
     // 직전 렌더 소요로 다음 디바운스를 정한다 — 큰 문서일수록 간격을 벌려 타이핑 버벅임을 막는다.
@@ -71,7 +72,7 @@ export function usePreviewHtml(
         clearTimeout(timer);
       }
     };
-  }, [tabId, filePath, paused]);
+  }, [tabId, filePath, rootDir, paused]);
 
   return html;
 }

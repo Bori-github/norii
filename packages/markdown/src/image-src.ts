@@ -28,17 +28,27 @@ function normalizeAbsolute(path: string): string {
   return `/${resolved.join("/")}`;
 }
 
+/** 이미지 경로를 푸는 기준 폴더 — 절대 경로다(→ .claude/docs/preview-strategy.md#경로-해석). */
+export interface ImageBaseDirs {
+  /** 문서가 있는 폴더. 경로 없는 문서(Untitled)는 `null`이다. */
+  docDir: string | null;
+  /** 사이드바로 연 폴더. 폴더를 열지 않았으면 `null`이다. */
+  rootDir: string | null;
+}
+
 /**
- * 이미지 src를 문서 폴더 기준의 절대 경로로 바꾼다. 바꿀 것이 없으면 `null`이다 —
+ * 이미지 src를 절대 경로로 바꾼다. 바꿀 것이 없으면 `null`이다 —
  * 그때 프리뷰는 src를 그대로 둔다.
- *
- * @param docDir 문서가 있는 폴더의 절대 경로. 경로 없는 문서(Untitled)는 `null`이다.
  */
-export function resolveImagePath(docDir: string | null, src: string): string | null {
+export function resolveImagePath({ docDir, rootDir }: ImageBaseDirs, src: string): string | null {
   // 프로토콜을 생략한 원격 주소(//호스트/경로)는 경로가 아니다 — 이어 붙이면 주소가 망가진다.
-  if (src === "" || docDir === null || HAS_SCHEME.test(src) || src.startsWith("//")) {
+  if (src === "" || HAS_SCHEME.test(src) || src.startsWith("//")) {
     return null;
   }
   const decoded = decodePath(src);
-  return normalizeAbsolute(decoded.startsWith("/") ? decoded : `${docDir}/${decoded}`);
+  const base = decoded.startsWith("/") ? rootDir : docDir;
+  if (base === null) {
+    return null;
+  }
+  return normalizeAbsolute(`${base}/${decoded}`);
 }
