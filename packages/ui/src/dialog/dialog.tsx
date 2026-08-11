@@ -29,12 +29,21 @@ export const DIALOG_STYLES = {
 const dialogRecipe = cva(DIALOG_STYLES);
 
 export interface DialogProps extends DialogHTMLAttributes<HTMLDialogElement> {
+  /** `false`로 바꿔도 닫는 전환이 끝날 때까지 DOM에 남음 */
   open: boolean;
+  /** `sm`은 상자가 여백을 갖고, `lg`는 내용이 여백을 가짐 */
   size?: "sm" | "lg";
+  /** `<dialog>` 요소를 직접 만져야 할 때 넘김 — 없으면 내부 ref 사용 */
   dialogRef?: RefObject<HTMLDialogElement | null>;
   children: ReactNode;
 }
 
+/**
+ * 화면 전체를 막고 뜨는 대화상자
+ *
+ * @description
+ * 포커스는 닫을 때 연 요소로 돌아감 — 여는 시점의 `document.activeElement`를 기억해 두고 되돌림
+ */
 export function Dialog({ open, size, className, dialogRef, children, ...rest }: DialogProps) {
   const fallbackRef = useRef<HTMLDialogElement>(null);
   const ref = dialogRef ?? fallbackRef;

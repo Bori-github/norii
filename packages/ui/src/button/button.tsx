@@ -103,6 +103,7 @@ interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 
 export type ButtonProps = CommonProps;
 
+/** 글자로 행동을 나타내는 버튼 */
 export function Button({ variant, size, className, children, ...rest }: ButtonProps) {
   return (
     <button type="button" className={cx(buttonRecipe({ variant, size }), className)} {...rest}>
@@ -116,6 +117,7 @@ export interface IconButtonProps extends CommonProps {
   label: string;
 }
 
+/** 좁은 자리(툴바·탭·트리 행)에 넣는, 아이콘만 있는 버튼 */
 export function IconButton({
   variant = "ghost",
   size = "md",

@@ -44,9 +44,16 @@ const selectClass = css({
 
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {
   children: ReactNode;
+  /** 폭·정렬은 `<select>`가 아니라 감싸는 요소가 정하기 때문에 그 요소에 붙는 class */
   wrapClassName?: string;
 }
 
+/**
+ * 목록에서 하나를 고르는 입력 — 네이티브 `<select>`에 norii 스타일을 적용
+ *
+ * @description
+ * 열린 목록은 OS가 그리므로 항목 모양은 정할 수 없음 — 닫힌 상태만 이 컴포넌트가 그림
+ */
 export function Select({ children, className, wrapClassName, ...rest }: SelectProps) {
   return (
     <div className={cx(wrapClass, wrapClassName)}>

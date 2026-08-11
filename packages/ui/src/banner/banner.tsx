@@ -32,15 +32,12 @@ const bannerRecipe = cva(BANNER_STYLES);
 const bodyClass = css({ flex: 1 });
 
 export interface BannerProps extends HTMLAttributes<HTMLDivElement> {
+  /** `danger`면 왼쪽에 빨간 띠를 더함. 기본값은 `default` */
   tone?: "default" | "danger";
   children: ReactNode;
 }
 
-/**
- * 알림·충돌·삭제됨을 알리는 띠 컴포넌트
- *
- * @param tone - `danger`면 왼쪽에 빨간 띠를 더함. 기본값은 `default`
- */
+/** 알림·충돌·삭제됨을 알리는 띠 컴포넌트 */
 export function Banner({ tone, className, children, ...rest }: BannerProps) {
   return (
     <div role="alert" className={cx(bannerRecipe({ tone }), className)} {...rest}>
@@ -49,6 +46,7 @@ export function Banner({ tone, className, children, ...rest }: BannerProps) {
   );
 }
 
+/** `Banner`의 본문을 감싸 남는 자리를 차지하게 하는 요소 — 액션이 오른쪽 끝으로 밀림 */
 export function BannerBody({ className, children, ...rest }: HTMLAttributes<HTMLSpanElement>) {
   return (
     <span className={cx(bodyClass, className)} {...rest}>
