@@ -92,10 +92,12 @@ const iconSizeClass = {
 type Variant = "accent" | "outline" | "ghost" | "toggle";
 type Size = "2xs" | "xs" | "sm" | "md";
 
-/** `className`은 배치(margin·정렬)만 받음 — 변형과 같은 속성은 CSS 파일 순서가 결정 */
 interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+  /** `toggle`은 스위치가 아니라 눌린 상태가 유지되는 버튼 — 그 상태는 `aria-pressed`로 전달 */
   variant?: Variant;
   size?: Size;
+  /** 배치(margin·정렬)만 받음 — 변형과 같은 속성은 CSS 파일 순서가 결정 */
+  className?: string;
   children: ReactNode;
 }
 
