@@ -11,6 +11,11 @@ export interface NoriiPresetOptions {
   readonly glassOpacity: GlassOpacity;
 }
 
+// 라이트를 base와 _light 두 곳에 내보내되 값은 한 번만 적는다 — 손으로 복사하면 한쪽만 고쳐 어긋난다.
+function themed(light: string, dark: string) {
+  return { base: light, _light: light, _dark: dark };
+}
+
 /**
  * norii 디자인 시스템 토큰을 담은 Panda preset을 만드는 함수
  *
@@ -19,7 +24,7 @@ export interface NoriiPresetOptions {
  * @returns 앱의 `panda.config`가 `presets`에 넣는 preset 객체
  *
  * @description
- * 원시 색·시맨틱 색·타이포·모서리 토큰과 테마 조건(`dark`·`glass`), 포커스 링 layerStyle을 담음
+ * 원시 색·시맨틱 색·타이포·모서리 토큰과 조건(`light`·`dark`·`glass`), 포커스 링 layerStyle을 담음
  *
  * 폰트 토큰은 이름만 지정 — woff2와 `@font-face`는 앱이 제공하고, 없으면 시스템 폰트로 폴백
  */
@@ -30,9 +35,8 @@ export function createNoriiPreset({ glassOpacity }: NoriiPresetOptions) {
     // prefers-color-scheme으로는 앱이 테마를 덮어쓸 수 없기 때문에 루트 속성으로 판정
     conditions: {
       extend: {
+        light: '[data-theme="light"] &',
         dark: '[data-theme="dark"] &',
-        // specificity가 같아 뒤에 정의한 쪽이 적용되기 때문에 dark 뒤에 배치 —
-        // 앞에 두면 유리에서 캔버스가 불투명해지고 게이트가 못 잡음
         glass: '[data-glass="on"] &',
       },
     },
@@ -130,47 +134,38 @@ export function createNoriiPreset({ glassOpacity }: NoriiPresetOptions) {
             bg: {
               canvas: {
                 value: {
-                  base: "{colors.gray.100}",
-                  _dark: "{colors.gray.950}",
+                  ...themed("{colors.gray.100}", "{colors.gray.950}"),
                   _glass: "transparent",
                 },
               },
 
               chrome: {
-                value: {
-                  base: `rgba(255, 255, 255, var(--norii-glass-opacity, ${glassOpacity.light}))`,
-                  _dark: `rgba(0, 0, 0, var(--norii-glass-opacity, ${glassOpacity.dark}))`,
-                },
+                value: themed(
+                  `rgba(255, 255, 255, var(--norii-glass-opacity, ${glassOpacity.light}))`,
+                  `rgba(0, 0, 0, var(--norii-glass-opacity, ${glassOpacity.dark}))`,
+                ),
               },
 
-              paper: { value: { base: "{colors.gray.50}", _dark: "{colors.gray.900}" } },
+              paper: { value: themed("{colors.gray.50}", "{colors.gray.900}") },
 
-              hover: {
-                value: { base: "rgba(23, 23, 23, 0.06)", _dark: "rgba(250, 250, 250, 0.08)" },
-              },
+              hover: { value: themed("rgba(23, 23, 23, 0.06)", "rgba(250, 250, 250, 0.08)") },
 
-              selection: {
-                value: { base: "rgba(204, 255, 0, 0.28)", _dark: "rgba(204, 255, 0, 0.30)" },
-              },
+              selection: { value: themed("rgba(204, 255, 0, 0.28)", "rgba(204, 255, 0, 0.30)") },
 
-              match: {
-                value: { base: "rgba(204, 255, 0, 0.14)", _dark: "rgba(204, 255, 0, 0.16)" },
-              },
+              match: { value: themed("rgba(204, 255, 0, 0.14)", "rgba(204, 255, 0, 0.16)") },
 
-              scrollbar: {
-                value: { base: "rgba(23, 23, 23, 0.25)", _dark: "rgba(250, 250, 250, 0.25)" },
-              },
+              scrollbar: { value: themed("rgba(23, 23, 23, 0.25)", "rgba(250, 250, 250, 0.25)") },
               scrollbarHover: {
-                value: { base: "rgba(23, 23, 23, 0.4)", _dark: "rgba(250, 250, 250, 0.4)" },
+                value: themed("rgba(23, 23, 23, 0.4)", "rgba(250, 250, 250, 0.4)"),
               },
 
-              scrim: { value: { base: "rgba(0, 0, 0, 0.4)", _dark: "rgba(0, 0, 0, 0.6)" } },
+              scrim: { value: themed("rgba(0, 0, 0, 0.4)", "rgba(0, 0, 0, 0.6)") },
             },
 
             text: {
-              DEFAULT: { value: { base: "{colors.gray.900}", _dark: "{colors.gray.200}" } },
-              muted: { value: { base: "{colors.gray.700}", _dark: "{colors.gray.400}" } },
-              mark: { value: { base: "{colors.lime.700}", _dark: "{colors.lime.300}" } },
+              DEFAULT: { value: themed("{colors.gray.900}", "{colors.gray.200}") },
+              muted: { value: themed("{colors.gray.700}", "{colors.gray.400}") },
+              mark: { value: themed("{colors.lime.700}", "{colors.lime.300}") },
             },
 
             accent: {
@@ -191,12 +186,8 @@ export function createNoriiPreset({ glassOpacity }: NoriiPresetOptions) {
             },
 
             border: {
-              DEFAULT: {
-                value: { base: "rgba(23, 23, 23, 0.14)", _dark: "rgba(250, 250, 250, 0.14)" },
-              },
-              muted: {
-                value: { base: "rgba(23, 23, 23, 0.2)", _dark: "rgba(250, 250, 250, 0.2)" },
-              },
+              DEFAULT: { value: themed("rgba(23, 23, 23, 0.14)", "rgba(250, 250, 250, 0.14)") },
+              muted: { value: themed("rgba(23, 23, 23, 0.2)", "rgba(250, 250, 250, 0.2)") },
             },
           },
         },
