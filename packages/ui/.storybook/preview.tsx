@@ -7,20 +7,41 @@ const withSurface: Decorator = (Story, context) => {
   document.documentElement.dataset["theme"] = String(context.globals["theme"]);
 
   return (
-    <div
-      style={{
-        background: "var(--colors-bg-canvas)",
-        color: "var(--colors-text)",
-        fontFamily: "var(--fonts-ui)",
-        padding: "24px",
-      }}
-    >
+    <div style={{ color: "var(--colors-text)", fontFamily: "var(--fonts-ui)" }}>
       <Story />
     </div>
   );
 };
 
 const preview: Preview = {
+  parameters: {
+    layout: "padded",
+
+    // 배경을 토큰으로 두면 컴포넌트를 앱에서 실제로 놓이는 면 위에서 본다.
+    // var()로 적어 테마 툴바를 따라간다.
+    backgrounds: {
+      options: {
+        canvas: { name: "bg.canvas — 편집 면", value: "var(--colors-bg-canvas)" },
+        chrome: { name: "bg.chrome — 사이드바·탭바", value: "var(--colors-bg-chrome)" },
+        paper: { name: "bg.paper — 다이얼로그·팝오버", value: "var(--colors-bg-paper)" },
+      },
+    },
+
+    // 기본 프리셋은 휴대폰 크기라 데스크톱 앱에 맞지 않는다.
+    // 세 값은 사이드바 폭 · 분할 한쪽 · tauri.conf.json의 창 기본 폭이다.
+    viewport: {
+      options: {
+        sidebar: { name: "사이드바 240px", styles: { width: "240px", height: "600px" } },
+        pane: { name: "분할 한쪽 480px", styles: { width: "480px", height: "600px" } },
+        window: { name: "창 기본 1024px", styles: { width: "1024px", height: "768px" } },
+      },
+    },
+
+    options: {
+      storySort: { order: ["Tokens", "Icons", "*"] },
+    },
+  },
+
   globalTypes: {
     theme: {
       description: "data-theme",
@@ -33,7 +54,10 @@ const preview: Preview = {
       },
     },
   },
-  initialGlobals: { theme: "light" },
+  initialGlobals: {
+    theme: "light",
+    backgrounds: { value: "canvas" },
+  },
   decorators: [withSurface],
 };
 
