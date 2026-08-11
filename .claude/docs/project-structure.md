@@ -99,8 +99,10 @@ packages/markdown
 
 packages/ui
   - Panda preset — 토큰·조건·layerStyle (소비 측이 presets로 확장한다)
-  - 플랫폼 무관 프레젠테이션 컴포넌트
-  - 상태·파일 I/O를 알지 않는다
+  - 컴포넌트 하나가 폴더 하나 — src/button/{button.tsx, button.test.ts}
+    폴더 안에 배럴을 두지 않고 src/index.ts가 직접 집는다
+  - **앱을 알지 않는다** — 스토어·IPC·UI 문자열·파일 경로를 모른다.
+    자기 안에서 닫히는 상태(열림 전환·포커스·호버)는 가져도 된다
 
 apps/desktop
   - 위 패키지를 조립하고 Tauri IPC에 연결
