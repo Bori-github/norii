@@ -1,0 +1,32 @@
+import { ColorItem, ColorPalette, Meta } from "@storybook/addon-docs/blocks";
+
+import { ColorBand } from "../.storybook/color-band";
+import { PRIMITIVE, SEMANTIC, readGroup, readSteps } from "../.storybook/tokens";
+
+<Meta title="Foundations/Colors" />
+
+<style>{`.sbdocs-content { max-width: none; }`}</style>
+
+export const GROUPS = Object.keys(SEMANTIC).map(readGroup);
+export const ORDERED = [
+  ...GROUPS.filter((group) => group.varies),
+  ...GROUPS.filter((group) => !group.varies),
+];
+
+# Colors
+
+{ORDERED.map((group) => (
+
+<section key={group.name}>
+  <h2>{group.name}</h2>
+  <ColorBand group={group} />
+</section>
+))}
+
+## Primitive
+
+<ColorPalette>
+  {Object.keys(PRIMITIVE).map((name) => (
+    <ColorItem key={name} title={name} subtitle="" colors={readSteps(name)} />
+  ))}
+</ColorPalette>
