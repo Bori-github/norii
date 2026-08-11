@@ -67,7 +67,7 @@ const collapseClass = css({
 });
 
 // 안쪽 여백은 포커스 링의 자리다 — overflow가 잘라내는 면이라 여백이 바깥 링보다
-// 좁으면 링이 가장자리에서 잘린다(링 크기 → panda.config layerStyles).
+// 좁으면 링이 가장자리에서 잘린다(링 크기 → @norii/ui preset의 layerStyles).
 // 여백은 상자의 최소 높이로 남는다(→ decisions/motion.md).
 const listClass = css({
   margin: 0,

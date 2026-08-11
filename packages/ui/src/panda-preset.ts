@@ -12,8 +12,14 @@ export interface GlassOpacity {
   readonly dark: number;
 }
 
+/**
+ * `bg.chrome`이 쓰는 기본 알파. 두 테마의 값이 다른 것은 대비 게이트의 계산 결과다
+ * (→ .claude/docs/design/design-system.md#대비-게이트).
+ */
+export const GLASS_OPACITY_DEFAULT: GlassOpacity = { light: 0.5, dark: 0.6 };
+
 export interface NoriiPresetOptions {
-  /** `bg.chrome`이 쓰는 기본 알파. 앱의 `shared/config/glass.ts`가 소유한다. */
+  /** 소비 측이 이 값을 덮어쓸 수 있다. 기본은 `GLASS_OPACITY_DEFAULT`다. */
   readonly glassOpacity: GlassOpacity;
 }
 

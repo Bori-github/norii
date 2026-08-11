@@ -1,15 +1,14 @@
 import { defineConfig } from "@pandacss/dev";
 import pandaPreset from "@pandacss/dev/presets";
-import { createNoriiPreset } from "@norii/ui/panda-preset";
 import { OMITTED_SCALE_PATHS } from "@norii/ui/panda-scale";
 
-import { GLASS_OPACITY_DEFAULT } from "./src/shared/config/glass";
+import { noriiPreset } from "./src/shared/config/norii-preset";
 
 // 색 토큰은 @norii/ui의 preset이 소유한다(→ .claude/docs/design/design-system.md).
 export default defineConfig({
   // presets를 지정하면 @pandacss/preset-panda가 자동으로 빠진다 — 명시하지 않으면
   // spacing·shadows·fontWeights 같은 프리셋 토큰이 통째로 사라진다.
-  presets: [pandaPreset, createNoriiPreset({ glassOpacity: GLASS_OPACITY_DEFAULT })],
+  presets: [pandaPreset, noriiPreset],
 
   // 스타일 추출 대상 — FSD 레이어 전체와 @norii/ui의 컴포넌트 소스.
   // 패키지 소스를 넣지 않으면 그 안에서만 쓰인 스타일이 앱 CSS에 나오지 않는다.
@@ -19,8 +18,7 @@ export default defineConfig({
   // CSS 리셋 포함.
   preflight: true,
 
-  // 프리셋의 안 쓰는 크기·행간 단계를 지운다(→ decisions/typography).
-  // preset에 선언한 훅은 실행되지 않는다 — 소비 측 설정에만 둘 수 있다.
+  // 안 쓰는 크기·행간 단계를 지운다(→ @norii/ui의 panda-scale.ts).
   hooks: {
     "config:resolved": ({ config, utils }) =>
       // omit의 반환 타입(Omit<UserConfig, string>)이 훅 시그니처와 안 맞아 원형으로 되돌린다.

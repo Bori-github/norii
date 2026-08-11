@@ -7,25 +7,5 @@ export type { DialogProps } from "./dialog";
 export { Select } from "./select";
 export type { SelectProps } from "./select";
 export { Tooltip } from "./tooltip";
-export {
-  AlertTriangleIcon,
-  AnnotationAlertIcon,
-  CheckIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  ColumnVerticalIcon,
-  ComputerIcon,
-  CopyRightIcon,
-  EditIcon,
-  FileEyeIcon,
-  FilePlusIcon,
-  FolderPlusIcon,
-  InformationCircleContainedIcon,
-  LightbulbIcon,
-  MinusCircleContainedIcon,
-  MoonIcon,
-  PanelLeftIcon,
-  PlusIcon,
-  SettingsIcon,
-  SunIcon,
-} from "./icons";
+// 아이콘 이름은 icons/index.ts 한 곳에서만 관리한다.
+export * from "./icons";

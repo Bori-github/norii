@@ -1,13 +1,8 @@
-import { createNoriiPreset } from "@norii/ui/panda-preset";
+import { noriiPreset as preset } from "./norii-preset";
 
-import { GLASS_OPACITY_DEFAULT } from "./glass";
-
-// @norii/ui preset의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
+// preset의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
 // 대비 게이트가 "문서에 적힌 값"이 아니라 "코드가 실제로 쓰는 값"을 검사하게 하려면
 // 토큰 참조({colors.lime.200})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
-
-// panda.config와 같은 인자로 부른다 — 다르면 게이트가 빌드에 안 들어가는 값을 검사한다.
-const preset = createNoriiPreset({ glassOpacity: GLASS_OPACITY_DEFAULT });
 
 type Theme = "light" | "dark";
 

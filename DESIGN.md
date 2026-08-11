@@ -1,6 +1,6 @@
 # norii 디자인
 
-지켜야 할 규칙만 담는다. 왜 그렇게 정했는지는 [결정 기록](.claude/docs/design/decisions/)이, 색·크기의 실제 값은 `apps/desktop/panda.config.ts`가 갖는다.
+지켜야 할 규칙만 담는다. 왜 그렇게 정했는지는 [결정 기록](.claude/docs/design/decisions/)이, 색·크기의 실제 값은 `packages/ui/src/panda-preset.ts`가 갖는다.
 
 ## 1. 재질
 
@@ -110,7 +110,7 @@
 .claude/docs/design/decisions/       왜 그렇게 정했는가 — 주제 1개 = 파일 1개
 .claude/docs/design/design-system.md Panda로 어떻게 구현하는가 (계약)
 .claude/docs/design/window-chrome.md 창 설정의 실제 값 (계약)
-apps/desktop/panda.config.ts         값 — 팔레트·스케일의 실제 숫자
+packages/ui/src/panda-preset.ts      값 — 팔레트·스케일의 실제 숫자
 ```
 
 미결정 사항은 [실제 구현 계획](.claude/docs/implementation-plan.md#열린-결정-open-decisions)의 열린 결정이 추적한다.

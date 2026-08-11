@@ -8,7 +8,7 @@ import { css } from "styled-system/css";
 import type { Rgb } from "@shared/lib";
 import { parseColor } from "@shared/lib";
 
-import { Button } from "./button";
+import { Button } from "@norii/ui";
 
 // 왜: Panda가 만드는 클래스는 원자 단위라, 같은 속성을 정한 클래스가 둘 붙으면 어느 쪽이 이길지를
 //     작성 순서가 아니라 CSS 파일 순서가 정한다. 강조 버튼의 라임 채움이 배치용 클래스에 조용히

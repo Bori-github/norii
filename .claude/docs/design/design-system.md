@@ -19,7 +19,7 @@ apps/desktop/panda.config.ts     앱 설정 — 추출 대상 · 생성물 위�
 
 **색·간격의 실제 값을 이 문서에 옮겨 적지 않는다.** 값이 두 곳에 살면 반드시 어긋난다.
 
-앱은 `panda.config.ts`의 `presets`로 preset을 확장한다. **preset은 함수다** — `bg.chrome`이 쓰는 기본 알파를 앱에서 받는다. 그 값은 `shared/config/glass.ts`가 소유하는데, preset이 그 파일을 import하면 패키지가 플랫폼 중립을 잃는다.
+앱은 `panda.config.ts`의 `presets`로 preset을 확장한다. **preset은 함수다** — `bg.chrome`이 쓰는 알파를 인자로 받아 소비 측이 덮어쓸 수 있다. 기본값은 preset이 함께 내주고, 앱은 그것을 `shared/config/norii-preset.ts`에서 한 번 조립해 `panda.config.ts`와 토큰을 읽는 테스트가 같은 인스턴스를 쓰게 한다.
 
 ## codegen은 두 번 돈다
 
@@ -159,18 +159,18 @@ buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defa
 ## FSD 배치
 
 ```text
-packages/ui            panda-preset.ts — 토큰·조건·layerStyle
+packages/ui            panda-preset.ts(토큰·조건·layerStyle) + 컴포넌트(recipe)
       │
-panda.config.ts        preset을 확장하고 추출 대상·전역 CSS·recipe를 더한다 (apps/desktop)
+panda.config.ts        preset을 확장하고 추출 대상·전역 CSS를 더한다 (apps/desktop)
       │  (panda codegen)
 styled-system/         생성물 — 여기서 css()·recipe·토큰을 import
       │
-shared/ui              styled-system로 만든 디자인 시스템 컴포넌트 (Button, Tab …)
+shared/ui              packages/ui를 재노출하고 스토어에 묶인 조립물을 더한다
       │
-widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소화)
+widgets / features     shared/ui만 소비 (직접 스타일 최소화)
 ```
 
-- 토큰 정의는 `packages/ui`. `shared`가 이를 감싸 앱에 노출한다.
+- 토큰과 컴포넌트는 `packages/ui`. `shared/ui`가 이를 감싸 앱에 노출한다.
 - `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
 
 ## 아이콘

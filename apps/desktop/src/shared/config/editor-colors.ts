@@ -7,7 +7,7 @@ import type { EditorColors } from "@norii/editor";
 // 브라우저가 알아서 다시 풀어 준다 — 에디터는 아무것도 모른 채 색만 갈아입는다.
 //
 // 변수 이름은 Panda가 시맨틱 토큰에서 생성한다(colors.bg.paper → --colors-bg-paper).
-// 값의 단일 출처는 panda.config.ts이고, 이 파일은 이름만 잇는다.
+// 값의 단일 출처는 @norii/ui의 panda-preset.ts이고, 이 파일은 이름만 잇는다.
 export const EDITOR_COLORS: EditorColors = {
   paper: "var(--colors-bg-paper)",
   text: "var(--colors-text)",
