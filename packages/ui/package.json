@@ -12,8 +12,10 @@
   "scripts": {
     "codegen": "panda codegen",
     "postinstall": "panda codegen --silent",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "storybook": "storybook dev -p 6006 --no-open",
+    "storybook-build": "storybook build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@pandacss/dev": "1.11.4",

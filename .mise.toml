@@ -127,6 +127,17 @@ if ls src/icons/generated/*.tsx >/dev/null 2>&1; then
 fi
 """
 
+# --- 컴포넌트 카탈로그 ---
+[tasks.storybook]
+description = "packages/ui 컴포넌트를 Storybook으로 띄운다 (localhost:6006)"
+dir = "packages/ui"
+run = "pnpm storybook"
+
+[tasks.storybook-build]
+description = "Storybook 정적 빌드 (생성물은 VCS 제외)"
+dir = "packages/ui"
+run = "pnpm storybook-build"
+
 # --- 문서-코드 정합 ---
 [tasks.docs-drift]
 description = "문서-코드 드리프트 검사 (계약 문서 ↔ 코드 기계 대조)"
