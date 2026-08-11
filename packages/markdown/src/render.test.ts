@@ -223,3 +223,50 @@ describe("이미지 src 해석", () => {
     expect(html).not.toContain("resolved:");
   });
 });
+
+// 집행: preview-strategy.md#해석하는-속성
+//
+// 왜: srcset이 있으면 브라우저는 src보다 그쪽을 먼저 쓴다. src만 바꾸면 srcset을 쓴 이미지는
+//     문서와 같은 폴더에 파일이 있어도 렌더되지 않는다.
+// 경계: 후보를 고르는 것은 브라우저다 — 여기서는 값이 바뀌는 것까지만 본다.
+describe("srcset 해석", () => {
+  it("`img[srcset]`은 후보마다 해석한다", () => {
+    const html = renderMarkdown('<img src="./a.png" srcset="./a.png 1x, ./a@2x.png 2x">', {
+      resolveImageSrc: markResolved,
+    });
+    expect(html).toContain('srcset="resolved:./a.png 1x, resolved:./a@2x.png 2x"');
+  });
+
+  it("`source[srcset]`도 해석한다", () => {
+    const html = renderMarkdown(
+      '<picture><source srcset="./a.avif"><img src="./a.png"></picture>',
+      { resolveImageSrc: markResolved },
+    );
+    expect(html).toContain('srcset="resolved:./a.avif"');
+  });
+
+  // 왜: 쉼표로 통째로 쪼개면 이름에 쉼표가 든 파일이 두 후보로 갈려 둘 다 없는 파일이 된다.
+  // 경계: 데이터 URL도 쉼표를 담지만 여기까지 오지 못한다 — 맨 앞 후보가 data:면 DOMPurify가
+  //       srcset을 통째로 버린다.
+  it("파일 이름 안의 쉼표를 후보 경계로 보지 않는다", () => {
+    const html = renderMarkdown('<img srcset="./가,나.png 1x, ./a@2x.png 2x">', {
+      resolveImageSrc: markResolved,
+    });
+    expect(html).toContain("resolved:./가,나.png 1x");
+    expect(html).toContain("resolved:./a@2x.png 2x");
+  });
+
+  // 왜: 후보로 남으면 문서가 허용 루트 밖의 파일을 이미지로 실을 수 있다.
+  it("후보가 `asset:`으로 시작하는 경우 버린다", () => {
+    const html = renderMarkdown('<img srcset="./a.png 1x, asset://localhost/etc/passwd 2x">', {
+      resolveImageSrc: markResolved,
+    });
+    expect(html).not.toContain("asset://");
+    expect(html).toContain('srcset="resolved:./a.png 1x"');
+  });
+
+  it("resolver가 없는 경우 그대로 둔다", () => {
+    const source = '<img srcset="./a.png 1x, ./a@2x.png 2x">';
+    expect(renderMarkdown(source, { resolveImageSrc: undefined })).toBe(renderMarkdown(source));
+  });
+});

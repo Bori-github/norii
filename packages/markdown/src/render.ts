@@ -102,6 +102,65 @@ export interface RenderOptions {
   resolveImageSrc?: (src: string) => string | null;
 }
 
+interface SrcsetCandidate {
+  url: string;
+  /** 후보 뒤의 서술자(`2x`·`640w`). 없으면 빈 문자열이다. */
+  descriptor: string;
+}
+
+/**
+ * srcset 값을 후보로 가른다. 후보를 가르는 것은 URL 뒤에 오는 쉼표뿐이다 — URL은 공백까지
+ * 이어지므로 이름 안의 쉼표는 경계가 아니다(HTML 명세의 srcset 파싱).
+ */
+function parseSrcset(value: string): SrcsetCandidate[] {
+  const candidates: SrcsetCandidate[] = [];
+  let index = 0;
+  while (index < value.length) {
+    while (index < value.length && /[\s,]/.test(value[index] ?? "")) {
+      index += 1;
+    }
+    const urlStart = index;
+    while (index < value.length && !/\s/.test(value[index] ?? "")) {
+      index += 1;
+    }
+    const url = value.slice(urlStart, index);
+    if (url === "") {
+      break;
+    }
+    // URL이 쉼표로 끝나면 그 자리가 후보의 끝이다 — 서술자가 없는 후보다.
+    const trimmed = url.replace(/,+$/, "");
+    if (trimmed !== url) {
+      candidates.push({ url: trimmed, descriptor: "" });
+      continue;
+    }
+    const descriptorStart = index;
+    while (index < value.length && value[index] !== ",") {
+      index += 1;
+    }
+    candidates.push({ url, descriptor: value.slice(descriptorStart, index).trim() });
+  }
+  return candidates;
+}
+
+/** srcset 후보를 해석해 값을 다시 세운다. 바뀐 후보가 없으면 `null`이다 — 값을 그대로 둔다. */
+function resolveSrcset(value: string, resolve: (src: string) => string | null): string | null {
+  let changed = false;
+  const resolved: string[] = [];
+  for (const { url, descriptor } of parseSrcset(value)) {
+    // 문서가 적은 asset URL을 sanitize는 src에서만 지운다(→ preview-strategy.md#해석하는-속성).
+    if (url.toLowerCase().startsWith("asset:")) {
+      changed = true;
+      continue;
+    }
+    const next = resolve(url);
+    if (next !== null) {
+      changed = true;
+    }
+    resolved.push(descriptor === "" ? (next ?? url) : `${next ?? url} ${descriptor}`);
+  }
+  return changed ? resolved.join(", ") : null;
+}
+
 // src를 sanitize 뒤에 바꾸는 이유는 preview-strategy.md#src는-sanitize-뒤에-바꾼다에 있다.
 function resolveImageSources(html: string, resolve: (src: string) => string | null): string {
   const template = document.createElement("template");
@@ -112,6 +171,12 @@ function resolveImageSources(html: string, resolve: (src: string) => string | nu
       image.setAttribute("src", resolved);
     }
   }
+  for (const element of template.content.querySelectorAll("img[srcset], source[srcset]")) {
+    const resolved = resolveSrcset(element.getAttribute("srcset") ?? "", resolve);
+    if (resolved !== null) {
+      element.setAttribute("srcset", resolved);
+    }
+  }
   return template.innerHTML;
 }
 
@@ -119,9 +184,10 @@ function resolveImageSources(html: string, resolve: (src: string) => string | nu
 export function renderMarkdown(source: string, options: RenderOptions = {}): string {
   const html = DOMPurify.sanitize(md.render(source), SANITIZE_CONFIG);
   const { resolveImageSrc } = options;
-  // 이미지가 없는 문서는 다시 파싱하지 않는다. "<img"가 속성값에 들어 있어도(직렬화가 속성값의
-  // <를 이스케이프하지 않는다) 아래 패스가 바꿀 것을 못 찾을 뿐이라 결과는 같다.
-  if (resolveImageSrc === undefined || !html.includes("<img")) {
+  // 이미지가 없는 문서는 다시 파싱하지 않는다. "<img"·"<source"가 속성값에 들어 있어도
+  // (직렬화가 속성값의 <를 이스케이프하지 않는다) 아래 패스가 바꿀 것을 못 찾을 뿐이라
+  // 결과는 같다.
+  if (resolveImageSrc === undefined || (!html.includes("<img") && !html.includes("<source"))) {
     return html;
   }
   return resolveImageSources(html, resolveImageSrc);
