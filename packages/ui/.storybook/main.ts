@@ -9,7 +9,6 @@ const config: StorybookConfig = {
     "@storybook/addon-docs",
     "@storybook/addon-a11y",
     "@storybook/addon-vitest",
-    // 개발 서버에만 붙는 로컬 MCP 엔드포인트(localhost:6006/mcp) — 정적 빌드에는 없다.
     "@storybook/addon-mcp",
   ],
 
