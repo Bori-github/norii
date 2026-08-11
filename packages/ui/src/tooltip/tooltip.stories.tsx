@@ -34,6 +34,7 @@ export const 개요: Story = {
             <Cell key={x} label={x}>
               <Anchor>
                 <input
+                  aria-label="파일 이름"
                   aria-describedby={`tip-${x}`}
                   defaultValue="README.md"
                   style={{ width: "100%" }}
@@ -51,13 +52,19 @@ export const 개요: Story = {
         <Row>
           <Cell label="짧게">
             <Anchor>
-              <input aria-describedby="tip-short" defaultValue="a.md" style={{ width: "100%" }} />
+              <input
+                aria-label="파일 이름"
+                aria-describedby="tip-short"
+                defaultValue="a.md"
+                style={{ width: "100%" }}
+              />
               <Tooltip id="tip-short">이름이 비었습니다</Tooltip>
             </Anchor>
           </Cell>
           <Cell label="길게 — 줄바꿈하지 않는다">
             <Anchor width={260}>
               <input
+                aria-label="파일 이름"
                 aria-describedby="tip-long"
                 defaultValue="README.md"
                 style={{ width: "100%" }}
@@ -74,7 +81,12 @@ export const 개요: Story = {
 export const Playground: Story = {
   render: (args) => (
     <Anchor>
-      <input aria-describedby="tip" defaultValue="README.md" style={{ width: "100%" }} />
+      <input
+        aria-label="파일 이름"
+        aria-describedby="tip"
+        defaultValue="README.md"
+        style={{ width: "100%" }}
+      />
       <Tooltip {...args} id="tip" />
     </Anchor>
   ),

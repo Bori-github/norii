@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
 // 스토리를 나란히 놓는 배치. 컴포넌트와 섞이지 않게 Panda 토큰이 아니라 인라인 스타일을 쓴다.
+// 색만은 토큰을 쓴다 — 임의의 opacity로 흐리면 대비가 AA에 미치지 못해 a11y 패널이 잡는다.
 const labelStyle = {
   fontSize: 11,
   fontFamily: "ui-monospace, monospace",
-  opacity: 0.55,
+  color: "var(--colors-text-muted)",
   letterSpacing: "0.02em",
   // 긴 이름이 옆 칸을 침범하지 않게 한다.
   maxWidth: "100%",
