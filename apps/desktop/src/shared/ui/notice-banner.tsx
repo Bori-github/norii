@@ -1,8 +1,7 @@
+import { Banner, BannerBody, Button, CloseIcon, IconButton } from "@norii/ui";
+
 import { STRINGS } from "../config";
 
-import { bannerBodyClass, bannerClass } from "./banner-styles";
-import { Button, IconButton } from "./button";
-import { CloseIcon } from "@norii/ui";
 import { useNoticeStore } from "./notice-store";
 
 // 알림 배너 스택 — 에러·확인 요청을 비차단으로 보여준다(네이티브 다이얼로그 금지).
@@ -13,8 +12,8 @@ export function NoticeBanner() {
   return (
     <>
       {notices.map((notice) => (
-        <div key={notice.id} className={bannerClass} role="alert" data-testid="notice">
-          <span className={bannerBodyClass}>{notice.message}</span>
+        <Banner key={notice.id} data-testid="notice">
+          <BannerBody>{notice.message}</BannerBody>
           {notice.actions?.map((action) => (
             <Button
               key={action.label}
@@ -35,7 +34,7 @@ export function NoticeBanner() {
           >
             <CloseIcon />
           </IconButton>
-        </div>
+        </Banner>
       ))}
     </>
   );
