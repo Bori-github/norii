@@ -33,12 +33,13 @@ const preview: Preview = {
       },
     },
 
-    // 기본 프리셋은 휴대폰 크기라 데스크톱 앱에 맞지 않는다.
-    // 세 값은 사이드바 폭 · 분할 한쪽 · tauri.conf.json의 창 기본 폭이다.
+    // 기본 프리셋은 휴대폰 크기라 데스크톱 앱에 쓸 데가 없음. 네 값은 앱에서 컴포넌트가
+    // 실제로 놓이는 칸의 폭 — 좁은 쪽부터 분할 한 칸 · 사이드바 · 문서 칸 · 창 전체.
     viewport: {
       options: {
-        sidebar: { name: "사이드바 240px", styles: { width: "240px", height: "600px" } },
-        pane: { name: "분할 한쪽 480px", styles: { width: "480px", height: "600px" } },
+        pane: { name: "분할 한 칸 200px", styles: { width: "200px", height: "768px" } },
+        sidebar: { name: "사이드바 240px", styles: { width: "240px", height: "768px" } },
+        document: { name: "문서 칸 400px", styles: { width: "400px", height: "768px" } },
         window: { name: "창 기본 1024px", styles: { width: "1024px", height: "768px" } },
       },
     },
