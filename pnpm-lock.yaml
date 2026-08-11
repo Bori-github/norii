@@ -81,9 +81,6 @@ importers:
       '@pandacss/dev':
         specifier: 1.11.4
         version: 1.11.4(typescript@6.0.3)
-      '@svgr/cli':
-        specifier: 8.1.0
-        version: 8.1.0(typescript@6.0.3)
       '@tauri-apps/cli':
         specifier: 2.11.4
         version: 2.11.4
@@ -199,6 +196,9 @@ importers:
       '@pandacss/dev':
         specifier: 1.11.4
         version: 1.11.4(typescript@6.0.3)
+      '@svgr/cli':
+        specifier: 8.1.0
+        version: 8.1.0(typescript@6.0.3)
       '@types/react':
         specifier: 19.2.17
         version: 19.2.17

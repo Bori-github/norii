@@ -178,7 +178,7 @@ widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소
 아이콘은 **SVG 원본 파일을 단일 출처**로 두고, 도구(SVGR CLI, → [기술 스택 — 코드 품질](../tech-stack.md#코드-품질))가 React 컴포넌트를 생성한다. 빌드 플러그인이 아니라 커밋되는 코드젠이다 — vite·vitest 설정에 침투하지 않아 설정 드리프트(katex alias류 함정)가 생기지 않고, 생성물이 리뷰·게이트를 그대로 통과한다.
 
 ```text
-apps/desktop/src/shared/ui/icons/
+packages/ui/src/icons/
 ├── svg/          ← 단일 출처 — 디자인 산출물(Figma 내보내기 등)을 그대로 둔다
 ├── generated/    ← mise run icons가 생성한 TSX — 손으로 고치지 않는다
 └── index.ts      ← 공개 배럴 — 컴포넌트 이름(XxxIcon)을 사람이 관리한다

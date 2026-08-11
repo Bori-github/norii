@@ -3,7 +3,7 @@ import { afterEach, expect, it } from "vitest";
 
 import "@app/index.css";
 
-import { CloseIcon } from "./icons";
+import { CloseIcon } from "@norii/ui";
 
 import { IconButton } from "./button";
 

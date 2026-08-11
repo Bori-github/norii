@@ -1,4 +1,4 @@
-// 아이콘 생성 설정 — SVG 원본(shared/ui/icons/svg) → React 컴포넌트(generated).
+// 아이콘 생성 설정 — SVG 원본(src/icons/svg) → React 컴포넌트(generated).
 // 실행은 `mise run icons`. 규칙의 근거는 디자인 시스템 문서가 단일 출처다
 // (→ .claude/docs/design/design-system.md#아이콘).
 //

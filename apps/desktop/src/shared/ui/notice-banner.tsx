@@ -2,7 +2,7 @@ import { STRINGS } from "../config";
 
 import { bannerBodyClass, bannerClass } from "./banner-styles";
 import { Button, IconButton } from "./button";
-import { CloseIcon } from "./icons";
+import { CloseIcon } from "@norii/ui";
 import { useNoticeStore } from "./notice-store";
 
 // 알림 배너 스택 — 에러·확인 요청을 비차단으로 보여준다(네이티브 다이얼로그 금지).

@@ -5,3 +5,25 @@ export type { DialogProps } from "./dialog";
 export { Select } from "./select";
 export type { SelectProps } from "./select";
 export { Tooltip } from "./tooltip";
+export {
+  AlertTriangleIcon,
+  AnnotationAlertIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  ColumnVerticalIcon,
+  ComputerIcon,
+  CopyRightIcon,
+  EditIcon,
+  FileEyeIcon,
+  FilePlusIcon,
+  FolderPlusIcon,
+  InformationCircleContainedIcon,
+  LightbulbIcon,
+  MinusCircleContainedIcon,
+  MoonIcon,
+  PanelLeftIcon,
+  PlusIcon,
+  SettingsIcon,
+  SunIcon,
+} from "./icons";

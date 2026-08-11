@@ -25,7 +25,7 @@ export {
   PlusIcon,
   SettingsIcon,
   SunIcon,
-} from "./icons";
+} from "@norii/ui";
 export { useConfirmStore } from "./confirm-store";
 export type { ConfirmRequest } from "./confirm-store";
 export { NoticeBanner } from "./notice-banner";
