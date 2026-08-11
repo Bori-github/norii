@@ -7,5 +7,4 @@ export type { DialogProps } from "./dialog/dialog";
 export { Select } from "./select/select";
 export type { SelectProps } from "./select/select";
 export { Tooltip } from "./tooltip/tooltip";
-// 아이콘 이름은 icons/index.ts 한 곳에서만 관리한다.
 export * from "./icons";

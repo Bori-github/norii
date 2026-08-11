@@ -2,8 +2,6 @@ import type { ReactNode, SelectHTMLAttributes } from "react";
 
 import { css, cx } from "styled-system/css";
 
-// 네이티브 화살표를 끄고(appearance: none) 직접 그린다 — OS마다 모양과 크기가 달라
-// 같은 화면에서 컨트롤 높이가 어긋난다.
 const wrapClass = css({
   position: "relative",
   display: "inline-flex",
@@ -27,8 +25,7 @@ const wrapClass = css({
 
 const selectClass = css({
   appearance: "none",
-  // 감싸는 상자를 넓혀도 셀렉트가 따라 늘어나야 한다 — 안 그러면 상자 오른쪽에 그린 꺽쇠가
-  // 셀렉트에서 떨어져 뜬다. basis는 auto로 둔다(0이면 폭을 안 준 상자가 0으로 접힌다).
+  // basis가 0이면 width를 지정하지 않은 wrapper가 0으로 줄기 때문에 auto로 지정
   flex: "1 1 auto",
   paddingLeft: "3",
   paddingRight: "8",
@@ -47,7 +44,6 @@ const selectClass = css({
 
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {
   children: ReactNode;
-  /** 감싸는 상자에 붙일 배치용 클래스. */
   wrapClassName?: string;
 }
 

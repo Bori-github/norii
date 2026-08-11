@@ -1,10 +1,3 @@
-// 스케일에서 지우는 단계 — 소비 측 panda.config가 config:resolved 훅에서 쓴다.
-// 훅은 preset 안에서 실행되지 않아 이 목록만 내주고, 거는 것은 소비 측이 한다.
-//
-// 두 설정이 서로 다른 단계를 남기면 같은 스타일이 다른 클래스 이름을 얻는다 —
-// 패키지와 앱이 각자 codegen을 돌리므로 목록이 한 곳에 있어야 한다.
-
-/** 쓰지 않는 크기 단계. 남겨 두면 스케일 밖 크기가 조용히 들어온다(→ decisions/typography). */
 const UNUSED_FONT_SIZES = [
   "2xs",
   "lg",
@@ -19,10 +12,18 @@ const UNUSED_FONT_SIZES = [
   "9xl",
 ];
 
-/** 쓰지 않는 행간 단계. 행간은 역할로 짓는다(ui · heading · editor · prose). */
 const UNUSED_LINE_HEIGHTS = ["none", "tight", "snug", "normal", "relaxed", "loose"];
 
-/** `utils.omit`에 넘길 경로 목록. */
+/**
+ * 스케일에서 지울 토큰 경로 목록
+ *
+ * @description
+ * 앱의 `panda.config`가 `config:resolved` 훅에서 `utils.omit`에 넘김 — 훅은 preset 안에서
+ * 실행되지 않기 때문에 목록만 내보내고 훅에 등록하는 것은 앱이 함
+ *
+ * 이 목록이 토큰 타입 union을 좁히기 때문에 **앱과 이 패키지가 같은 목록을 써야 함** —
+ * 다르면 이 패키지에서 타입이 통과한 토큰이 앱 CSS에 없음
+ */
 export const OMITTED_SCALE_PATHS = [
   ...UNUSED_FONT_SIZES.map((step) => `theme.tokens.fontSizes.${step}`),
   ...UNUSED_LINE_HEIGHTS.map((step) => `theme.tokens.lineHeights.${step}`),

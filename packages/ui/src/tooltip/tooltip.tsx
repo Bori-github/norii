@@ -1,9 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { css, cx } from "styled-system/css";
 
-// 대상 바로 아래에 겹쳐 뜬다 — 흐름에 끼우면 뜨고 사라질 때마다 주변이 밀린다.
-// 자리는 부르는 쪽이 정한다: 기준이 될 요소에 position: relative를 주고 className으로 좌우를 맞춘다.
-
 const POINTER_X = "--norii-tooltip-pointer-x";
 
 const tooltipClass = css({
@@ -19,7 +16,7 @@ const tooltipClass = css({
   whiteSpace: "nowrap",
   color: "status.dangerFg",
   background: "status.dangerSurface",
-  // 가상 요소라 props로 클래스를 바꿀 수 없어 사용자 정의 속성을 거친다.
+  // 꼭짓점은 ::before라 props를 받을 수 없기 때문에 CSS 사용자 정의 속성으로 전달
   _before: {
     content: '""',
     position: "absolute",
@@ -36,8 +33,14 @@ const tooltipClass = css({
 });
 
 /**
- * `id`는 대상의 `aria-describedby`와 잇는다 — 잇지 않으면 스크린리더가 이 글을 읽지 않는다.
- * `pointerX`는 툴팁 왼쪽 끝에서 잰 꼭짓점의 가운데 위치다(CSS 길이·백분율, 기본 50%).
+ * 대상 요소 아래에 겹쳐 뜨는 안내 문구 컴포넌트
+ *
+ * @param id - 대상의 `aria-describedby`와 연결할 값. 연결하지 않으면 스크린리더가 읽지 않음
+ * @param pointerX - 툴팁 왼쪽 끝을 기준으로 한 꼭짓점 중앙 위치(CSS 길이·백분율, 기본 50%)
+ *
+ * @description
+ * 툴팁을 붙일 요소에 `position: relative`를 지정해야 함 — 없으면 가장 가까운 positioned
+ * 조상을 기준으로 배치
  */
 export function Tooltip({
   id,
