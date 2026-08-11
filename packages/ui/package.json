@@ -22,6 +22,7 @@
     "@pandacss/dev": "1.11.4",
     "@storybook/addon-a11y": "10.5.7",
     "@storybook/addon-docs": "10.5.7",
+    "@storybook/addon-mcp": "0.7.0",
     "@storybook/addon-vitest": "10.5.7",
     "@storybook/react-vite": "10.5.7",
     "@svgr/cli": "8.1.0",

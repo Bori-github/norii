@@ -9,7 +9,11 @@ import { GLASS_OPACITY_DEFAULT } from "./panda-preset";
 const meta = {
   title: "Tokens",
   tags: ["autodocs"],
-  parameters: { controls: { disable: true } },
+  parameters: {
+    controls: { disable: true },
+    // component가 없어 docgen이 읽을 곳이 없기 때문에 여기서 설명을 준다 — MCP 목록에도 나온다.
+    docs: { description: { component: "면·상태색 토큰과 유리 불투명도" } },
+  },
 } satisfies Meta;
 
 export default meta;

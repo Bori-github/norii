@@ -14,7 +14,10 @@ const ENTRIES = Object.entries(icons as Record<string, ComponentType<SVGProps<SV
 const meta = {
   title: "Icons",
   tags: ["autodocs"],
-  parameters: { controls: { disable: true } },
+  parameters: {
+    controls: { disable: true },
+    docs: { description: { component: "`@norii/ui/icons`가 내보내는 아이콘 전체" } },
+  },
 } satisfies Meta;
 
 export default meta;
