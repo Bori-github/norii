@@ -18,6 +18,7 @@ export default defineConfig({
   preflight: true,
 
   // 프리셋의 안 쓰는 크기·행간 단계를 지운다(→ decisions/typography).
+  // preset에 선언한 훅은 실행되지 않는다 — 소비 측 설정에만 둘 수 있다.
   hooks: {
     "config:resolved": ({ config, utils }) =>
       // omit의 반환 타입(Omit<UserConfig, string>)이 훅 시그니처와 안 맞아 원형으로 되돌린다.
