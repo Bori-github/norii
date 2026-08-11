@@ -77,9 +77,11 @@ export const 전환: Story = {
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
 
+    // dialogIn이 opacity 0에서 시작해 그 사이에 재면 안 보이는 것으로 나오기 때문에 기다린다.
     await step("열기를 누르면 대화상자가 뜬다", async () => {
       await userEvent.click(canvas.getByRole("button", { name: "열기" }));
-      await expect(await canvas.findByRole("dialog")).toBeVisible();
+      const dialog = await canvas.findByRole("dialog");
+      await waitFor(() => expect(dialog).toBeVisible());
     });
 
     await step("취소를 누르면 전환이 끝난 뒤 사라진다", async () => {

@@ -61,8 +61,11 @@ Refactor → 테스트를 초록으로 유지하며 정리
 | **에디터 · 한글 IME · 데이터 유실 왕복 (위험 영역)** | **tauri-plugin-webdriver (실제 Tauri 앱) + WebdriverIO 클라이언트** | 실제 WKWebView 조합(composition) 이벤트, 실제 Rust 파일 I/O 왕복. **실제 앱 전체를 띄워 — 실행은 가장 느리지만 운영과 동일하게.** 클라이언트는 `webdriverio` programmatic `remote()`를 Vitest 안에서 구동한다(테스트러너 없이 경량). 플러그인은 **`webdriver` Cargo 피처** 뒤에 두어(optional dependency), E2E 실행 시 `tauri dev --features webdriver`로만 컴파일·기동한다 — 일반 개발·릴리스 빌드에는 포함되지 않는다. |
 | Rust 백엔드 (커맨드·인코딩·watch) | `cargo test` + 실제 임시 디렉터리 파일 I/O | 백엔드는 이 자체가 운영 동일. |
 | IPC 계약 (Rust ↔ 프론트) | **tauri-specta** (Rust→TS 타입 생성) | 직렬화·`AppError` 매핑 드리프트를 **컴파일 타임에 차단**. |
+| `packages/ui` 컴포넌트 | **스토리 + `@storybook/addon-vitest` (WebKit)** | 스토리가 곧 렌더 테스트다. `play`를 단 스토리는 상호작용까지 본다. 브라우저는 앱과 같은 WebKit이다. |
 
-**Storybook은 이 표에 없다.** `packages/ui` 컴포넌트를 눈으로 보고 테마를 툴바로 바꾸는 카탈로그이지 테스트가 아니다 — 통과/실패를 판정하지 않으므로 게이트에도 넣지 않는다. **시각 회귀의 단일 출처는 Vitest Browser Mode의 스크린샷이다**(`shared/ui/__screenshots__`). Storybook에 회귀 도구를 얹으면 출처가 둘이 된다.
+**시각 회귀는 여기서 하지 않는다.** 스토리 테스트는 렌더와 상호작용만 판정한다. **시각 회귀의 단일 출처는 Vitest Browser Mode의 스크린샷이다**(`shared/ui/__screenshots__`). Storybook에 회귀 도구(Chromatic 등)를 얹으면 출처가 둘이 되고, 클라우드 의존은 [비목표](../rules/non-goals.md)다.
+
+**카탈로그로서의 Storybook은 판정하지 않는다.** 테마·배경·창 폭 툴바와 접근성 패널은 사람이 눈으로 보는 자리이지 통과/실패를 가르지 않는다. 게이트가 도는 것은 스토리 테스트뿐이다.
 
 ## 위험 영역은 실제 앱으로 검증 (핵심)
 
