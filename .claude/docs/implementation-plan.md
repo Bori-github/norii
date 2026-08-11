@@ -87,7 +87,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **E2E 도구 재확인** — tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검(도입 자체는 확정, 재점검만 열림) (→ [테스트 전략](testing.md))
 - **tauri-specta 2.0** — rc 핀 → 정식 2.0 도달 시 재확인 (→ [기술 스택](tech-stack.md))
 - **i18n 도입** — 현재 미도입(UI 문자열은 shared/config 상수) — 다국어 필요 시 (→ [프론트엔드 아키텍처](frontend-architecture.md))
-- **Storybook 도입** — 도입 여부와 붙일 자리 — 시각 회귀는 Vitest browser 스크린샷이 맡고 있어, Storybook에 회귀를 얹으면 그 출처가 둘이 된다 (→ [테스트 전략](testing.md))
 
 ## 백로그 (실행만 남은 소규모 후속)
 

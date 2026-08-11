@@ -78,7 +78,7 @@ norii/
   packages/
     editor/                  CodeMirror 6 래퍼 — 확장 구성·폴딩·테마. 플랫폼 무관
     markdown/                프리뷰 파이프라인 — markdown-it + DOMPurify + 스크롤 매핑
-    ui/                      Panda preset과 공유 React 컴포넌트
+    ui/                      Panda preset과 공유 React 컴포넌트 + Storybook 카탈로그
     tsconfig/                공유 TS/린트 설정
 ```
 
@@ -99,6 +99,7 @@ packages/markdown
 
 packages/ui
   - Panda preset — 토큰·조건·layerStyle (소비 측이 presets로 확장한다)
+  - Storybook — 컴포넌트를 눈으로 보는 카탈로그(`mise run storybook`). 테스트가 아니다
   - 컴포넌트 하나가 폴더 하나 — src/button/{button.tsx, button.test.ts}
     폴더 안에 배럴을 두지 않고 src/index.ts가 직접 집는다
   - **앱을 알지 않는다** — 스토어·IPC·UI 문자열·파일 경로를 모른다.
