@@ -25,7 +25,7 @@ const SIZES = Object.keys(
 ) as (keyof typeof BUTTON_STYLES.variants.size)[];
 
 const meta = {
-  title: "Button/IconButton",
+  title: "Components/IconButton",
   component: IconButton,
   tags: ["autodocs"],
   args: { label: "닫기", children: <CloseIcon />, onClick: fn() },

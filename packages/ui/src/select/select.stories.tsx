@@ -15,7 +15,7 @@ const OPTIONS = (
 );
 
 const meta = {
-  title: "Select",
+  title: "Components/Select",
   component: Select,
   tags: ["autodocs"],
   args: { "aria-label": "인코딩 다시 읽기", children: OPTIONS, onChange: fn() },
@@ -33,7 +33,7 @@ export const 개요: Story = {
           <Cell label="내용 폭">
             <Select {...args} />
           </Cell>
-          <Cell label="상자 360px — 셀렉트가 따라 늘어난다">
+          <Cell label="상자 360px">
             <div style={{ width: 360, display: "flex" }}>
               <Select {...args} />
             </div>

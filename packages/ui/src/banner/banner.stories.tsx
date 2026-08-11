@@ -9,7 +9,7 @@ import { BANNER_STYLES, Banner, BannerBody } from "./banner";
 const TONES = Object.keys(BANNER_STYLES.variants.tone);
 
 const meta = {
-  title: "Banner",
+  title: "Components/Banner",
   component: Banner,
   subcomponents: { BannerBody },
   tags: ["autodocs"],

@@ -13,7 +13,7 @@ const SIZES = Object.keys(
 ) as (keyof typeof BUTTON_STYLES.variants.size)[];
 
 const meta = {
-  title: "Button/Button",
+  title: "Components/Button",
   component: Button,
   tags: ["autodocs"],
   args: { children: "폴더 열기", onClick: fn() },

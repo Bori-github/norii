@@ -1,21 +1,14 @@
 import type { Decorator, Preview } from "@storybook/react-vite";
-import { ThemeProvider, ensure, themes } from "storybook/theming";
 
 import "./preview.css";
 
-// 테마는 루트 속성으로 갈리기 때문에 툴바에서 그 속성을 바꾼다.
-// ColorPalette·IconGallery 같은 Doc Block은 Storybook 테마를 읽는데 Canvas에는 그 컨텍스트가
-// 없기 때문에(Docs에만 있음) 여기서 넣는다 — 없으면 블록이 렌더 중 예외를 던진다.
 const withSurface: Decorator = (Story, context) => {
-  const dark = context.globals["theme"] === "dark";
-  document.documentElement.dataset["theme"] = dark ? "dark" : "light";
+  document.documentElement.dataset["theme"] = String(context.globals["theme"]);
 
   return (
-    <ThemeProvider theme={ensure(dark ? themes.dark : themes.light)}>
-      <div style={{ color: "var(--colors-text)", fontFamily: "var(--fonts-ui)" }}>
-        <Story />
-      </div>
-    </ThemeProvider>
+    <div style={{ color: "var(--colors-text)", fontFamily: "var(--fonts-ui)" }}>
+      <Story />
+    </div>
   );
 };
 
@@ -23,8 +16,7 @@ const preview: Preview = {
   parameters: {
     layout: "padded",
 
-    // 배경을 토큰으로 두면 컴포넌트를 앱에서 실제로 놓이는 면 위에서 본다.
-    // var()로 적어 테마 툴바를 따라간다.
+    // var()로 적어야 테마 툴바를 따라간다.
     backgrounds: {
       options: {
         canvas: { name: "bg.canvas — 편집 면", value: "var(--colors-bg-canvas)" },
@@ -33,8 +25,7 @@ const preview: Preview = {
       },
     },
 
-    // 기본 프리셋은 휴대폰 크기라 데스크톱 앱에 쓸 데가 없음. 네 값은 앱에서 컴포넌트가
-    // 실제로 놓이는 칸의 폭 — 좁은 쪽부터 분할 한 칸 · 사이드바 · 문서 칸 · 창 전체.
+    // 기본 프리셋은 휴대폰 크기라 데스크톱 앱에 쓸 데가 없다. 앱에서 컴포넌트가 놓이는 칸의 폭.
     viewport: {
       options: {
         pane: { name: "분할 한 칸 200px", styles: { width: "200px", height: "768px" } },
@@ -45,7 +36,11 @@ const preview: Preview = {
     },
 
     options: {
-      storySort: { order: ["Tokens", "Icons", "*"] },
+      // Foundations는 Colors를 첫 장으로 두려고 나열하고, 나머지는 늘어나도 손대지 않게 가나다순.
+      storySort: {
+        method: "alphabetical",
+        order: ["Foundations", ["Colors", "Glass", "Icons"], "Components"],
+      },
     },
   },
 

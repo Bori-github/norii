@@ -6,10 +6,11 @@ import { expect, userEvent, waitFor, within } from "storybook/test";
 import { Cell, Row, Section } from "../../.storybook/grid";
 import { Button } from "../button/button";
 
+import type { DialogProps } from "./dialog";
 import { Dialog } from "./dialog";
 
 const meta = {
-  title: "Dialog",
+  title: "Components/Dialog",
   component: Dialog,
   tags: ["autodocs"],
 } satisfies Meta<typeof Dialog>;
@@ -18,7 +19,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function Trigger({ size, body }: { size: "sm" | "lg"; body: ReactNode }) {
+function Trigger({ size, body }: { size: DialogProps["size"]; body: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -42,7 +43,7 @@ export const 개요: Story = {
   args: { open: false, children: null },
   parameters: { controls: { disable: true } },
   render: () => (
-    <Section title="크기 — 여백을 상자가 갖는가, 내용이 갖는가">
+    <Section title="크기">
       <Row>
         <Cell label="sm · 상자가 여백을 가짐">
           <Trigger size="sm" body={<p>저장하지 않은 변경이 있습니다. 닫을까요?</p>} />

@@ -7,7 +7,7 @@ import { Cell, Row, Section } from "../../.storybook/grid";
 import { Tooltip } from "./tooltip";
 
 const meta = {
-  title: "Tooltip",
+  title: "Components/Tooltip",
   component: Tooltip,
   tags: ["autodocs"],
   args: { children: "같은 이름의 파일이 이미 있습니다" },
@@ -62,7 +62,7 @@ export const 개요: Story = {
               <Tooltip id="tip-short">이름이 비었습니다</Tooltip>
             </Anchor>
           </Cell>
-          <Cell label="길게 — 줄바꿈하지 않는다">
+          <Cell label="길게">
             <Anchor width={260}>
               <input
                 aria-label="파일 이름"
