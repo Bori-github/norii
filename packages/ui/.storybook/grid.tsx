@@ -44,17 +44,3 @@ export function Cell({ label, children }: { label: string; children: ReactNode }
     </div>
   );
 }
-
-export function Grid({ min = 120, children }: { min?: number; children: ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`,
-        gap: 16,
-      }}
-    >
-      {children}
-    </div>
-  );
-}

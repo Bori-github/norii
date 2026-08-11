@@ -9,6 +9,7 @@ import { Banner, BannerBody } from "./banner";
 const meta = {
   title: "Banner",
   component: Banner,
+  subcomponents: { BannerBody },
   tags: ["autodocs"],
   argTypes: { tone: { control: "inline-radio", options: ["default", "danger"] } },
 } satisfies Meta<typeof Banner>;

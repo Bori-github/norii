@@ -1,7 +1,8 @@
+import { IconGallery, IconItem } from "@storybook/addon-docs/blocks";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentType, SVGProps } from "react";
 
-import { Cell, Grid, Row, Section } from "../../.storybook/grid";
+import { Cell, Row, Section } from "../../.storybook/grid";
 
 import * as icons from "./index";
 
@@ -26,13 +27,13 @@ export const 전체: Story = {
       <p style={{ fontSize: 13, marginBottom: 20 }}>
         <code>{'import { CloseIcon } from "@norii/ui/icons";'}</code>
       </p>
-      <Grid min={200}>
+      <IconGallery>
         {ENTRIES.map(([name, Icon]) => (
-          <Cell key={name} label={name}>
+          <IconItem key={name} name={name}>
             <Icon style={{ width: 24, height: 24 }} />
-          </Cell>
+          </IconItem>
         ))}
-      </Grid>
+      </IconGallery>
     </>
   ),
 };

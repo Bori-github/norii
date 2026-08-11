@@ -1,15 +1,21 @@
 import type { Decorator, Preview } from "@storybook/react-vite";
+import { ThemeProvider, ensure, themes } from "storybook/theming";
 
 import "./preview.css";
 
 // 테마는 루트 속성으로 갈리기 때문에 툴바에서 그 속성을 바꾼다.
+// ColorPalette·IconGallery 같은 Doc Block은 Storybook 테마를 읽는데 Canvas에는 그 컨텍스트가
+// 없기 때문에(Docs에만 있음) 여기서 넣는다 — 없으면 블록이 렌더 중 예외를 던진다.
 const withSurface: Decorator = (Story, context) => {
-  document.documentElement.dataset["theme"] = String(context.globals["theme"]);
+  const dark = context.globals["theme"] === "dark";
+  document.documentElement.dataset["theme"] = dark ? "dark" : "light";
 
   return (
-    <div style={{ color: "var(--colors-text)", fontFamily: "var(--fonts-ui)" }}>
-      <Story />
-    </div>
+    <ThemeProvider theme={ensure(dark ? themes.dark : themes.light)}>
+      <div style={{ color: "var(--colors-text)", fontFamily: "var(--fonts-ui)" }}>
+        <Story />
+      </div>
+    </ThemeProvider>
   );
 };
 
