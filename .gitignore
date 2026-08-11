@@ -13,6 +13,7 @@ apps/desktop/src-tauri/gen/schemas/
 
 # Panda CSS (생성물)
 styled-system/
+storybook-static/
 
 # Caches
 .turbo/

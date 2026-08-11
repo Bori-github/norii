@@ -8,5 +8,5 @@
       "styled-system/*": ["./styled-system/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", ".storybook"]
 }

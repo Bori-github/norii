@@ -1,0 +1,2 @@
+/* 레이어 순서를 선언하면 PostCSS 플러그인이 각 레이어에 리셋·토큰·recipe·유틸리티를 넣는다. */
+@layer reset, base, tokens, recipes, utilities;
