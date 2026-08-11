@@ -15,6 +15,7 @@
         "title": "norii",
         "width": 1024,
         "height": 768,
+        "minWidth": 640,
         "transparent": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
