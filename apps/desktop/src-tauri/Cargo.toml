@@ -68,6 +68,6 @@ libc = "0.2.180"
 
 [dev-dependencies]
 serde_json = "1.0.150"
-# test 피처의 mock_app — asset 프로토콜 스코프는 앱에서만 얻을 수 있어, 스코프 미러링을 가짜가
-# 아니라 진짜 Tauri 스코프로 검증한다(→ src/scope.rs).
+# test 피처의 mock_app — asset 프로토콜 스코프는 앱에서만 얻을 수 있다. 진짜 Tauri 스코프에
+# 등록된 결과를 테스트가 조회한다(→ src/scope.rs).
 tauri = { version = "2", features = ["test"] }

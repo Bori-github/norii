@@ -19,7 +19,7 @@ pub struct FileScope {
 }
 
 impl FileScope {
-    /// asset 프로토콜 스코프를 물린다 — 이후의 허용·거부가 그쪽에도 등록된다.
+    /// asset 프로토콜 스코프를 보관한다 — 이후의 허용·거부가 그쪽에도 등록된다.
     /// 허용 루트가 하나라도 쌓이기 전에, setup 맨 앞에서 부른다.
     pub fn set_asset_scope(&self, scope: tauri::scope::fs::Scope) {
         *self.asset.lock().expect("FileScope 락은 포이즌되지 않는다") = Some(scope);
@@ -54,7 +54,7 @@ impl FileScope {
             .push(canonical_dir);
     }
 
-    /// 같은 경로를 asset 프로토콜 스코프에도 등록한다
+    /// 허용·거부를 asset 프로토콜 스코프에도 등록한다. 등록하는 경로는 호출 측이 정한다
     /// (→ .claude/docs/rust-commands.md#권한-capabilities).
     ///
     /// 등록 실패는 이미지만 못 뜨게 하므로 파일 커맨드까지 막지 않는다 — 기록하고 넘어간다.
@@ -159,7 +159,7 @@ mod tests {
     //     검사하는 쪽이라 우리 ensure_allowed로는 그 사실이 드러나지 않는다.
     // 경계: 실제 이미지 로드(asset 응답)는 실앱 E2E가 본다 — 여기서는 등록 결과만 본다.
 
-    /// 진짜 Tauri 스코프를 물린 FileScope와, 같은 스코프를 보는 조회용 손잡이.
+    /// 진짜 Tauri 스코프를 보관한 FileScope와, 같은 스코프를 조회할 값.
     fn asset_scope_fixture() -> (FileScope, tauri::scope::fs::Scope) {
         use tauri::Manager;
         let app = tauri::test::mock_app();

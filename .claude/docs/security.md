@@ -44,18 +44,18 @@ connect-src 'self';                     local-first → 외부 연결 없음 (�
 
 #### 이미지 (asset 프로토콜)
 
-프리뷰의 로컬 이미지는 Tauri asset 프로토콜로 읽는다. 읽는 범위는 위 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 정한다.
+프리뷰의 로컬 이미지는 Tauri asset 프로토콜로 읽는다. 읽을 수 있는 경로는 위 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 정한다.
 
-**파일 하나만 연 경우**(열기 다이얼로그·최근 파일·세션 복원) **이미지의 읽기 범위가 파일 커맨드보다 넓다.**
+**파일 하나만 연 경우**(열기 다이얼로그·최근 파일·세션 복원) **이미지를 읽을 수 있는 경로는 파일 커맨드보다 넓다.** 파일 커맨드는 그 파일만 다루고, asset 프로토콜은 그 파일이 있는 폴더의 하위 트리를 읽는다.
 
-- 범위 밖은 읽지 못한다.
+- 그 폴더 밖은 읽지 못한다.
 - 읽은 이미지는 화면에 렌더될 뿐 밖으로 나가지 않는다(`connect-src 'self'`).
 - 파일을 고치거나 지우지 못한다.
 - 남는 위험: 문서가 같은 폴더의 이미지를 지정해 화면에 렌더할 수 있다(`<img src="./영수증.png">`).
 
-VS Code도 같은 범위를 읽는다 — [`getMarkdownLocalResourceRoots`](https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/src/util/resources.ts).
+VS Code도 같은 폴더를 읽는다 — [`getMarkdownLocalResourceRoots`](https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/src/util/resources.ts).
 
-**문서가 적은 asset URL은 프리뷰에 닿지 않는다.** `src`에 적은 값은 DOMPurify가 지우고(→ [프리뷰 전략](preview-strategy.md#src는-sanitize-뒤에-바꾼다)), `srcset`의 후보는 렌더 파이프라인이 버린다(→ [프리뷰 전략 — 해석하는 속성](preview-strategy.md#해석하는-속성)). 남는 asset URL은 norii가 계산한 값뿐이다.
+**문서가 적은 asset URL은 프리뷰에 닿지 않는다.** `src`에 적은 값은 DOMPurify가 지우고(→ [프리뷰 전략](preview-strategy.md#sanitize-뒤에-바꾼다)), `srcset`의 후보는 렌더 파이프라인이 버린다(→ [프리뷰 전략 — 해석하는 속성](preview-strategy.md#해석하는-속성)). 남는 asset URL은 norii가 계산한 값뿐이다.
 
 #### 세션 파일
 

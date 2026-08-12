@@ -1,4 +1,4 @@
-// 이미지 경로 해석 — 문서 폴더 기준의 절대 경로를 만든다(→ .claude/docs/preview-strategy.md#경로-해석).
+// 이미지 경로 해석 — 기준 폴더에 붙여 절대 경로를 만든다(→ .claude/docs/preview-strategy.md#경로-해석).
 
 // 스킴이 붙은 src(https:·data:·asset:…)는 이미 완결된 주소다. RFC 3986의 scheme 문법이다.
 const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;

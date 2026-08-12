@@ -140,7 +140,7 @@ describe("자동 링크 (linkify)", () => {
 // resolver가 실제로 돌았는지 눈에 보이게 표시만 남기는 가짜 해석기다.
 const markResolved = (src: string) => `resolved:${src}`;
 
-// 집행: preview-strategy.md#src는-sanitize-뒤에-바꾼다
+// 집행: preview-strategy.md#sanitize-뒤에-바꾼다
 //
 // 왜: DOMPurify는 asset:을 모르는 스킴으로 보고 그 src를 통째로 버린다. 허용목록을 넓혀
 //     파서가 먼저 심으면 **문서가 적은 asset URL도 함께 통과**하므로, 순서를 뒤집어

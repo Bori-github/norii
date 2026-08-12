@@ -104,7 +104,7 @@ export interface RenderOptions {
 
 interface SrcsetCandidate {
   url: string;
-  /** 후보 뒤의 서술자(`2x`·`640w`). 없으면 빈 문자열이다. */
+  /** 후보 뒤에 붙는 `2x`·`640w` 같은 표기. 없으면 빈 문자열이다. */
   descriptor: string;
 }
 
@@ -127,7 +127,7 @@ function parseSrcset(value: string): SrcsetCandidate[] {
     if (url === "") {
       break;
     }
-    // URL이 쉼표로 끝나면 그 자리가 후보의 끝이다 — 서술자가 없는 후보다.
+    // URL이 쉼표로 끝나면 그 자리가 후보의 끝이다 — 뒤에 붙는 표기가 없는 후보다.
     const trimmed = url.replace(/,+$/, "");
     if (trimmed !== url) {
       candidates.push({ url: trimmed, descriptor: "" });
@@ -142,7 +142,7 @@ function parseSrcset(value: string): SrcsetCandidate[] {
   return candidates;
 }
 
-/** srcset 후보를 해석해 값을 다시 세운다. 바뀐 후보가 없으면 `null`이다 — 값을 그대로 둔다. */
+/** srcset 후보를 해석해 값을 다시 만든다. 바뀐 후보가 없으면 `null`이다 — 값을 그대로 둔다. */
 function resolveSrcset(value: string, resolve: (src: string) => string | null): string | null {
   let changed = false;
   const resolved: string[] = [];
@@ -161,7 +161,7 @@ function resolveSrcset(value: string, resolve: (src: string) => string | null): 
   return changed ? resolved.join(", ") : null;
 }
 
-// src를 sanitize 뒤에 바꾸는 이유는 preview-strategy.md#src는-sanitize-뒤에-바꾼다에 있다.
+// sanitize 뒤에 바꾸는 이유는 preview-strategy.md#sanitize-뒤에-바꾼다에 있다.
 function resolveImageSources(html: string, resolve: (src: string) => string | null): string {
   const template = document.createElement("template");
   template.innerHTML = html;
