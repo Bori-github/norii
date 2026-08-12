@@ -36,8 +36,9 @@ function steps(name: string) {
 }
 
 // 이름을 손으로 케밥으로 바꾸면 Panda 규칙과 어긋난 토큰이 빈 값으로 조용히 통과한다.
+// 경로는 preset에서 만들기 때문에 codegen이 아는 이름인지는 실행할 때 알 수 있다.
 function cssVar(path: string) {
-  const variable = token.var(`colors.${path}`);
+  const variable = token.var(`colors.${path}` as Parameters<typeof token.var>[0]);
   if (!variable) throw new Error(`codegen에 없는 토큰: colors.${path}`);
 
   return variable.slice("var(".length, -1);
