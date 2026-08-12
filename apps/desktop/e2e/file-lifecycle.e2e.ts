@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -25,7 +25,15 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 // 않음을 실측으로 확인했다(사전순 아님). 스모크도 이 파일의 첫 테스트다.
 
 const SCOPE_ROOT = process.env.NORII_E2E_SCOPE_ROOT ?? "/tmp/norii-e2e";
+/** 폴더 없이 파일 하나만 연 세션의 문서 — 기본값은 dev-webdriver가 주입하는 값과 같다. */
+const SCOPE_FILE = process.env.NORII_E2E_SCOPE_FILE ?? "/tmp/norii-e2e-single/문서.md";
+/** 어느 허용 루트에도 속하지 않는 폴더 — 이미지가 파일이 있어도 막히는지 본다. */
+const OUTSIDE_ROOT = `${SCOPE_ROOT}-outside`;
 const WEBDRIVER_PORT = Number(process.env.TAURI_WEBDRIVER_PORT ?? "4445");
+
+// 이미지 시나리오가 쓰는 예시 파일 — 데모 영상에 그대로 나오므로 눈에 보이는 크기를 쓴다.
+const EXAMPLE_IMAGE = "../../examples/images/격자-그라디언트.png";
+const EXAMPLE_IMAGE_2X = "../../examples/images/사선-2배.png";
 
 // 데모 녹화 감속(→ development-commands.md#pr-데모-영상-demo--upload-demo) — 동작 앞에서만
 // 쉬고 대기 폴링에는 걸지 않는다.
@@ -961,28 +969,44 @@ it("색 — 테마를 바꿔도 액센트는 한 색이다", async () => {
   });
 });
 
-// 집행: preview-strategy.md#이미지 — 로컬 파일은 문서 폴더 기준으로 찾아 asset 프로토콜로 싣는다.
+// 집행: preview-strategy.md#어느-폴더의-이미지를-읽는가 · #경로-해석 · #해석하는-속성
 // 왜: asset 프로토콜은 실제 Tauri 웹뷰에만 있다. 브라우저 테스트는 src 문자열까지만 볼 수 있어,
-//     그 주소가 진짜로 픽셀을 실어 오는지는 여기서만 증명된다. 스코프 미러링(FileScope →
-//     asset 스코프)이 끊기면 403이 되는데, 그것도 여기서만 드러난다.
-// 보장: 문서 옆 PNG가 asset 주소로 바뀌어 실제로 디코드되고(naturalWidth > 0), 같은 문서의
-//       없는 파일은 로드에 실패해 깨짐 표시가 붙는다.
-// 경계: 보이는 모습(폭 제한·흐린 alt 글자)은 examples/프리뷰-기본.md로 사람이 판정한다.
+//     그 주소가 진짜로 픽셀을 실어 오는지는 여기서만 증명된다.
+// 보장: 로드 성공은 naturalWidth > 0으로, 실패는 깨짐 표시로 판정한다.
+// 경계: 보이는 모습(폭 제한·흐린 alt 글자)은 examples/이미지-예시.md로 사람이 판정한다.
 //       깨짐 표시 이름은 use-image-loads의 BROKEN_IMAGE_ATTR와 짝이다(testid와 같은 계약).
-it("프리뷰 이미지 — 문서 옆 파일이 실제로 로드되고 없는 파일은 표시가 남는다", async () => {
+it("프리뷰 이미지 — 문서 폴더·연 폴더·srcset이 로드되고 없는 파일과 범위 밖은 표시가 남는다", async () => {
   const imagesDir = path.join(SCOPE_ROOT, "images");
-  await mkdir(imagesDir, { recursive: true });
-  // 1×1 PNG — 로드 성공 여부만 보므로 내용은 최소로 둔다.
-  await writeFile(
-    path.join(imagesDir, "그림.png"),
-    Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-      "base64",
-    ),
-  );
-  const doc = path.join(SCOPE_ROOT, "이미지-문서.md");
-  await writeFile(doc, "![있음](./images/그림.png)\n\n![없음](./images/없다.png)\n", "utf8");
+  const hiddenDir = path.join(imagesDir, ".숨김");
+  await mkdir(hiddenDir, { recursive: true });
+  await copyFile(EXAMPLE_IMAGE, path.join(imagesDir, "격자.png"));
+  await copyFile(EXAMPLE_IMAGE_2X, path.join(imagesDir, "사선-2배.png"));
+  await copyFile(EXAMPLE_IMAGE, path.join(hiddenDir, "숨김.png"));
+  await mkdir(OUTSIDE_ROOT, { recursive: true });
+  await copyFile(EXAMPLE_IMAGE, path.join(OUTSIDE_ROOT, "밖.png"));
 
+  const doc = path.join(SCOPE_ROOT, "이미지-문서.md");
+  await writeFile(
+    doc,
+    [
+      "![문서 폴더](./images/격자.png)",
+      "",
+      "![연 폴더](/images/격자.png)",
+      "",
+      '<img srcset="./images/격자.png 1x, ./images/사선-2배.png 2x" alt="후보 목록">',
+      "",
+      "![점으로 시작하는 폴더](./images/.숨김/숨김.png)",
+      "",
+      "![없는 파일](./images/없다.png)",
+      "",
+      `![범위 밖](${path.relative(SCOPE_ROOT, path.join(OUTSIDE_ROOT, "밖.png"))})`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  // 이 시나리오만 폴더를 열고 시작한다 — `/`로 시작하는 경로에 기준이 필요하다.
+  await openFolderInApp(SCOPE_ROOT);
   await openInApp(doc);
   await waitActiveTab(doc);
 
@@ -993,25 +1017,68 @@ it("프리뷰 이미지 — 문서 옆 파일이 실제로 로드되고 없는 �
           const image = node as HTMLImageElement;
           return {
             src: image.getAttribute("src") ?? "",
+            currentSrc: image.currentSrc,
             width: image.naturalWidth,
             broken: image.hasAttribute("data-norii-broken"),
           };
         }),
       );
-      // 둘 다 판정이 끝나야 한다 — 하나는 디코드되고 하나는 실패 표시가 붙는다.
-      const [loaded, missing] = found;
-      if (loaded === undefined || missing === undefined || found.length !== 2) {
+      // 여섯 장의 판정이 다 끝나야 순서대로 비교할 수 있다.
+      if (found.length !== 6) {
         return false;
       }
-      return loaded.width > 0 && missing.broken ? { loaded, missing } : false;
+      return found.every((image) => image.width > 0 || image.broken) ? found : false;
     },
-    { timeout: 10_000, interval: 200, timeoutMsg: "프리뷰 이미지 둘의 판정이 끝나지 않았다" },
+    { timeout: 10_000, interval: 200, timeoutMsg: "프리뷰 이미지 여섯 장의 판정이 끝나지 않았다" },
   );
 
+  const [docDir, rootDir, srcset, hidden, missing, outside] = images;
   // 상대 경로가 asset 주소로 바뀐 것까지 확인한다 — 그냥 뜬 것과 우리가 푼 것을 가른다.
-  expect(images.loaded.src.startsWith("asset:")).toBe(true);
-  expect(images.loaded.broken).toBe(false);
-  expect(images.missing.width).toBe(0);
+  expect(docDir?.src.startsWith("asset:")).toBe(true);
+  expect(docDir?.width).toBeGreaterThan(0);
+  expect(rootDir?.src.startsWith("asset:")).toBe(true);
+  expect(rootDir?.width).toBeGreaterThan(0);
+  // 어느 후보가 뽑히는지는 화면 배율이 정한다 — 후보가 asset 주소로 풀린 것만 본다.
+  expect(srcset?.currentSrc.startsWith("asset:")).toBe(true);
+  expect(srcset?.width).toBeGreaterThan(0);
+  expect(hidden?.width).toBeGreaterThan(0);
+  expect(missing?.broken).toBe(true);
+  // 파일이 있는데도 막힌다 — 스코프가 넓어지면 이 단언이 먼저 깨진다.
+  expect(existsSync(path.join(OUTSIDE_ROOT, "밖.png"))).toBe(true);
+  expect(outside?.broken).toBe(true);
+});
+
+// 집행: preview-strategy.md#어느-폴더의-이미지를-읽는가 — 파일만 연 경우 그 파일이 있는 폴더를 읽는다.
+// 왜: 폴더를 열지 않고 파일 하나만 여는 것이 이 기능의 출발점이다. 그 경로는 파일 커맨드가
+//     그 파일만 허용하므로, asset 스코프가 부모 폴더를 함께 등록하지 않으면 이미지가 403이 된다.
+// 경계: 사용자는 열기 다이얼로그·최근 파일·세션 복원으로 파일 하나를 연다. WebDriver는
+//       다이얼로그를 열 수 없어, webdriver 빌드에서만 환경변수로 같은 상태를 만든다.
+it("프리뷰 이미지 — 파일 하나만 허용해도 그 옆 이미지가 뜬다", async () => {
+  const singleDir = path.dirname(SCOPE_FILE);
+  await mkdir(path.join(singleDir, "images"), { recursive: true });
+  await copyFile(EXAMPLE_IMAGE, path.join(singleDir, "images", "격자.png"));
+  await writeFile(SCOPE_FILE, "![문서 옆](./images/격자.png)\n", "utf8");
+
+  await openInApp(SCOPE_FILE);
+  await waitActiveTab(SCOPE_FILE);
+
+  const image = await browser.waitUntil(
+    async () => {
+      const found = await browser.execute(() => {
+        const node = document.querySelector(
+          '[data-testid="preview-pane"] img',
+        ) as HTMLImageElement | null;
+        return node === null
+          ? null
+          : { width: node.naturalWidth, broken: node.hasAttribute("data-norii-broken") };
+      });
+      return found !== null && (found.width > 0 || found.broken) ? found : false;
+    },
+    { timeout: 10_000, interval: 200, timeoutMsg: "파일만 연 문서의 이미지 판정이 끝나지 않았다" },
+  );
+
+  expect(image.broken).toBe(false);
+  expect(image.width).toBeGreaterThan(0);
 });
 
 // 집행: document-model.md#세션-복원 — "탭 목록·활성 탭·루트 폴더·탭별 자리"를 되살린다.

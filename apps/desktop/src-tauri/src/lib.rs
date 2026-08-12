@@ -121,6 +121,23 @@ pub fn run() {
                     app.state::<scope::FileScope>().allow(canonical);
                 }
             }
+
+            // 파일 하나를 허용 루트로 넣는다 — 폴더 허용이 닿지 않는 상태를 E2E가 만들 수 있다.
+            // 없는 경로는 canonicalize가 실패해 허용되지 않으므로 미리 만든다.
+            #[cfg(feature = "webdriver")]
+            if let Ok(file) = std::env::var("NORII_E2E_SCOPE_FILE") {
+                let path = std::path::PathBuf::from(&file);
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                if !path.exists() {
+                    let _ = std::fs::write(&path, b"");
+                }
+                if let Ok(canonical) = std::fs::canonicalize(&path) {
+                    use tauri::Manager;
+                    app.state::<scope::FileScope>().allow(canonical);
+                }
+            }
             let _ = app;
             Ok(())
         })
