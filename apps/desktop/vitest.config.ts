@@ -14,6 +14,10 @@ export default defineConfig({
   // 하위 경로까지 망가진다.
   resolve: { alias: [{ find: /^katex$/, replacement: "katex/dist/katex.mjs" }] },
   plugins: [tsconfigPaths({ projects: ["./tsconfig.app.json"] })],
+  // 실행 중간에 발견되는 의존성을 미리 넣는다. Vite가 페이지를 리로드하면서 러너 없는 페이지에서
+  // 테스트 파일이 실행돼 실행마다 다른 파일이 죽는 것을 방지한다.
+  // 재현: node_modules/.vite를 지우고 브라우저 프로젝트를 돌린다.
+  optimizeDeps: { include: ["@tauri-apps/plugin-store", "react-dom/client"] },
   test: {
     projects: [
       {
