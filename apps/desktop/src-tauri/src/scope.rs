@@ -14,11 +14,30 @@ pub struct FileScope {
     roots: Mutex<HashSet<PathBuf>>,
     /// 허용 루트보다 강한 거부 — 앱 자신의 config·data 디렉터리가 들어간다.
     denied: Mutex<Vec<PathBuf>>,
+    /// 프리뷰의 로컬 이미지가 지나는 asset 프로토콜의 스코프. setup이 넣기 전에는 None이다.
+    asset: Mutex<Option<tauri::scope::fs::Scope>>,
 }
 
 impl FileScope {
+    /// asset 프로토콜 스코프를 보관한다 — 이후의 허용·거부가 그쪽에도 등록된다.
+    /// 허용 루트가 하나라도 쌓이기 전에, setup 맨 앞에서 부른다.
+    pub fn set_asset_scope(&self, scope: tauri::scope::fs::Scope) {
+        *self.asset.lock().expect("FileScope 락은 포이즌되지 않는다") = Some(scope);
+    }
+
     /// canonicalize된 경로를 허용 루트로 추가한다(파일이면 그 파일만, 폴더면 하위 트리 전체).
+    /// asset 스코프에는 다른 경로를 등록한다(→ .claude/docs/rust-commands.md#권한-capabilities).
     pub fn allow(&self, canonical_root: PathBuf) {
+        self.mirror_to_asset(|asset| {
+            if canonical_root.is_dir() {
+                return asset.allow_directory(&canonical_root, true);
+            }
+            match canonical_root.parent() {
+                // 부모가 파일시스템 루트인 경우 폴더째 등록하면 디스크 전체가 열린다.
+                Some(parent) if parent.parent().is_some() => asset.allow_directory(parent, true),
+                _ => asset.allow_file(&canonical_root),
+            }
+        });
         self.roots
             .lock()
             .expect("FileScope 락은 포이즌되지 않는다")
@@ -28,10 +47,28 @@ impl FileScope {
     /// 어떤 허용 루트 아래에 있어도 거부할 디렉터리를 등록한다 — 대상은 앱 config
     /// 디렉터리다(→ .claude/docs/rust-commands.md#권한-capabilities).
     pub fn deny(&self, canonical_dir: PathBuf) {
+        self.mirror_to_asset(|asset| asset.forbid_directory(&canonical_dir, true));
         self.denied
             .lock()
             .expect("FileScope 락은 포이즌되지 않는다")
             .push(canonical_dir);
+    }
+
+    /// 허용·거부를 asset 프로토콜 스코프에도 등록한다. 등록하는 경로는 호출 측이 정한다
+    /// (→ .claude/docs/rust-commands.md#권한-capabilities).
+    ///
+    /// 등록 실패는 이미지만 못 뜨게 하므로 파일 커맨드까지 막지 않는다 — 기록하고 넘어간다.
+    fn mirror_to_asset(
+        &self,
+        register: impl FnOnce(&tauri::scope::fs::Scope) -> tauri::Result<()>,
+    ) {
+        let asset = self.asset.lock().expect("FileScope 락은 포이즌되지 않는다");
+        let Some(asset) = asset.as_ref() else {
+            return;
+        };
+        if let Err(error) = register(asset) {
+            log::error!("asset 프로토콜 스코프 등록 실패: {error}");
+        }
     }
 
     /// canonicalize된 경로가 허용 루트와 같거나 그 하위인지 확인한다.
@@ -60,6 +97,8 @@ impl FileScope {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
 
     // 집행: rust-commands.md#권한-capabilities — 경로 스코프 강제는 커맨드 코드에 있다.
@@ -111,5 +150,106 @@ mod tests {
             scope.ensure_allowed(Path::new("/tmp/any.md")),
             Err(AppError::Permission(_))
         ));
+    }
+
+    // 아래는 프리뷰 이미지가 지나는 asset 프로토콜 스코프를 본다.
+    //
+    // 집행: rust-commands.md#권한-capabilities — 허용 루트 목록이 두 스코프의 단일 출처다.
+    // 왜: 두 스코프가 갈라지면 파일 커맨드가 막는 경로를 이미지로 읽을 수 있다. Tauri가
+    //     검사하는 쪽이라 우리 ensure_allowed로는 그 사실이 드러나지 않는다.
+    // 경계: 실제 이미지 로드(asset 응답)는 실앱 E2E가 본다 — 여기서는 등록 결과만 본다.
+
+    /// 진짜 Tauri 스코프를 보관한 FileScope와, 같은 스코프를 조회할 값.
+    fn asset_scope_fixture() -> (FileScope, tauri::scope::fs::Scope) {
+        use tauri::Manager;
+        let app = tauri::test::mock_app();
+        let scope = FileScope::default();
+        scope.set_asset_scope(app.asset_protocol_scope());
+        (scope, app.asset_protocol_scope())
+    }
+
+    // 보장: 폴더를 허용하면 그 하위 파일이 asset 스코프에서 열리고, 밖은 열리지 않는다.
+    #[test]
+    fn 허용한_폴더의_하위는_asset_스코프에서도_열린다() {
+        let (scope, asset) = asset_scope_fixture();
+        let dir = tempfile::tempdir().expect("임시 폴더");
+        let root = fs::canonicalize(dir.path()).expect("canonicalize");
+
+        scope.allow(root.clone());
+
+        assert!(asset.is_allowed(root.join("사진.png")));
+        assert!(asset.is_allowed(root.join("하위/사진.png")));
+        assert!(!asset.is_allowed(
+            root.parent()
+                .expect("임시 폴더에는 부모가 있다")
+                .join("밖.png")
+        ));
+    }
+
+    // 왜: 폴더 없이 파일 하나만 여는 길(다이얼로그·최근 파일·세션 복원)에서 파일만 등록하면
+    //     문서와 같은 폴더에 둔 이미지가 렌더되지 않는다.
+    // 보장: 그 파일이 있는 폴더의 하위 트리까지 들어가고, 폴더 밖은 들어가지 않는다.
+    #[test]
+    fn 허용한_파일은_그_폴더가_asset_스코프에_들어간다() {
+        let (scope, asset) = asset_scope_fixture();
+        let dir = tempfile::tempdir().expect("임시 폴더");
+        let root = fs::canonicalize(dir.path()).expect("canonicalize");
+        let file = root.join("문서.md");
+        fs::write(&file, b"").expect("파일 생성");
+
+        scope.allow(file.clone());
+
+        assert!(asset.is_allowed(&file));
+        assert!(asset.is_allowed(root.join("이웃.png")));
+        assert!(asset.is_allowed(root.join("하위/사진.png")));
+        assert!(!asset.is_allowed(
+            root.parent()
+                .expect("임시 폴더에는 부모가 있다")
+                .join("밖.png")
+        ));
+    }
+
+    // 왜: 두 스코프가 함께 넓어지면 파일 하나를 연 것으로 그 폴더 전체를 읽고 쓸 수 있다.
+    #[test]
+    fn 허용한_파일의_이웃은_파일_커맨드에서_거부된다() {
+        let scope = FileScope::default();
+        scope.allow(PathBuf::from("/tmp/vault/문서.md"));
+
+        assert!(scope
+            .ensure_allowed(Path::new("/tmp/vault/문서.md"))
+            .is_ok());
+        assert!(matches!(
+            scope.ensure_allowed(Path::new("/tmp/vault/이웃.md")),
+            Err(AppError::Permission(_))
+        ));
+    }
+
+    // 왜: 파일시스템 루트에 둔 문서의 부모는 루트다 — 폴더째 등록하면 디스크 전체가 이미지로
+    //     읽힌다.
+    #[test]
+    fn 루트에_있는_파일은_그_파일만_등록한다() {
+        let (scope, asset) = asset_scope_fixture();
+
+        scope.allow(PathBuf::from("/문서.md"));
+
+        assert!(asset.is_allowed("/문서.md"));
+        assert!(!asset.is_allowed("/이웃.png"));
+    }
+
+    // 보장: 거부 디렉터리는 허용 루트 하위에 있어도 asset 스코프에서 거부된다
+    //      (ensure_allowed의 거부 우선과 같은 결과).
+    #[test]
+    fn 거부_디렉터리는_asset_스코프에서도_거부된다() {
+        let (scope, asset) = asset_scope_fixture();
+        let dir = tempfile::tempdir().expect("임시 폴더");
+        let home = fs::canonicalize(dir.path()).expect("canonicalize");
+        let config = home.join("config");
+        fs::create_dir(&config).expect("폴더 생성");
+
+        scope.allow(home.clone());
+        scope.deny(config.clone());
+
+        assert!(asset.is_allowed(home.join("사진.png")));
+        assert!(!asset.is_allowed(config.join("session.json")));
     }
 }

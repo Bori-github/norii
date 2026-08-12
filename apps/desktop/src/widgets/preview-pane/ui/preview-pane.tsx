@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { css } from "styled-system/css";
 
 import { useDocumentStore } from "@entities/document";
+import { useWorkspaceStore } from "@entities/workspace";
 import { openExternalLink } from "@features/open-link";
 import { useViewModeStore } from "@features/switch-view-mode";
 import { STRINGS } from "@shared/config";
@@ -10,6 +11,7 @@ import { STRINGS } from "@shared/config";
 import { isAnchorHref, scrollToAnchor } from "../model/anchor";
 import { useCallouts } from "../model/use-callouts";
 import { useCodeBlocks } from "../model/use-code-copy";
+import { useImageLoads } from "../model/use-image-loads";
 import { useMermaid } from "../model/use-mermaid";
 import { usePreviewHtml } from "../model/use-preview-html";
 import { usePreviewScrollSync } from "../model/use-preview-scroll-sync";
@@ -124,6 +126,14 @@ const paneClass = css({
   "& details > *:not(summary)": { marginLeft: "1.25em" },
   "& hr": { borderColor: "border", marginY: "6" },
   "& img": { maxWidth: "100%", marginTop: 0, marginBottom: "4" },
+  // 못 찾은 이미지는 그 자리에만 알린다 — 브라우저의 물음표 상자를 감추고, 그 옆에 세운
+  // 대체 텍스트를 흐린 글자로 그린다(수식 실패 .katex-error와 같은 결). 감추기·세우기의
+  // 이유와 시점은 use-image-loads가 소유한다(이름도 그쪽 상수다 — Panda 정적 추출 때문에 리터럴).
+  "& img[data-norii-broken]": { display: "none" },
+  "& [data-norii-broken-alt]": {
+    color: "text.muted",
+    fontStyle: "italic",
+  },
   "& blockquote.norii-callout": {
     borderLeftWidth: "4px",
     borderColor: "border",
@@ -181,8 +191,14 @@ const contentClass = css({
 // DOM 삽입과 갱신 타이밍(디바운스)뿐이다.
 export function PreviewPane() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
+  // 이미지 경로의 두 기준 — 상대 경로는 활성 탭의 폴더, `/`는 연 폴더다
+  // (→ preview-strategy.md#경로-해석).
+  const activeFilePath = useDocumentStore(
+    (state) => state.tabs.find((tab) => tab.id === state.activeTabId)?.filePath ?? null,
+  );
+  const rootDir = useWorkspaceStore((state) => state.rootDir);
   const viewMode = useViewModeStore((state) => state.mode);
-  const html = usePreviewHtml(activeTabId, viewMode === "editor");
+  const html = usePreviewHtml(activeTabId, activeFilePath, rootDir, viewMode === "editor");
   const paneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -205,8 +221,10 @@ export function PreviewPane() {
   // 다이어그램은 비동기로 도착해 블록 높이를 바꾼다 — 리비전이 오르면 스크롤 동기화가
   // 낡은 측정을 버리고 다시 잰다(→ use-mermaid.ts). 이 효과는 위 삽입 뒤에 돈다.
   const mermaidRevision = useMermaid(paneRef, html);
-  // 렌더 키는 캐시 무효화 신호 — 렌더 스왑·다이어그램 도착마다 블록 위치를 다시 잰다.
-  usePreviewScrollSync(paneRef, activeTabId, `${mermaidRevision} ${html}`);
+  // 이미지도 렌더 뒤에 도착해 높이를 바꾼다 — 다이어그램과 같은 경로다.
+  const imageRevision = useImageLoads(contentRef, html);
+  // 렌더 키는 캐시 무효화 신호 — 렌더 스왑·다이어그램·이미지 도착마다 블록 위치를 다시 잰다.
+  usePreviewScrollSync(paneRef, activeTabId, `${mermaidRevision} ${imageRevision} ${html}`);
 
   // 링크 클릭 — 웹뷰 내비게이션은 **항상** 막는다(앱 창이 문서 속 URL로 이동하면 앱 UI가
   // 사라진다). 가로챈 뒤 세 갈래다(→ preview-strategy.md#링크-정책):

@@ -21,15 +21,41 @@ default-src 'self';
 script-src  'self';                     원격/인라인 스크립트 차단
 style-src   'self' 'unsafe-inline';     CM6·프리뷰 인라인 스타일·mermaid SVG의 style 최소 허용
 font-src    'self';                     로컬 번들 폰트만 (KaTeX 등 — 외부 CDN 금지)
-img-src     'self' data: asset:;        로컬·data· Tauri asset만
+img-src     'self' data: asset: https:; 로컬·data·Tauri asset·원격 https 이미지
 connect-src 'self';                     local-first → 외부 연결 없음 (업데이트 서버만 예외 도메인 추가)
 ```
 
-원칙: norii는 local-first라 **외부 연결이 거의 없다.** `connect-src`를 최대한 좁히고, 자동 업데이트 서버 도메인만 예외로 연다(→ [플랫폼 전략](platform-strategy.md)). 원격 이미지(`http(s)://`) 로드 허용 여부는 열린 결정이며, 기본은 로컬 상대경로 이미지를 우선한다(→ [실제 구현 계획](implementation-plan.md)).
+원칙: norii는 local-first라 **외부 연결이 거의 없다.** `connect-src`를 최대한 좁히고, 자동 업데이트 서버 도메인만 예외로 연다(→ [플랫폼 전략](platform-strategy.md)).
+
+원격 이미지는 이 원칙 밖에 있다. 마크다운 문서는 원격 이미지를 흔히 쓰고, 막으면 다른 뷰어에서 보이던 이미지가 norii에서만 빈자리가 된다.
+
+```text
+여는 것      https: 이미지
+열지 않는 것 http: — 오가는 중에 응답이 바뀔 수 있고, 얻는 것은 사설 http 서버의 이미지뿐이다
+남는 위험    문서를 여는 것만으로 그 URL에 요청이 나간다 —
+             문서를 준 쪽이 언제 열렸는지와 접속한 IP를 알 수 있다
+```
+
+원격 이미지를 끄는 설정은 없다 — CSP는 정적이라 껐다 켜는 것이 렌더 단계의 별도 작업이 된다(→ [실제 구현 계획](implementation-plan.md#열린-결정-open-decisions)).
 
 ### 2. 경로 스코프 (capabilities + 커맨드 검증)
 
-파일시스템 접근은 사용자가 다이얼로그로 선택했거나 연 루트 폴더 하위로 제한한다. **단, 파일 I/O는 커스텀 `std::fs` 커맨드라 capabilities가 경로를 자동 제한하지 못한다** — 실제 경로 스코프는 커맨드가 canonicalize + 허용 루트 검증으로 강제하고, capabilities는 커맨드·플러그인 노출을 제한한다. 두 층의 단일 출처는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이다.
+파일 커맨드의 접근은 사용자가 다이얼로그로 선택했거나 연 루트 폴더 하위로 제한한다(이미지는 아래 [이미지](#이미지-asset-프로토콜)가 따로 정한다). **단, 파일 I/O는 커스텀 `std::fs` 커맨드라 capabilities가 경로를 자동 제한하지 못한다** — 실제 경로 스코프는 커맨드가 canonicalize + 허용 루트 검증으로 강제하고, capabilities는 커맨드·플러그인 노출을 제한한다. 두 층의 단일 출처는 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이다.
+
+#### 이미지 (asset 프로토콜)
+
+프리뷰의 로컬 이미지는 Tauri asset 프로토콜로 읽는다. 읽을 수 있는 경로는 위 [Rust 커맨드 계약 — 권한](rust-commands.md#권한-capabilities)이 정한다.
+
+**파일 하나만 연 경우**(열기 다이얼로그·최근 파일·세션 복원) **이미지를 읽을 수 있는 경로는 파일 커맨드보다 넓다.** 파일 커맨드는 그 파일만 다루고, asset 프로토콜은 그 파일이 있는 폴더의 하위 트리를 읽는다.
+
+- 그 폴더 밖은 읽지 못한다.
+- 읽은 이미지는 화면에 렌더될 뿐 밖으로 나가지 않는다(`connect-src 'self'`).
+- 파일을 고치거나 지우지 못한다.
+- 남는 위험: 문서가 같은 폴더의 이미지를 지정해 화면에 렌더할 수 있다(`<img src="./영수증.png">`).
+
+VS Code도 같은 폴더를 읽는다 — [`getMarkdownLocalResourceRoots`](https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/src/util/resources.ts).
+
+**문서가 적은 asset URL은 프리뷰에 닿지 않는다.** `src`에 적은 값은 DOMPurify가 지우고(→ [프리뷰 전략](preview-strategy.md#sanitize-뒤에-바꾼다)), `srcset`의 후보는 렌더 파이프라인이 버린다(→ [프리뷰 전략 — 해석하는 속성](preview-strategy.md#해석하는-속성)). 남는 asset URL은 norii가 계산한 값뿐이다.
 
 #### 세션 파일
 

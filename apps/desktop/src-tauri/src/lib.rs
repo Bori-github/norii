@@ -75,6 +75,13 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            // 아래 deny가 첫 등록이므로 그보다 앞에 있어야 한다(→ src/scope.rs의 set_asset_scope).
+            {
+                use tauri::Manager;
+                app.state::<scope::FileScope>()
+                    .set_asset_scope(app.asset_protocol_scope());
+            }
+
             // 창 유리 — 투명 창의 뒤 배경을 OS가 흐린다(→ src/window_glass.rs).
             // 그 위에 드래그 띠를 얹는다 — 오버레이 타이틀바에서 창을 끄는 유일한 길이다
             // (→ src/titlebar_drag.rs).
@@ -110,6 +117,23 @@ pub fn run() {
             if let Ok(root) = std::env::var("NORII_E2E_SCOPE_ROOT") {
                 let _ = std::fs::create_dir_all(&root);
                 if let Ok(canonical) = std::fs::canonicalize(&root) {
+                    use tauri::Manager;
+                    app.state::<scope::FileScope>().allow(canonical);
+                }
+            }
+
+            // 파일 하나를 허용 루트로 넣는다 — 폴더 허용이 닿지 않는 상태를 E2E가 만들 수 있다.
+            // 없는 경로는 canonicalize가 실패해 허용되지 않으므로 미리 만든다.
+            #[cfg(feature = "webdriver")]
+            if let Ok(file) = std::env::var("NORII_E2E_SCOPE_FILE") {
+                let path = std::path::PathBuf::from(&file);
+                if let Some(parent) = path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                if !path.exists() {
+                    let _ = std::fs::write(&path, b"");
+                }
+                if let Ok(canonical) = std::fs::canonicalize(&path) {
                     use tauri::Manager;
                     app.state::<scope::FileScope>().allow(canonical);
                 }
