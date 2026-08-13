@@ -2,7 +2,7 @@ export { Banner, BannerBody } from "./banner/banner";
 export type { BannerProps } from "./banner/banner";
 export { Button, IconButton } from "./button/button";
 export type { ButtonProps, IconButtonProps } from "./button/button";
-export { Dialog } from "./dialog/dialog";
+export { Dialog, DialogBody, DialogFooter, DialogHeader } from "./dialog/dialog";
 export type { DialogProps } from "./dialog/dialog";
 export { Select } from "./select/select";
 export type { SelectProps } from "./select/select";

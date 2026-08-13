@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
@@ -7,11 +6,12 @@ import { Cell, Row, Section } from "../../.storybook/grid";
 import { Button } from "../button/button";
 
 import type { DialogProps } from "./dialog";
-import { Dialog } from "./dialog";
+import { Dialog, DialogBody, DialogFooter, DialogHeader } from "./dialog";
 
 const meta = {
   title: "Components/Dialog",
   component: Dialog,
+  subcomponents: { DialogHeader, DialogBody, DialogFooter },
   tags: ["autodocs"],
 } satisfies Meta<typeof Dialog>;
 
@@ -19,21 +19,34 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-function Trigger({ size, body }: { size: DialogProps["size"]; body: ReactNode }) {
+function Trigger({
+  width,
+  header,
+  divider,
+}: {
+  width?: DialogProps["width"];
+  header?: string;
+  divider?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button variant="accent" onClick={() => setOpen(true)}>
         열기
       </Button>
-      <Dialog open={open} size={size}>
-        {body}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+      <Dialog open={open} width={width}>
+        {header ? (
+          <DialogHeader divider={divider}>
+            <strong>{header}</strong>
+          </DialogHeader>
+        ) : null}
+        <DialogBody>저장하지 않은 변경이 있습니다. 닫을까요?</DialogBody>
+        <DialogFooter divider={divider}>
           <Button onClick={() => setOpen(false)}>취소</Button>
           <Button variant="accent" onClick={() => setOpen(false)}>
             확인
           </Button>
-        </div>
+        </DialogFooter>
       </Dialog>
     </>
   );
@@ -43,24 +56,29 @@ export const 개요: Story = {
   args: { open: false, children: null },
   parameters: { controls: { disable: true } },
   render: () => (
-    <Section title="크기">
-      <Row>
-        <Cell label="sm · 상자가 여백을 가짐">
-          <Trigger size="sm" body={<p>저장하지 않은 변경이 있습니다. 닫을까요?</p>} />
-        </Cell>
-        <Cell label="lg · 내용이 경계까지 채움">
-          <Trigger
-            size="lg"
-            body={
-              <div style={{ padding: 24 }}>
-                <h2 style={{ marginBottom: 12 }}>설정</h2>
-                <p>머리말과 본문이 자기 경계까지 채우는 크기다.</p>
-              </div>
-            }
-          />
-        </Cell>
-      </Row>
-    </Section>
+    <>
+      <Section title="폭">
+        <Row>
+          <Cell label="sm">
+            <Trigger />
+          </Cell>
+          <Cell label="lg">
+            <Trigger width="lg" header="설정" />
+          </Cell>
+        </Row>
+      </Section>
+
+      <Section title="구분선">
+        <Row>
+          <Cell label="없음">
+            <Trigger header="설정" />
+          </Cell>
+          <Cell label="있음">
+            <Trigger header="설정" divider />
+          </Cell>
+        </Row>
+      </Section>
+    </>
   ),
 };
 
@@ -74,7 +92,7 @@ export const 개요: Story = {
 export const 전환: Story = {
   args: { open: false, children: null },
   parameters: { controls: { disable: true } },
-  render: () => <Trigger size="sm" body={<p>열고 닫으며 전환을 본다.</p>} />,
+  render: () => <Trigger />,
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
 
@@ -88,6 +106,52 @@ export const 전환: Story = {
     await step("취소를 누르면 전환이 끝난 뒤 사라진다", async () => {
       await userEvent.click(canvas.getByRole("button", { name: "취소" }));
       await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+  },
+};
+
+/**
+ * @description
+ * 스타일 객체가 아니라 계산된 값을 확인한다 — `padding: "4 5"`처럼 Panda가 읽지 못하는 표기는
+ * 객체만 보면 통과하고 화면에서 0이 된다.
+ */
+export const 계산된_값: Story = {
+  tags: ["!dev", "!autodocs"],
+  args: { open: true, children: null },
+  parameters: { controls: { disable: true } },
+  render: () => (
+    <Dialog open>
+      <DialogHeader data-testid="header">제목</DialogHeader>
+      <DialogBody data-testid="body">본문</DialogBody>
+      <DialogFooter data-testid="footer">
+        <Button>확인</Button>
+      </DialogFooter>
+    </Dialog>
+  ),
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+    const styleOf = (id: string) => getComputedStyle(canvas.getByTestId(id));
+
+    await step("세 영역 모두 여백이 있다", async () => {
+      const paddings = ["header", "body", "footer"].map((part) => styleOf(part).padding);
+      await expect(paddings).not.toContain("0px");
+    });
+
+    await step("divider 없이는 선이 없다", async () => {
+      await expect(styleOf("header").borderBottomWidth).toBe("0px");
+      await expect(styleOf("footer").borderTopWidth).toBe("0px");
+    });
+
+    await step("상자는 불투명하고 뒤에는 딤이 있다", async () => {
+      const dialog = canvasElement.querySelector("dialog");
+      if (!dialog) {
+        throw new Error("대화상자를 찾지 못했다");
+      }
+      // 알파가 있으면 창 유리의 흐림이 상자를 통과해 비친다.
+      await expect(getComputedStyle(dialog).backgroundColor).toMatch(/^rgb\(/);
+      await expect(getComputedStyle(dialog, "::backdrop").backgroundColor).not.toBe(
+        "rgba(0, 0, 0, 0)",
+      );
     });
   },
 };

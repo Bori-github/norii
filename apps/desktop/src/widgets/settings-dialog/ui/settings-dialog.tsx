@@ -19,23 +19,13 @@ import {
   CloseIcon,
   ComputerIcon,
   Dialog,
+  DialogFooter,
+  DialogHeader,
   IconButton,
   MoonIcon,
   Select,
   SunIcon,
 } from "@shared/ui";
-
-const headerClass = css({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "5",
-  paddingX: "5",
-  paddingY: "4",
-  borderBottomWidth: "1px",
-  borderBottomStyle: "solid",
-  borderBottomColor: "border",
-});
 
 const titleClass = css({ fontSize: "md", fontWeight: "semibold" });
 
@@ -168,16 +158,6 @@ const sliderClass = css({
   },
 });
 
-const actionsClass = css({
-  display: "flex",
-  justifyContent: "flex-end",
-  paddingX: "5",
-  paddingY: "4",
-  borderTopWidth: "1px",
-  borderTopStyle: "solid",
-  borderTopColor: "border",
-});
-
 const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof SunIcon }[] = [
   { value: "light", label: STRINGS.themeLightLabel, Icon: SunIcon },
   { value: "dark", label: STRINGS.themeDarkLabel, Icon: MoonIcon },
@@ -260,13 +240,13 @@ export function SettingsDialog() {
   return (
     <Dialog
       open={open}
-      size="lg"
+      width="lg"
       dialogRef={dialogRef}
       data-testid="settings-dialog"
       aria-label={STRINGS.settingsTitle}
       onCancel={closeSettings} // Esc.
     >
-      <header className={headerClass}>
+      <DialogHeader divider>
         <strong className={titleClass}>{STRINGS.settingsTitle}</strong>
         <IconButton
           data-testid="settings-close"
@@ -275,7 +255,7 @@ export function SettingsDialog() {
         >
           <CloseIcon />
         </IconButton>
-      </header>
+      </DialogHeader>
 
       <div className={bodyClass}>
         <div
@@ -411,11 +391,11 @@ export function SettingsDialog() {
         </div>
       </div>
 
-      <div className={actionsClass}>
+      <DialogFooter divider>
         <Button size="sm" data-testid="settings-reset" onClick={restoreDefaults}>
           {STRINGS.settingsResetLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }
