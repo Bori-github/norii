@@ -215,7 +215,7 @@ export function SettingsDialog() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const resolvedOpacity = resolveOpacity(opacity, theme);
 
-  /** 세로 탭의 방향키 이동 — 옮긴 칸으로 포커스도 따라간다(roving tabindex 계약). */
+  // 방향키로 옮긴 분류에 포커스도 옮긴다 — 브라우저는 방향키로 포커스를 옮기지 않는다.
   function moveSection(event: React.KeyboardEvent<HTMLDivElement>): void {
     const delta = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
     if (delta === 0) {
