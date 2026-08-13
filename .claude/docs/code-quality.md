@@ -14,7 +14,7 @@ norii의 코드 품질 도구와 게이트의 단일 출처다. 도구 버전은
 | 타입 체크 | **tsc** (`--noEmit`) | TypeScript 컴파일러가 진실. 패키지별 project references로 실행. |
 | JS/TS 테스트 | **Vitest** | Vite 8 스택과 네이티브로 맞물림. 빠른 유닛·컴포넌트 테스트. |
 | Rust 포맷 | **rustfmt** (`cargo fmt`) | Rust 툴체인 기본. 추가 설치 없음. |
-| Rust 린트 | **Clippy** (`cargo clippy`) | Rust 표준 린터. 경고를 에러로(`-D warnings`) 취급. |
+| Rust 린트 | **Clippy** (`cargo clippy`) | Rust 표준 린터. 경고를 에러로(`-D warnings`) 취급하고, 테스트 코드까지 검사한다(`--all-targets`). 금지 호출 목록은 `apps/desktop/src-tauri/clippy.toml`이 소유한다. |
 | Rust 테스트 | **cargo test** | Rust 표준. |
 | Git 훅 | **lefthook** | 단일 바이너리 Git 훅. 커밋 전 `check` 게이트 자동 실행. |
 | CI | **GitHub Actions** | 푸시·PR에서 `mise run check` 실행. |
@@ -39,7 +39,7 @@ mise run check   # 아래를 모두 검증 (수정하지 않고 확인만)
   ├─ typecheck       turbo typecheck (tsc)  타입 체크
   ├─ test            turbo test (vitest)    JS/TS 테스트
   ├─ rust-fmt-check  cargo fmt --check      Rust 포맷 검증
-  ├─ clippy          cargo clippy -D warnings  Rust 린트
+  ├─ clippy          cargo clippy --all-targets -D warnings  Rust 린트
   ├─ rust-test       cargo test             Rust 테스트
   └─ docs-drift      node scripts/docs-drift.mjs  문서-코드 정합
 ```

@@ -81,7 +81,7 @@ run = "cargo fmt --check"
 [tasks.clippy]
 description = "Rust 린트 (clippy, 경고를 에러로)"
 dir = "apps/desktop/src-tauri"
-run = "cargo clippy -- -D warnings"
+run = "cargo clippy --all-targets -- -D warnings"
 
 [tasks.rust-test]
 description = "Rust 테스트"

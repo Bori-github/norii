@@ -40,7 +40,7 @@ mise run icons        # SVGR 아이콘 생성 (shared/ui/icons/svg → generated
 
 # Rust
 mise run rust-fmt-check  # cargo fmt --check
-mise run clippy          # cargo clippy -D warnings
+mise run clippy          # cargo clippy --all-targets -D warnings
 mise run rust-test       # cargo test
 
 # 실앱 E2E (check 미포함 — 앱 실행 필요, CI에서 실행)
