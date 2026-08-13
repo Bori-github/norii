@@ -13,7 +13,7 @@ const tooltipClass = css({
   borderRadius: "md",
   fontSize: "xs",
   fontWeight: "medium",
-  whiteSpace: "nowrap",
+  whiteSpace: "pre",
   color: "status.dangerFg",
   background: "status.dangerSurface",
   // 꼭짓점은 ::before라 props를 받을 수 없기 때문에 CSS 사용자 정의 속성으로 전달
