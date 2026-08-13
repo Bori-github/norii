@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
+import { css } from "styled-system/css";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
 
@@ -26,6 +27,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const 개요: Story = {
+  play: async ({ canvasElement }) => {
+    const [내용_폭, 지정_폭] = within(canvasElement).getAllByRole("combobox");
+
+    await expect(Math.round(지정_폭?.getBoundingClientRect().width ?? 0)).toBe(360);
+    await expect(내용_폭?.getBoundingClientRect().width).toBeLessThan(360);
+  },
   render: (args) => (
     <>
       <Section title="폭">
@@ -33,10 +40,8 @@ export const 개요: Story = {
           <Cell label="내용 폭">
             <Select {...args} />
           </Cell>
-          <Cell label="상자 360px">
-            <div style={{ width: 360, display: "flex" }}>
-              <Select {...args} />
-            </div>
+          <Cell label="wrapClassName으로 360px">
+            <Select {...args} wrapClassName={css({ width: "360px" })} />
           </Cell>
         </Row>
       </Section>
