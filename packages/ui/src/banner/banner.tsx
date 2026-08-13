@@ -15,7 +15,6 @@ export const BANNER_STYLES = {
     borderBottomColor: "border",
     fontSize: "sm",
     whiteSpace: "pre-line",
-    // 자리가 모자라면 액션이 상자 밖으로 나가 누를 수 없기 때문에 아랫줄로 내림
     flexWrap: "wrap",
   },
   variants: {
@@ -30,20 +29,29 @@ export const BANNER_STYLES = {
   defaultVariants: { tone: "default" },
 } as const;
 
-// flex만 두면 본문이 한 글자 폭까지 줄어 wrap이 걸리지 않기 때문에 하한을 둠.
 // ch는 숫자 0의 폭이라 글자 수와 다름 — 14ch는 123px, 한글로 10자.
 export const BANNER_BODY_STYLE = { flex: 1, minWidth: "14ch" } as const;
 
+const BANNER_ACTIONS_STYLE = {
+  display: "flex",
+  alignItems: "center",
+  gap: "2",
+  marginLeft: "auto",
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+} as const;
+
 const bannerRecipe = cva(BANNER_STYLES);
 const bodyClass = css(BANNER_BODY_STYLE);
+const actionsClass = css(BANNER_ACTIONS_STYLE);
 
 export interface BannerProps extends HTMLAttributes<HTMLDivElement> {
-  /** `danger`면 왼쪽에 빨간 띠를 더함. 기본값은 `default` */
+  /** `danger`면 왼쪽에 빨간 띠를 더함 */
   tone?: "default" | "danger";
   children: ReactNode;
 }
 
-/** 알림·충돌·삭제됨을 알리는 띠 컴포넌트 */
+/** 알림·충돌·삭제됨을 알리는 띠 — 본문은 `BannerBody`, 버튼은 `BannerActions`에 넣어 조립함 */
 export function Banner({ tone, className, children, ...rest }: BannerProps) {
   return (
     <div role="alert" className={cx(bannerRecipe({ tone }), className)} {...rest}>
@@ -52,11 +60,18 @@ export function Banner({ tone, className, children, ...rest }: BannerProps) {
   );
 }
 
-/** `Banner`의 본문을 감싸 남는 자리를 차지하게 하는 요소 — 액션이 오른쪽 끝으로 밀림 */
 export function BannerBody({ className, children, ...rest }: HTMLAttributes<HTMLSpanElement>) {
   return (
     <span className={cx(bodyClass, className)} {...rest}>
       {children}
     </span>
+  );
+}
+
+export function BannerActions({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cx(actionsClass, className)} {...rest}>
+      {children}
+    </div>
   );
 }

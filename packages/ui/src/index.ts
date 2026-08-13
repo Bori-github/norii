@@ -1,4 +1,4 @@
-export { Banner, BannerBody } from "./banner/banner";
+export { Banner, BannerActions, BannerBody } from "./banner/banner";
 export type { BannerProps } from "./banner/banner";
 export { Button, IconButton } from "./button/button";
 export type { ButtonProps, IconButtonProps } from "./button/button";

@@ -1,4 +1,4 @@
-import { Banner, BannerBody, Button, CloseIcon, IconButton } from "@norii/ui";
+import { Banner, BannerActions, BannerBody, Button, CloseIcon, IconButton } from "@norii/ui";
 
 import { STRINGS } from "../config";
 
@@ -14,26 +14,28 @@ export function NoticeBanner() {
       {notices.map((notice) => (
         <Banner key={notice.id} data-testid="notice">
           <BannerBody>{notice.message}</BannerBody>
-          {notice.actions?.map((action) => (
-            <Button
-              key={action.label}
-              variant="accent"
+          <BannerActions>
+            {notice.actions?.map((action) => (
+              <Button
+                key={action.label}
+                variant="accent"
+                size="sm"
+                onClick={() => {
+                  dismissNotice(notice.id);
+                  action.onPress();
+                }}
+              >
+                {action.label}
+              </Button>
+            ))}
+            <IconButton
               size="sm"
-              onClick={() => {
-                dismissNotice(notice.id);
-                action.onPress();
-              }}
+              label={STRINGS.dismissNoticeLabel}
+              onClick={() => dismissNotice(notice.id)}
             >
-              {action.label}
-            </Button>
-          ))}
-          <IconButton
-            size="sm"
-            label={STRINGS.dismissNoticeLabel}
-            onClick={() => dismissNotice(notice.id)}
-          >
-            <CloseIcon />
-          </IconButton>
+              <CloseIcon />
+            </IconButton>
+          </BannerActions>
         </Banner>
       ))}
     </>

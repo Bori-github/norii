@@ -1,6 +1,6 @@
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { Banner, BannerBody, Button } from "@shared/ui";
+import { Banner, BannerActions, BannerBody, Button } from "@shared/ui";
 
 import { useConflictStore } from "../model/conflict-store";
 import { resolveConflictKeepDisk, resolveConflictKeepMine } from "../model/save-tab";
@@ -19,12 +19,14 @@ export function ConflictBanner() {
       <BannerBody>
         {STRINGS.conflictTitle} — {STRINGS.conflictBody}
       </BannerBody>
-      <Button size="sm" onClick={() => void resolveConflictKeepMine(activeTabId)}>
-        {STRINGS.conflictKeepMine}
-      </Button>
-      <Button size="sm" onClick={() => void resolveConflictKeepDisk(activeTabId)}>
-        {STRINGS.conflictKeepDisk}
-      </Button>
+      <BannerActions>
+        <Button size="sm" onClick={() => void resolveConflictKeepMine(activeTabId)}>
+          {STRINGS.conflictKeepMine}
+        </Button>
+        <Button size="sm" onClick={() => void resolveConflictKeepDisk(activeTabId)}>
+          {STRINGS.conflictKeepDisk}
+        </Button>
+      </BannerActions>
     </Banner>
   );
 }

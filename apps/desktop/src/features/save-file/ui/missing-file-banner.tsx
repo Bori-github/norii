@@ -1,6 +1,6 @@
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { Banner, BannerBody, Button } from "@shared/ui";
+import { Banner, BannerActions, BannerBody, Button } from "@shared/ui";
 
 import { useMissingFileStore } from "../model/missing-file-store";
 import { saveTabNow } from "../model/save-tab";
@@ -17,9 +17,11 @@ export function MissingFileBanner() {
   return (
     <Banner tone="danger" data-testid="missing-file-banner">
       <BannerBody>{STRINGS.missingFileBody}</BannerBody>
-      <Button variant="accent" size="sm" onClick={() => void saveTabNow(activeTabId)}>
-        {STRINGS.missingFileRecreate}
-      </Button>
+      <BannerActions>
+        <Button variant="accent" size="sm" onClick={() => void saveTabNow(activeTabId)}>
+          {STRINGS.missingFileRecreate}
+        </Button>
+      </BannerActions>
     </Banner>
   );
 }
