@@ -1,0 +1,6 @@
+disallowed-methods = [
+  { path = "trash::delete", reason = "삭제는 trash_context()로 — 계약: .claude/docs/rust-commands.md#항목-조작" },
+  { path = "trash::delete_all", reason = "삭제는 trash_context()로 — 계약: .claude/docs/rust-commands.md#항목-조작" },
+  { path = "trash::TrashContext::delete", reason = "삭제는 trash_context()로 — 계약: .claude/docs/rust-commands.md#항목-조작" },
+  { path = "trash::TrashContext::delete_all", reason = "삭제는 trash_context()로 — 계약: .claude/docs/rust-commands.md#항목-조작" },
+]
