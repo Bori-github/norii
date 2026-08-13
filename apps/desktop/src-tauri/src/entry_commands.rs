@@ -69,7 +69,24 @@ pub fn rename_entry_impl(
 
 pub fn delete_entry_impl(scope: &FileScope, path: &str) -> Result<(), AppError> {
     let entry = resolve_entry(scope, path)?;
-    trash::delete(&entry).map_err(|_| AppError::Io("휴지통으로 보내지 못했습니다".into()))
+    trash_context()
+        .delete(&entry)
+        .map_err(|_| AppError::Io("휴지통으로 보내지 못했습니다".into()))
+}
+
+/// 삭제 방식(→ rust-commands.md#항목-조작).
+#[cfg(target_os = "macos")]
+fn trash_context() -> trash::TrashContext {
+    use trash::macos::{DeleteMethod, TrashContextExtMacos};
+
+    let mut context = trash::TrashContext::default();
+    context.set_delete_method(DeleteMethod::NsFileManager);
+    context
+}
+
+#[cfg(not(target_os = "macos"))]
+fn trash_context() -> trash::TrashContext {
+    trash::TrashContext::default()
 }
 
 fn is_same_entry(one: &Path, other: &Path) -> bool {
@@ -367,6 +384,24 @@ mod tests {
         PathBuf::from(std::env::var("HOME").expect("HOME"))
             .join(".Trash")
             .join(name)
+    }
+
+    // 집행: rust-commands.md#항목-조작 — "macOS는 NSFileManager로 옮긴다".
+    // 왜: 크레이트 기본값(Finder)으로 돌아가면 삭제마다 Finder 제어 권한 창이 떠서, 사람이
+    //     눌러 주기 전까지 삭제가 멈춘다.
+    // 보장: 삭제가 쓰는 컨텍스트를 만드는 함수가 NsFileManager를 고른다.
+    // 경계: 삭제가 그 함수를 거치는지는 이 테스트가 보지 못한다 — 크레이트 기본 컨텍스트로
+    //       지우는 trash::delete 호출은 clippy.toml이 막는다. 옮긴 결과(휴지통에 나타나고
+    //       자리에서 사라짐)는 위 삭제 테스트가 본다.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn 삭제는_권한을_묻지_않는_방식을_쓴다() {
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+
+        assert!(matches!(
+            trash_context().delete_method(),
+            DeleteMethod::NsFileManager
+        ));
     }
 
     // 집행: rust-commands.md#권한-capabilities — 경로 스코프 강제는 커맨드 코드에 있다.

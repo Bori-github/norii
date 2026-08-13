@@ -106,6 +106,8 @@ async fn delete_entry(path: String) -> Result<(), AppError>;
 // - 폴더는 하위 전체가 함께 간다
 // - 휴지통으로 보낼 수 없는 환경(지원하지 않는 볼륨 등)은 AppError::Io로 실패하고 완전
 //   삭제로 대체하지 않는다 — 되돌릴 수 없는 삭제는 사용자가 고른 정책이 아니다
+// - macOS는 NSFileManager로 옮긴다 — 크레이트 기본값인 Finder 방식(osascript)은 Finder
+//   제어 권한 창을 띄운다
 
 // 네 커맨드 모두 트리를 직접 갱신하지 않는다 — 자기 변경도 watch_tree의 dir-changed로
 // 돌아와 반영된다(외부 변경과 같은 경로. 프론트에 낙관적 갱신을 두지 않는다)
