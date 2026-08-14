@@ -38,7 +38,7 @@ CGS 흐림 반경     윈도서버에 "이 창 뒤를 이만큼 흐려라"를 �
 }
 ```
 
-**`minWidth`는 640이다.** 사이드바는 240px 고정이고 [문서 칸](../preview-strategy.md)이 나머지를 가져가므로, 640에서 문서 칸은 400px이다. 배너는 분할 칸 위에 있어 프리뷰를 나눠도 이 폭을 그대로 받는다. 액션이 둘인 배너는 382px 아래에서 액션이 아랫줄로 내려가므로 최소 창에서도 한 줄에 남는다 — 여유는 18px다. `minHeight`는 두지 않는다.
+**`minWidth`는 640이다.** 사이드바와 [문서 칸](../preview-strategy.md)이 함께 놓이는 최소 폭이다. `minHeight`는 두지 않는다.
 
 **`windowEffects`(NSVisualEffectView)는 쓰지 않고, `titleBarStyle`은 `Overlay`다.** 웹뷰가 타이틀바 자리까지 올라와 상단 전체가 한 장의 유리가 되고, 신호등은 OS가 그 위에 그린다. 두 선택의 근거와 실측은 [유리](decisions/glass.md)가 소유한다.
 
