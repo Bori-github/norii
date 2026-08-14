@@ -3,9 +3,7 @@ import { afterEach, expect, it } from "vitest";
 
 import "@app/index.css";
 
-import { CloseIcon } from "@norii/ui";
-
-import { IconButton } from "@norii/ui";
+import { CloseIcon, IconButton } from "@norii/ui";
 
 // 왜: 아이콘 버튼의 여백은 compoundVariants가 정한다. 그 부분을 cva에 spread로 넘기면 Panda가
 //     정적으로 읽지 못해 클래스 이름만 붙고 규칙이 생성되지 않는다 — 실제로 그렇게 xs가

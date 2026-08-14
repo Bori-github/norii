@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { css } from "styled-system/css";
 
-import { Button } from "@norii/ui";
+import { Button, Dialog, DialogBody, DialogFooter } from "@norii/ui";
+
 import { useConfirmStore } from "./confirm-store";
-import { Dialog, DialogBody, DialogFooter } from "@norii/ui";
 
 const textClass = css({
   marginTop: "3",
