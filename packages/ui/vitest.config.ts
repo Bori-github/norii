@@ -10,6 +10,12 @@ const alias = { "styled-system": fileURLToPath(new URL("./styled-system", import
 export default defineConfig({
   resolve: { alias },
   test: {
+    coverage: {
+      provider: "istanbul",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.stories.tsx", "src/**/*.test.ts", "src/icons/generated/**"],
+      reporter: ["text-summary", "html"],
+    },
     projects: [
       {
         extends: true,

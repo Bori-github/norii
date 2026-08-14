@@ -115,19 +115,21 @@ export const 전환: Story = {
  * 스타일 객체가 아니라 계산된 값을 확인한다 — `padding: "4 5"`처럼 Panda가 읽지 못하는 표기는
  * 객체만 보면 통과하고 화면에서 0이 된다.
  */
+const renderParts = () => (
+  <Dialog open>
+    <DialogHeader data-testid="header">제목</DialogHeader>
+    <DialogBody data-testid="body">본문</DialogBody>
+    <DialogFooter data-testid="footer">
+      <Button>확인</Button>
+    </DialogFooter>
+  </Dialog>
+);
+
 export const 계산된_값: Story = {
   tags: ["!dev", "!autodocs"],
   args: { open: true, children: null },
   parameters: { controls: { disable: true } },
-  render: () => (
-    <Dialog open>
-      <DialogHeader data-testid="header">제목</DialogHeader>
-      <DialogBody data-testid="body">본문</DialogBody>
-      <DialogFooter data-testid="footer">
-        <Button>확인</Button>
-      </DialogFooter>
-    </Dialog>
-  ),
+  render: renderParts,
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
     const styleOf = (id: string) => getComputedStyle(canvas.getByTestId(id));
@@ -152,6 +154,38 @@ export const 계산된_값: Story = {
       await expect(getComputedStyle(dialog, "::backdrop").backgroundColor).not.toBe(
         "rgba(0, 0, 0, 0)",
       );
+    });
+  },
+};
+
+export const 계산된_값_다크: Story = {
+  tags: ["!dev", "!autodocs"],
+  globals: { theme: "dark" },
+  args: { open: true, children: null },
+  parameters: { controls: { disable: true } },
+  render: renderParts,
+  play: async ({ canvasElement, step }) => {
+    const dialog = canvasElement.querySelector("dialog");
+    if (!dialog) {
+      throw new Error("대화상자를 찾지 못했다");
+    }
+    const background = getComputedStyle(dialog).backgroundColor;
+
+    await step("상자는 이 테마의 bg.paper를 쓴다", async () => {
+      await expect(document.documentElement.dataset["theme"]).toBe("dark");
+
+      // 토큰 값을 적어 두면 팔레트가 바뀔 때 어긋난다. 같은 트리에 빈 요소를 넣어 변수를 푼다.
+      const probe = document.createElement("div");
+      probe.style.background = "var(--colors-bg-paper)";
+      dialog.append(probe);
+      const paper = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+
+      await expect(background).toBe(paper);
+    });
+
+    await step("상자는 다크에서도 불투명하다", async () => {
+      await expect(background).toMatch(/^rgb\(/);
     });
   },
 };
