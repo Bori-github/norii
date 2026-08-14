@@ -22,7 +22,7 @@
     "@types/markdown-it": "14.1.2",
     "@types/markdown-it-footnote": "3.0.4",
     "@vitest/browser-playwright": "4.1.9",
-    "playwright": "1.57.0",
+    "playwright": "1.62.1",
     "typescript": "6.0.3",
     "vitest": "4.1.9"
   }

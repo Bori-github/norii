@@ -84,7 +84,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **커버리지 임계값** — 도입 시점·수치 (→ [테스트 전략](testing.md))
 - **번들 크기 임계값** — 앱 번들 15MB 예산은 확정. 프론트엔드 dist 하드 임계값 도입 여부가 열림 (→ [플랫폼 전략](platform-strategy.md))
 - **oxfmt 1.0 재확인** — 베타(0.x) → 1.0 도달 시 안정성 재점검 (→ [코드 품질](code-quality.md))
-- **playwright 재상향** — 로컬 macOS 13이 WebKit을 지원하는 마지막 버전으로 다운핀 — macOS 14+ 업그레이드 시 최신으로 복귀 (→ [기술 스택](tech-stack.md#코드-품질))
 - **E2E 도구 재확인** — tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검(도입 자체는 확정, 재점검만 열림) (→ [테스트 전략](testing.md))
 - **tauri-specta 2.0** — rc 핀 → 정식 2.0 도달 시 재확인 (→ [기술 스택](tech-stack.md))
 - **i18n 도입** — 현재 미도입(UI 문자열은 shared/config 상수) — 다국어 필요 시 (→ [프론트엔드 아키텍처](frontend-architecture.md))
