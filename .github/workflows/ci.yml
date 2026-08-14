@@ -14,8 +14,8 @@ concurrency:
 
 jobs:
   check:
-    # mac 러너 — 운영 1순위 플랫폼과 같은 계열이고, 브라우저 테스트(WebKit)가 실제 엔진으로 돈다.
-    runs-on: macos-14
+    # mac 러너 - 브라우저 테스트(WebKit)가 실제 엔진으로 돈다.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
