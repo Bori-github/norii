@@ -93,11 +93,11 @@ export const 다크: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const accent = getComputedStyle(canvas.getByRole("button", { name: "승인" }));
+    const accent = canvas.getByRole("button", { name: "승인" });
     const outline = canvas.getByRole("button", { name: "취소" });
 
-    await expect(accent.backgroundColor).toBe(resolvedColor(outline, "accent"));
-    await expect(accent.color).toBe(resolvedColor(outline, "accent.fg"));
+    await expect(getComputedStyle(accent).backgroundColor).toBe(resolvedColor(accent, "accent"));
+    await expect(getComputedStyle(accent).color).toBe(resolvedColor(accent, "accent.fg"));
 
     await expect(getComputedStyle(outline).color).toBe(resolvedColor(outline, "text"));
     await expect(getComputedStyle(outline).borderColor).toBe(resolvedColor(outline, "border"));
