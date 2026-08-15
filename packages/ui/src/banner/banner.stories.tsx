@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, within } from "storybook/test";
 
 import { Section } from "../../.storybook/grid";
+import { resolvedColor } from "../../.storybook/tokens";
 import { Button, IconButton } from "../button/button";
 import { CloseIcon } from "../icons";
 
@@ -146,5 +147,24 @@ export const Playground: Story = {
         </BannerActions>
       </>
     ),
+  },
+};
+
+export const 다크: Story = {
+  tags: ["!dev", "!autodocs"],
+  globals: { theme: "dark" },
+  args: { children: null },
+  parameters: { controls: { disable: true } },
+  render: () => (
+    <Banner>
+      <BannerBody>파일을 UTF-8로 다시 읽었습니다.</BannerBody>
+    </Banner>
+  ),
+  play: async ({ canvasElement }) => {
+    const banner = within(canvasElement).getByRole("alert");
+    const style = getComputedStyle(banner);
+
+    await expect(style.backgroundColor).toBe(resolvedColor(banner, "bg.paper"));
+    await expect(style.borderBottomColor).toBe(resolvedColor(banner, "border"));
   },
 };

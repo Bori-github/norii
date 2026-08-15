@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { css } from "styled-system/css";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
+import { resolvedColor } from "../../.storybook/tokens";
 
 import { Select } from "./select";
 
@@ -81,5 +82,19 @@ export const Playground: Story = {
 
     await expect(select).toHaveValue("euc-kr");
     await expect(args.onChange).toHaveBeenCalled();
+  },
+};
+
+export const 다크: Story = {
+  tags: ["!dev", "!autodocs"],
+  parameters: { controls: { disable: true } },
+  globals: { theme: "dark" },
+  play: async ({ canvasElement }) => {
+    const select = within(canvasElement).getByRole("combobox");
+    const style = getComputedStyle(select);
+
+    await expect(style.backgroundColor).toBe(resolvedColor(select, "bg.hover"));
+    await expect(style.color).toBe(resolvedColor(select, "text"));
+    await expect(style.borderColor).toBe(resolvedColor(select, "border"));
   },
 };

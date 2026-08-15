@@ -3,6 +3,7 @@ import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
+import { resolvedColor } from "../../.storybook/tokens";
 import { Button } from "../button/button";
 
 import type { DialogProps } from "./dialog";
@@ -173,15 +174,7 @@ export const 계산된_값_다크: Story = {
 
     await step("상자는 이 테마의 bg.paper를 쓴다", async () => {
       await expect(document.documentElement.dataset["theme"]).toBe("dark");
-
-      // 토큰 값을 적어 두면 팔레트가 바뀔 때 어긋난다. 같은 트리에 빈 요소를 넣어 변수를 푼다.
-      const probe = document.createElement("div");
-      probe.style.background = "var(--colors-bg-paper)";
-      dialog.append(probe);
-      const paper = getComputedStyle(probe).backgroundColor;
-      probe.remove();
-
-      await expect(background).toBe(paper);
+      await expect(background).toBe(resolvedColor(dialog, "bg.paper"));
     });
 
     await step("상자는 다크에서도 불투명하다", async () => {

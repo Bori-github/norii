@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
+import { resolvedColor } from "../../.storybook/tokens";
 
 import { BUTTON_STYLES, Button } from "./button";
 
@@ -75,3 +76,30 @@ export const 긴_글: Story = {
 };
 
 export const Playground: Story = { args: { variant: "accent", size: "md" } };
+
+export const 다크: Story = {
+  tags: ["!dev", "!autodocs"],
+  parameters: { controls: { disable: true } },
+  globals: { theme: "dark" },
+  render: (args) => (
+    <>
+      <Button {...args} variant="accent">
+        승인
+      </Button>
+      <Button {...args} variant="outline">
+        취소
+      </Button>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const accent = getComputedStyle(canvas.getByRole("button", { name: "승인" }));
+    const outline = canvas.getByRole("button", { name: "취소" });
+
+    await expect(accent.backgroundColor).toBe(resolvedColor(outline, "accent"));
+    await expect(accent.color).toBe(resolvedColor(outline, "accent.fg"));
+
+    await expect(getComputedStyle(outline).color).toBe(resolvedColor(outline, "text"));
+    await expect(getComputedStyle(outline).borderColor).toBe(resolvedColor(outline, "border"));
+  },
+};

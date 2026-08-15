@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import { css } from "styled-system/css";
 
 import { Cell, Row, Section } from "../../.storybook/grid";
+import { resolvedColor } from "../../.storybook/tokens";
 
 import { Tooltip } from "./tooltip";
 
@@ -129,5 +130,27 @@ export const Playground: Story = {
     const input = within(canvasElement).getByRole("textbox", { name: "파일 이름" });
 
     await expect(input).toHaveAccessibleDescription(String(args.children));
+  },
+};
+
+export const 다크: Story = {
+  tags: ["!dev", "!autodocs"],
+  argTypes: { pointerX: { control: false }, id: { control: false } },
+  globals: { theme: "dark" },
+  render: (args) => (
+    <Anchor>
+      <input aria-label="파일 이름" aria-describedby="tip-dark" defaultValue="README.md" />
+      <Tooltip {...args} className={tipClass} id="tip-dark" />
+    </Anchor>
+  ),
+  play: async ({ canvasElement }) => {
+    const tip = canvasElement.querySelector("#tip-dark");
+    if (!tip) {
+      throw new Error("툴팁을 찾지 못했다");
+    }
+    const style = getComputedStyle(tip);
+
+    await expect(style.backgroundColor).toBe(resolvedColor(tip, "status.dangerSurface"));
+    await expect(style.color).toBe(resolvedColor(tip, "status.dangerFg"));
   },
 };

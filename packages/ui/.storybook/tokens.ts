@@ -62,6 +62,28 @@ function readColors(tokens: string[], theme: "light" | "dark") {
 }
 
 /**
+ * 요소가 놓인 트리에서 색 토큰이 풀리는 값을 읽는다.
+ *
+ * @param host - 값을 잴 트리 안의 요소
+ * @param path - 시맨틱 색 경로 (예: `bg.paper`)
+ *
+ * @returns `rgb(...)` 문자열 — `getComputedStyle`의 색과 같은 형식
+ *
+ * @description
+ * 토큰 값을 테스트에 적으면 팔레트와 두 곳으로 갈리기 때문에 같은 트리에 빈 요소를 넣어 잰다
+ */
+export function resolvedColor(host: Element, path: string): string {
+  const probe = document.createElement("div");
+  probe.style.color = `var(${cssVar(path)})`;
+  host.append(probe);
+
+  const value = getComputedStyle(probe).color;
+  probe.remove();
+
+  return value;
+}
+
+/**
  * 시맨틱 색 그룹 하나를 읽는다.
  *
  * @param name - 그룹 이름
