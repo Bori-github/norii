@@ -36,7 +36,12 @@ mise run fmt-check    # oxfmt --check (포맷 검증, 수정 없음)
 mise run fsd-lint     # steiger (FSD 아키텍처 검증)
 mise run typecheck    # tsc (타입 체크)
 mise run test         # Vitest (테스트)
-mise run icons        # SVGR 아이콘 생성 (shared/ui/icons/svg → generated — 생성물은 커밋한다)
+mise run icons        # SVGR 아이콘 생성 (packages/ui의 icons/svg → generated — 생성물은 커밋한다)
+
+# 컴포넌트 카탈로그 (check 미포함)
+mise run storybook        # packages/ui 컴포넌트를 localhost:6006에 띄운다
+mise run storybook-build  # 정적 빌드 (생성물은 VCS 제외 — CI가 매 PR에 돌린다)
+mise run ui-coverage      # 스토리가 실행하지 않는 코드를 드러낸다 (임계값 없음, coverage/ 생성)
 
 # Rust
 mise run rust-fmt-check  # cargo fmt --check

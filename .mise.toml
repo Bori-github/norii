@@ -72,6 +72,11 @@ run = "turbo typecheck"
 description = "JS/TS 테스트 (Vitest, 패키지별)"
 run = "turbo test"
 
+[tasks.ui-coverage]
+description = "packages/ui 커버리지 — 스토리가 실행하지 않는 코드를 드러낸다 (임계값 없음)"
+dir = "packages/ui"
+run = "pnpm exec vitest run --coverage"
+
 # --- Rust 품질 (툴체인 기본) ---
 [tasks.rust-fmt-check]
 description = "Rust 포맷 검증"
@@ -115,17 +120,28 @@ run = "node scripts/bundle-size.mjs"
 
 # --- 아이콘 생성 (SVG 원본 → React 컴포넌트 — 생성물을 커밋한다) ---
 [tasks.icons]
-description = "아이콘 생성 (shared/ui/icons/svg → generated, SVGR — 생성물은 커밋한다)"
-dir = "apps/desktop"
+description = "아이콘 생성 (packages/ui의 icons/svg → generated, SVGR — 생성물은 커밋한다)"
+dir = "packages/ui"
 run = """
-mkdir -p src/shared/ui/icons/svg src/shared/ui/icons/generated
+mkdir -p src/icons/svg src/icons/generated
 pnpm svgr --config-file svgr.config.cjs --no-index \
-  --out-dir src/shared/ui/icons/generated src/shared/ui/icons/svg
+  --out-dir src/icons/generated src/icons/svg
 # 생성물이 있을 때만 포맷한다 — 원본이 아직 없으면 svgr는 no-op이고 포맷할 것도 없다.
-if ls src/shared/ui/icons/generated/*.tsx >/dev/null 2>&1; then
-  oxfmt src/shared/ui/icons/generated
+if ls src/icons/generated/*.tsx >/dev/null 2>&1; then
+  oxfmt src/icons/generated
 fi
 """
+
+# --- 컴포넌트 카탈로그 ---
+[tasks.storybook]
+description = "packages/ui 컴포넌트를 Storybook으로 띄운다 (localhost:6006)"
+dir = "packages/ui"
+run = "pnpm storybook"
+
+[tasks.storybook-build]
+description = "Storybook 정적 빌드 (생성물은 VCS 제외)"
+dir = "packages/ui"
+run = "pnpm storybook-build"
 
 # --- 문서-코드 정합 ---
 [tasks.docs-drift]

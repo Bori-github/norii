@@ -26,6 +26,7 @@ CGS 흐림 반경     윈도서버에 "이 창 뒤를 이만큼 흐려라"를 �
     "macOSPrivateApi": true, // 웹뷰 투명 배경 + fullScreenEnabled. App Store 포기의 원인.
     "windows": [
       {
+        "minWidth": 640, // 이 아래 폭은 설계 대상이 아니다(아래).
         "transparent": true, // 창 배경을 뚫는다. macOSPrivateApi 없이는 조용히 무시된다.
         "titleBarStyle": "Overlay", // 웹뷰를 창 맨 위까지 올린다 → 상단이 한 장의 유리.
         "hiddenTitle": true, // OS 타이틀 텍스트를 끈다. 앱 이름은 웹이 그린다(아래).
@@ -36,6 +37,8 @@ CGS 흐림 반경     윈도서버에 "이 창 뒤를 이만큼 흐려라"를 �
   },
 }
 ```
+
+**`minWidth`는 640이다.** 사이드바와 [문서 칸](../preview-strategy.md)이 함께 놓이는 최소 폭이다. `minHeight`는 두지 않는다.
 
 **`windowEffects`(NSVisualEffectView)는 쓰지 않고, `titleBarStyle`은 `Overlay`다.** 웹뷰가 타이틀바 자리까지 올라와 상단 전체가 한 장의 유리가 되고, 신호등은 OS가 그 위에 그린다. 두 선택의 근거와 실측은 [유리](decisions/glass.md)가 소유한다.
 

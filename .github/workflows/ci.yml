@@ -35,3 +35,6 @@ jobs:
       - run: pnpm --filter desktop exec playwright install webkit
 
       - run: mise run check
+
+      # 게이트가 컴파일하지 않는 `.mdx` 카탈로그 페이지를 빌드로 확인한다.
+      - run: mise run storybook-build

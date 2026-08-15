@@ -1,6 +1,6 @@
-import config from "../../../panda.config";
+import { noriiPreset as preset } from "./norii-preset";
 
-// panda.config.ts의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
+// preset의 시맨틱 토큰을 테마별 실제 색 문자열로 푼다.
 // 대비 게이트가 "문서에 적힌 값"이 아니라 "코드가 실제로 쓰는 값"을 검사하게 하려면
 // 토큰 참조({colors.lime.200})를 원시 토큰까지 따라가야 한다(→ design/design-system.md#대비-게이트).
 
@@ -79,11 +79,11 @@ function deref(value: string, primitives: TokenTree): string {
 }
 
 export function resolveSemanticColors(theme: Theme): SemanticColors {
-  const themeConfig = config.theme?.extend;
+  const themeConfig = preset.theme?.extend;
   const primitives = themeConfig?.tokens?.colors as TokenTree | undefined;
   const semantic = themeConfig?.semanticTokens?.colors as TokenTree | undefined;
   if (!primitives || !semantic) {
-    throw new Error("panda.config.ts에 색 토큰이 없습니다");
+    throw new Error("@norii/ui preset에 색 토큰이 없습니다");
   }
 
   const pick = (path: string): string => {

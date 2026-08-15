@@ -1,0 +1,43 @@
+{
+  "name": "@norii/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "디자인 시스템 — Panda preset(토큰·recipe)과 플랫폼 무관 프레젠테이션 컴포넌트 (→ .claude/docs/project-structure.md)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./icons": "./src/icons/index.ts",
+    "./panda-preset": "./src/panda-preset.ts",
+    "./panda-scale": "./src/panda-scale.ts"
+  },
+  "scripts": {
+    "codegen": "panda codegen",
+    "postinstall": "panda codegen --silent",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "storybook-build": "storybook build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@pandacss/dev": "1.11.4",
+    "@storybook/addon-a11y": "10.5.7",
+    "@storybook/addon-docs": "10.5.7",
+    "@storybook/addon-mcp": "0.7.0",
+    "@storybook/addon-vitest": "10.5.7",
+    "@storybook/react-vite": "10.5.7",
+    "@svgr/cli": "8.1.0",
+    "@types/react": "19.2.17",
+    "@vitejs/plugin-react": "6.0.3",
+    "@vitest/browser": "4.1.9",
+    "@vitest/browser-playwright": "4.1.9",
+    "@vitest/coverage-istanbul": "4.1.9",
+    "playwright": "1.62.1",
+    "react": "19.2.7",
+    "storybook": "10.5.7",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  },
+  "peerDependencies": {
+    "react": "19.2.7"
+  }
+}

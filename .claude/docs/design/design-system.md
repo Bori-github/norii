@@ -1,22 +1,40 @@
 # 디자인 시스템 (Panda CSS)
 
-norii는 프로젝트 내부에 디자인 시스템을 구축하고, 스타일을 **Panda CSS**로 작성한다. 이 문서는 토큰 계층·recipe·테마·배치의 단일 출처다.
-
-설계 의도는 **일관성을 도구로 강제**하는 것이다. 색·간격·타이포를 컴포넌트마다 하드코딩하지 않고, **토큰 하나를 단일 출처**로 두어 라이트/다크·리브랜딩·접근성 조정을 한 곳에서 바꾼다.
+norii는 스타일을 **Panda CSS**로 작성한다. 색·간격·타이포를 컴포넌트마다 적지 않고 토큰 하나를 단일 출처로 두어, 라이트/다크·접근성 조정을 한 곳에서 바꾼다.
 
 ## 이 문서의 경계
 
-디자인 문서는 넷으로 나뉜다. 같은 사실을 복제하지 않는다.
+디자인 문서는 다음으로 나뉜다. 같은 사실을 복제하지 않는다.
 
 ```text
 /DESIGN.md                       지켜야 할 규칙 — 재질(표면 표) · 색 · 타이포 · 접근성 · 모션 · 간격 · 모서리
 design/decisions/*.md            왜 그렇게 정했는가 — 맥락 · 기각한 대안 · 치르는 비용
 design/design-system.md          어떻게 구현하는가 — Panda 토큰 · recipe · 대비 게이트 (이 문서)
 design/window-chrome.md          창 설정의 실제 값 — transparent · 창 뒤 흐림 반경 · 폴백
-apps/desktop/panda.config.ts     값 — 팔레트·스케일의 실제 숫자. 문서가 아니라 코드가 소유한다.
+packages/ui/src/panda-preset.ts  값 — 색·타이포·모서리와 조건·layerStyle. 문서가 아니라 코드가 소유한다.
+apps/desktop/panda.config.ts     앱 설정 — 추출 대상 · 생성물 위치 · 전역 CSS · 훅.
+packages/ui/**/*.stories.tsx     컴포넌트 하나하나의 모양 · props · 조립 방법. 스토리북이 소유한다.
 ```
 
-**색·간격의 실제 값을 이 문서에 옮겨 적지 않는다.** 값이 두 곳에 살면 반드시 어긋난다.
+**컴포넌트별 문서는 여기에 쓰지 않는다.** 모양은 스토리가, props는 TSDoc이 소유하고 둘 다
+스토리북 화면에 나온다. 이 문서는 컴포넌트 전체에 걸리는 규칙만 갖는다.
+
+**색·간격의 실제 값을 이 문서에 옮겨 적지 않는다.** 값을 두 곳에 두면 반드시 어긋난다.
+
+앱은 `panda.config.ts`의 `presets`로 preset을 확장한다. **preset은 함수다** — `bg.chrome`이 쓰는 알파를 인자로 받아 소비 측이 덮어쓸 수 있다. 기본값은 preset이 함께 내주고, 앱은 그것을 `shared/config/norii-preset.ts`에서 한 번 조립해 `panda.config.ts`와 토큰을 읽는 테스트가 같은 인스턴스를 쓰게 한다.
+
+## codegen은 두 번 돈다
+
+`packages/ui`의 컴포넌트가 `css()`를 쓰므로 패키지도 자기 `styled-system`을 만든다. 앱은 그것을 쓰지 않고, 대신 **패키지 소스를 자기 `include`에 넣어** 같은 규칙을 자기 CSS에 담는다.
+
+```text
+packages/ui/panda.config.ts    패키지용 — 컴포넌트가 import할 css()·타입을 만든다
+apps/desktop/panda.config.ts   include에 ../../packages/ui/src를 더해 CSS 규칙을 담는다
+```
+
+**두 설정의 스케일이 갈리면 같은 스타일이 다른 클래스 이름을 얻는다.** 그래서 지우는 단계 목록은 `panda-scale.ts` 한 곳에 두고 양쪽이 가져다 쓴다. `config:resolved` 훅 자체는 preset 안에서 실행되지 않아 각 설정이 따로 건다.
+
+`turbo.json`이 `typecheck`·`test`·`build` 앞에 `codegen`을 세운다.
 
 ## 왜 Panda CSS인가
 
@@ -27,7 +45,7 @@ apps/desktop/panda.config.ts     값 — 팔레트·스케일의 실제 숫자. 
 
 ## 토큰 계층
 
-두 층으로 나눈다. **컴포넌트는 시맨틱 토큰만** 참조하고, 원시 토큰을 직접 쓰지 않는다.
+두 층으로 나눈다.
 
 ```text
 primitive tokens   원시값 — colors.gray.900, spacing.4, radii.md, fontSizes.sm …
@@ -37,12 +55,13 @@ semantic tokens    의미값 — colors.text, colors.bg.chrome, colors.border �
 컴포넌트           semantic token만 참조 (원시값·raw hex 금지)
 ```
 
-- **원시 토큰**: 팔레트·스케일의 실제 값. 바뀔 일이 적다.
-- **시맨틱 토큰**: "이 자리에 쓰는 의미". 라이트/다크에서 서로 다른 원시 토큰으로 매핑된다. 테마 전환의 핵심.
+시맨틱 토큰은 라이트/다크에서 서로 다른 원시 토큰으로 매핑된다.
+
+**폰트 토큰 이름은 역할로 짓는다.** `fonts.body`/`fonts.mono` 같은 이름은 "본문"이 UI 산문인지 에디터 텍스트인지 가리지 못한다 — `fonts.ui`(크롬·다이얼로그) / `fonts.editor`(에디터 본문)로 둔다.
 
 ## 표면 토큰
 
-표면의 역할·재질 규칙(→ [표면](decisions/surface.md))은 **배경 토큰의 이름으로** 코드에 나타난다. 컴포넌트는 "얼마나 투명한가"를 몰라도 되고, **자기가 무엇인지만** 고르면 된다. 어느 표면이 어느 토큰을 쓰는지는 루트 `DESIGN.md`의 표면 표가 단일 출처다 — 여기서는 토큰 이름만 정의한다.
+어느 표면이 어느 토큰을 쓰는지는 루트 `DESIGN.md`의 표면 표가 단일 출처다(→ [표면](decisions/surface.md)). 여기서는 토큰 이름만 정의한다.
 
 ```text
 bg.canvas         창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
@@ -57,9 +76,7 @@ bg.scrollbar      스크롤바 thumb(::-webkit-scrollbar-thumb)의 색. track은
 bg.scrollbarHover 호버 상태의 thumb 색.
 ```
 
-- **`bg.canvas`를 상태 배경으로 쓰지 않는다.** 캔버스가 투명해지면 호버 피드백이 사라진다. 그래서 `bg.hover`가 따로 있다.
-- **활성 탭은 `bg.paper`다**(→ [표면](decisions/surface.md)).
-- 편집면은 **배경을 명시적으로 칠한다.** 캔버스를 비쳐 쓰면 유리 도입 시 본문이 뚫린다.
+- 편집면은 **배경을 명시적으로 칠한다.** 캔버스를 비쳐 쓰면 유리에서 본문이 뚫린다.
 
 ## 글자·액센트 토큰
 
@@ -78,33 +95,36 @@ border        경계선. 비텍스트이므로 3:1 기준.
 border.muted  더 연한 경계선 — 트리 세로 가이드처럼 옅게 두는 선.
 ```
 
-위 금지는 취향이 아니라 [대비 게이트](#대비-게이트)의 계산 결과다 — 액센트를 글자로 쓸 수 있는 색은 색 계열과 무관하게 존재하지 않는다(→ [컬러 팔레트](decisions/color-palette.md)).
+위 금지는 [대비 게이트](#대비-게이트)의 계산 결과다 — 액센트를 글자로 쓸 수 있는 색은 색 계열과 무관하게 존재하지 않는다(→ [컬러 팔레트](decisions/color-palette.md)).
 
 ## 대비 게이트
 
-접근성 기준은 **토큰 값만으로 계산되는 순수 함수**로 정의한다 — 이 절이 그 정의의 단일 출처다. 유리 뒤 바탕화면은 통제할 수 없지만, 크롬 틴트의 알파 α가 정해지면 합성 결과가 구간에 갇힌다.
+접근성 기준은 **토큰 값만으로 계산되는 순수 함수**로 정의한다 — 이 절이 그 정의의 단일 출처다. 유리 뒤 바탕화면은 통제할 수 없지만, 크롬 틴트의 알파 α가 정해지면 합성 결과의 범위가 정해진다.
 
 ```text
 크롬 텍스트   bg.chrome 틴트를 순백 위 / 순흑 위에 각각 합성한 두 색 모두에서 4.5:1
 그 외 텍스트  해당 배경 토큰 위에서 4.5:1 (WCAG AA)
 ```
 
-토큰이 이 기준을 어기면 **테스트가 실패한다**(`mise run check`). 바탕화면도 스크린샷도 필요 없다 — 색 계산이 전부다. 이 게이트가 팔레트 확정의 합격선이며, 실측·눈대중이 그 자리를 대신하지 않는다.
+토큰이 이 기준을 어기면 **테스트가 실패한다**(`mise run check`). 팔레트는 이 계산을 통과해야 확정이며, 실측·눈대중이 그 자리를 대신하지 않는다.
 
 **게이트가 검사하는 것은 토큰 기본값이다.** 설정이 알파를 그 아래로 내리면 기준 밖이며, 하한을 두지 않는다(→ [유리](decisions/glass.md#크롬-틴트)).
 
 ## 테마 (라이트/다크)
 
-시맨틱 토큰 + Panda 조건으로 구현한다. 조건은 둘이고, 루트 요소의 속성이 켠다.
+시맨틱 토큰 + Panda 조건으로 구현한다. 조건은 셋이고, 앱은 루트 요소의 속성으로 켠다. 앞의 둘은 사용자·OS가 정한 테마다.
 
 ```text
-dark    [data-theme="dark"] &    사용자·OS가 정한 테마
+light   [data-theme="light"] &
+dark    [data-theme="dark"] &
 glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가(→ window-chrome.md)
 ```
 
-**`glass`를 `dark` 뒤에 정의한다.** specificity가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
+**라이트도 조건으로 내보낸다.** 기본값으로만 두면 되돌릴 규칙이 없어 다크인 트리 안에서 하위만 라이트로 되돌릴 수 없다. 기본값은 그대로 두므로 `data-theme`이 없을 때의 값은 바뀌지 않는다.
 
-선택지는 셋이다 — `system`(OS를 따른다) · `light` · `dark`. **`system`은 기본값이자 하나의 선택**이다: 그 의도를 버리고 light/dark만 저장하면 OS를 바꿔도 앱이 따라오지 않는다.
+**`glass`를 테마 조건 뒤에 정의한다.** specificity가 같아 나중에 정의된 쪽이 이기는데, 두 조건이 겹치는 토큰(`bg.canvas`)은 **유리가 이겨야** 한다 — 다크에서도 캔버스는 투명이어야 하기 때문이다. 두 표식을 심는 시점은 창 표면 계약이 소유한다(→ [표식은 첫 렌더 전에 심는다](window-chrome.md#표식은-첫-렌더-전에-심는다)). **상태는 `entities/theme`이 소유하고 `app`이 적용한다** — 소유 레이어의 근거는 [프론트엔드 아키텍처](../frontend-architecture.md)가 단일 출처다.
+
+선택지는 셋이다 — `system`(OS를 따른다) · `light` · `dark`. **`system`은 기본값이자 하나의 선택**이다 — light/dark만 저장하면 OS를 바꿔도 앱이 따라오지 않는다.
 
 **설정이 여는 것은 이 셋뿐이고, 색은 열지 않는다.** [대비 게이트](#대비-게이트)는 토큰 값만으로 도는 빌드 타임 검사라, 임의의 색을 받으면 검사가 런타임으로 옮겨간다.
 
@@ -114,9 +134,9 @@ glass   [data-glass="on"] &      이 빌드에서 창 유리가 켜져 있는가
 semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{colors.gray.900}' } }
 ```
 
-(단계 번호는 형태를 보이려는 예시다 — 실제 값의 단일 출처는 `panda.config.ts`다.)
+(단계 번호는 형태를 보이는 예시다. 색 값은 `panda-preset.ts`가 소유한다.)
 
-**에디터도 같은 토큰을 공유한다.** CodeMirror 6 테마는 JS 객체이므로, Panda가 생성한 토큰 값을 CM6 테마에 주입해 **앱 UI와 에디터가 하나의 토큰 출처**를 쓴다. 이 단일화가 [에디터 전략](../editor-strategy.md)의 "테마는 앱 테마와 단일 소스 공유" 원칙을 실현한다.
+**에디터도 같은 토큰을 공유한다.** CodeMirror 6 테마는 JS 객체이므로, Panda가 생성한 토큰 값을 CM6 테마에 주입해 **앱 UI와 에디터가 하나의 토큰 출처**를 쓴다(→ [에디터 전략](../editor-strategy.md)).
 
 **주입 방식은 CSS 변수다.** 앱이 `var(--colors-bg-paper)` 같은 **참조**를 넘기므로, 테마를 바꿔도 에디터 상태를 다시 만들 필요가 없다 — 브라우저가 변수를 다시 풀어 준다. 값을 넘기면 테마 전환마다 상태를 재생성해야 하고, 그러면 되돌리기 히스토리와 커서 위치가 날아간다.
 
@@ -124,17 +144,14 @@ semanticTokens.colors.bg.paper = { value: { base: '{colors.gray.50}', _dark: '{c
 
 **CM6 기본 테마는 전부 덮는다.** 하나라도 남기면 앱 팔레트 밖 색이 화면에 남는다 — 활성 줄의 옅은 파랑(`#cceeff`), 검색 패널의 회색(`#f5f5f5`)이 그것이다. 덮었는지는 테스트가 고정한다(`packages/editor/src/theme.test.ts`).
 
-**폰트 토큰 이름은 역할로 짓는다.** `fonts.body`/`fonts.mono` 같은 이름은 "본문"이 UI 산문인지 에디터 텍스트인지 가리지 못한다 — `fonts.ui`(크롬·다이얼로그) / `fonts.editor`(에디터 본문)로 둔다.
 
 ## Recipe (컴포넌트 변형)
 
-버튼·탭 같은 컴포넌트의 변형(`variant`·`size`·상태)은 Panda **recipe**로 정의한다. 변형이 타입으로 노출되어 오용을 막는다.
+컴포넌트의 변형(`variant`·`size`·상태)은 Panda **recipe**로 정의한다. 변형이 타입으로 노출되어 오용을 막는다.
 
-```text
-buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defaultVariants }
-```
-
-여러 요소로 구성된 컴포넌트는 slot recipe(`sva`)를 쓴다.
+여러 요소로 이루어진 컴포넌트는 요소마다 따로 내보낸다. 부모는 바깥 모양만 갖고 여백은 각 요소가
+가진다 — `Dialog`에 `DialogHeader`·`DialogBody`·`DialogFooter`를 넣어 조립하는 식이다. 쓰는 쪽이
+필요한 요소만 넣고 배치도 거기서 정해진다.
 
 ## 여러 컴포넌트가 공유하는 상태 스타일
 
@@ -143,24 +160,25 @@ buttonRecipe = { base, variants: { variant, size, icon }, compoundVariants, defa
 ## FSD 배치
 
 ```text
-panda.config.ts        토큰·시맨틱 토큰·recipe·조건의 단일 출처 (apps/desktop)
+packages/ui            panda-preset.ts(토큰·조건·layerStyle) + 컴포넌트(recipe)
+      │
+panda.config.ts        preset을 확장하고 추출 대상·전역 CSS를 더한다 (apps/desktop)
       │  (panda codegen)
 styled-system/         생성물 — 여기서 css()·recipe·토큰을 import
       │
-shared/ui              styled-system로 만든 디자인 시스템 컴포넌트 (Button, Tab …)
+shared/ui              packages/ui를 재노출하고 스토어에 연결한 컴포넌트를 더한다
       │
-widgets / features     shared/ui 컴포넌트만 소비 (직접 스타일 최소화)
+widgets / features     shared/ui만 소비 (직접 스타일 최소화)
 ```
 
-- 토큰 정의는 `panda.config.ts` 한 곳. `shared`가 이를 감싸 앱에 노출한다.
-- `styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
+`styled-system/`는 생성물이라 **버전관리에서 제외하고 빌드 시 생성**한다(→ [파일/폴더 구조](../project-structure.md)).
 
 ## 아이콘
 
-아이콘은 **SVG 원본 파일을 단일 출처**로 두고, 도구(SVGR CLI, → [기술 스택 — 코드 품질](../tech-stack.md#코드-품질))가 React 컴포넌트를 생성한다. 빌드 플러그인이 아니라 커밋되는 코드젠이다 — vite·vitest 설정에 침투하지 않아 설정 드리프트(katex alias류 함정)가 생기지 않고, 생성물이 리뷰·게이트를 그대로 통과한다.
+아이콘은 **SVG 원본 파일을 단일 출처**로 두고, 도구(SVGR CLI, → [기술 스택 — 코드 품질](../tech-stack.md#코드-품질))가 React 컴포넌트를 생성한다. 빌드 플러그인이 아니라 커밋되는 코드젠이다 — vite·vitest 설정을 건드리지 않아 두 설정이 어긋날 일이 없고, 생성물이 리뷰·게이트를 그대로 통과한다.
 
 ```text
-apps/desktop/src/shared/ui/icons/
+packages/ui/src/icons/
 ├── svg/          ← 단일 출처 — 디자인 산출물(Figma 내보내기 등)을 그대로 둔다
 ├── generated/    ← mise run icons가 생성한 TSX — 손으로 고치지 않는다
 └── index.ts      ← 공개 배럴 — 컴포넌트 이름(XxxIcon)을 사람이 관리한다
@@ -176,10 +194,6 @@ apps/desktop/src/shared/ui/icons/
 - Panda는 **PostCSS 플러그인**(`@pandacss/dev/postcss`)으로 동작한다. Vite의 PostCSS 파이프라인에 얹는다.
 - 코드 생성: `panda codegen`(postinstall·빌드·dev 시 — → [개발 명령](../development-commands.md#사전-준비)). `@pandacss/dev` 버전은 [기술 스택](../tech-stack.md#애플리케이션-스택)에 핀한다.
 
-## 규칙
+## 토큰을 쓰지 않는 값
 
-- **raw hex·매직 넘버 금지.** 색·간격·타이포·radius는 토큰으로만 쓴다.
-- **예외 — 플랫폼 상수는 토큰이 아니다.** OS가 정한 값(예: 타이틀바 높이 28px)은 디자인 스케일이 아니라 네이티브 코드와 맞춰야 하는 숫자다. 토큰으로 만들면 단일 출처가 두 곳으로 갈라진다. 그 값은 네이티브 쪽 상수가 소유하고(→ [창 표면 계약](window-chrome.md#계약--드래그-띠)), CSS는 같은 숫자를 쓰되 어디가 출처인지 주석으로 가리킨다.
-- **컴포넌트는 시맨틱 토큰**을 참조한다. 원시 토큰 직접 참조는 토큰 정의 계층에서만.
-- **컴포넌트 변형은 recipe**로. 조건부 클래스 난립을 막는다.
-- 디자인 시스템 컴포넌트는 `shared/ui`에 두고, 상위 레이어는 그것을 조합한다.
+색·간격·타이포·radius에 raw hex와 매직 넘버를 쓰지 않는다. 예외는 **플랫폼 상수**다 — OS가 정한 값(예: 타이틀바 높이 28px)은 디자인 스케일이 아니라 네이티브 코드와 맞춰야 하는 숫자라, 토큰으로 만들면 단일 출처가 두 곳으로 갈라진다. 그 값은 네이티브 쪽 상수가 소유하고(→ [창 표면 계약](window-chrome.md#계약--드래그-띠)), CSS는 같은 숫자를 쓰되 어디가 출처인지 주석으로 가리킨다.

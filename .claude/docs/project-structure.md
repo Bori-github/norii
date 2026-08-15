@@ -70,7 +70,7 @@ norii/
       tsconfig.app.json       FSD 레이어 path alias 정의
       tsconfig.json           편집기용 위임 설정 — tsconfig.app.json을 extends (언어 서버는 이 이름만 자동 탐색)
       steiger.config.ts       FSD 린트 설정
-      panda.config.ts         디자인 시스템 토큰·recipe 단일 출처 (→ design/design-system.md)
+      panda.config.ts         @norii/ui preset을 확장한 앱 설정 (→ design/design-system.md)
       postcss.config.cjs      Panda PostCSS 플러그인
       styled-system/          Panda 생성물 (VCS 제외 — 빌드 시 생성)
       package.json
@@ -78,7 +78,7 @@ norii/
   packages/
     editor/                  CodeMirror 6 래퍼 — 확장 구성·폴딩·테마. 플랫폼 무관
     markdown/                프리뷰 파이프라인 — markdown-it + DOMPurify + 스크롤 매핑
-    ui/                      공유 React 컴포넌트 — 버튼·탭바·트리 등
+    ui/                      Panda preset과 공유 React 컴포넌트 + Storybook 카탈로그
     tsconfig/                공유 TS/린트 설정
 ```
 
@@ -98,8 +98,13 @@ packages/markdown
   - DOM 렌더는 소비 측(apps/desktop)이 담당
 
 packages/ui
-  - 플랫폼 무관 프레젠테이션 컴포넌트
-  - 상태·파일 I/O를 알지 않는다
+  - Panda preset — 토큰·조건·layerStyle (소비 측이 presets로 확장한다)
+  - Storybook — 컴포넌트를 눈으로 보는 카탈로그(`mise run storybook`)
+    스토리는 게이트에서 렌더 테스트로도 돈다(→ [테스트 전략](testing.md))
+  - 컴포넌트 하나가 폴더 하나 — src/button/{button.tsx, button.test.ts}
+    폴더 안에 배럴을 두지 않고 src/index.ts가 직접 집는다
+  - **앱을 알지 않는다** — 스토어·IPC·UI 문자열·파일 경로를 모른다.
+    자기 안에서 닫히는 상태(열림 전환·포커스·호버)는 가져도 된다
 
 apps/desktop
   - 위 패키지를 조립하고 Tauri IPC에 연결

@@ -4,7 +4,7 @@
 
 지켜야 할 규칙을 명령형으로. **여기가 이 주제의 단일 출처다.**
 
-값은 복제하지 않고 계약 문서(`panda.config.ts` · `window-chrome.md` 등)를 가리킨다.
+값은 복제하지 않고 계약 문서(`packages/ui/src/panda-preset.ts` · `window-chrome.md` 등)를 가리킨다.
 
 ## 왜 이렇게 정했나
 

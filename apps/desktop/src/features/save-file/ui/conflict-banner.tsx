@@ -1,14 +1,12 @@
-import { cx } from "styled-system/css";
-
 import { useDocumentStore } from "@entities/document";
 import { STRINGS } from "@shared/config";
-import { bannerBodyClass, bannerClass, bannerDangerClass, Button } from "@shared/ui";
+import { Banner, BannerActions, BannerBody, Button } from "@shared/ui";
 
 import { useConflictStore } from "../model/conflict-store";
 import { resolveConflictKeepDisk, resolveConflictKeepMine } from "../model/save-tab";
 
 // 활성 탭의 외부 변경 충돌 배너 — 사용자가 디스크/편집 버전을 명시적으로 고른다
-// (자동 병합 금지 → file-lifecycle.md#자동-저장). 스타일은 shared/ui 배너 정의를 공유한다.
+// (자동 병합 금지 → file-lifecycle.md#자동-저장).
 export function ConflictBanner() {
   const activeTabId = useDocumentStore((state) => state.activeTabId);
   const conflictTabIds = useConflictStore((state) => state.conflictTabIds);
@@ -17,16 +15,18 @@ export function ConflictBanner() {
     return null;
   }
   return (
-    <div className={cx(bannerClass, bannerDangerClass)} role="alert" data-testid="conflict-banner">
-      <span className={bannerBodyClass}>
+    <Banner tone="danger" data-testid="conflict-banner">
+      <BannerBody>
         {STRINGS.conflictTitle} — {STRINGS.conflictBody}
-      </span>
-      <Button size="sm" onClick={() => void resolveConflictKeepMine(activeTabId)}>
-        {STRINGS.conflictKeepMine}
-      </Button>
-      <Button size="sm" onClick={() => void resolveConflictKeepDisk(activeTabId)}>
-        {STRINGS.conflictKeepDisk}
-      </Button>
-    </div>
+      </BannerBody>
+      <BannerActions>
+        <Button size="sm" onClick={() => void resolveConflictKeepMine(activeTabId)}>
+          {STRINGS.conflictKeepMine}
+        </Button>
+        <Button size="sm" onClick={() => void resolveConflictKeepDisk(activeTabId)}>
+          {STRINGS.conflictKeepDisk}
+        </Button>
+      </BannerActions>
+    </Banner>
   );
 }

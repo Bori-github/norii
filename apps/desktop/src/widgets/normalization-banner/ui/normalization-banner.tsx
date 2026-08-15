@@ -4,7 +4,7 @@ import { approveTabNormalization } from "@features/save-file";
 import { STRINGS } from "@shared/config";
 import { css } from "styled-system/css";
 
-import { bannerBodyClass, bannerClass, Button, Select } from "@shared/ui";
+import { Banner, BannerActions, BannerBody, Button, Select } from "@shared/ui";
 
 // 활성 탭의 정규화 승인 배너 — "저장 시 무엇이 바뀌는지"(인코딩 변환·개행 통일)를 알리고
 // 승인을 받는다(→ file-lifecycle.md#자동-저장). 감지 오판의 구제로 재해석 메뉴를 함께 노출한다
@@ -29,30 +29,32 @@ export function NormalizationBanner() {
   }
 
   return (
-    <div className={bannerClass} role="alert" data-testid="normalization-banner">
-      <span className={bannerBodyClass}>{messages.join("\n")}</span>
-      <Button variant="accent" size="sm" onClick={() => approveTabNormalization(activeTab.id)}>
-        {STRINGS.normalizationApproveLabel}
-      </Button>
-      <Select
-        wrapClassName={selectWrapClass}
-        aria-label={STRINGS.reopenEncodingLabel}
-        value=""
-        onChange={(event) => {
-          if (event.target.value !== "") {
-            void reopenTabWithEncoding(activeTab.id, event.target.value);
-          }
-        }}
-      >
-        <option value="" disabled>
-          {STRINGS.reopenEncodingLabel}
-        </option>
-        {REOPEN_ENCODINGS.map((label) => (
-          <option key={label} value={label}>
-            {label}
+    <Banner data-testid="normalization-banner">
+      <BannerBody>{messages.join("\n")}</BannerBody>
+      <BannerActions>
+        <Button variant="accent" size="sm" onClick={() => approveTabNormalization(activeTab.id)}>
+          {STRINGS.normalizationApproveLabel}
+        </Button>
+        <Select
+          wrapClassName={selectWrapClass}
+          aria-label={STRINGS.reopenEncodingLabel}
+          value=""
+          onChange={(event) => {
+            if (event.target.value !== "") {
+              void reopenTabWithEncoding(activeTab.id, event.target.value);
+            }
+          }}
+        >
+          <option value="" disabled>
+            {STRINGS.reopenEncodingLabel}
           </option>
-        ))}
-      </Select>
-    </div>
+          {REOPEN_ENCODINGS.map((label) => (
+            <option key={label} value={label}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </BannerActions>
+    </Banner>
   );
 }

@@ -1,22 +1,15 @@
 import { useRef } from "react";
 import { css } from "styled-system/css";
 
-import { Button } from "./button";
-import { useConfirmStore } from "./confirm-store";
-import { Dialog } from "./dialog";
+import { Button, Dialog, DialogBody, DialogFooter } from "@norii/ui";
 
-const bodyClass = css({
+import { useConfirmStore } from "./confirm-store";
+
+const textClass = css({
   marginTop: "3",
   fontSize: "sm",
   color: "text.muted",
   whiteSpace: "pre-line",
-});
-
-const actionsClass = css({
-  display: "flex",
-  justifyContent: "flex-end",
-  gap: "3",
-  marginTop: "5",
 });
 
 export function ConfirmDialog() {
@@ -40,18 +33,20 @@ export function ConfirmDialog() {
       aria-describedby="confirm-dialog-body"
       onCancel={() => settle(false)} // Esc — settle이 중복 호출을 무시하므로 close와 겹쳐도 안전.
     >
-      <strong id="confirm-dialog-title">{shown.title}</strong>
-      <p id="confirm-dialog-body" className={bodyClass}>
-        {shown.body}
-      </p>
-      <div className={actionsClass}>
+      <DialogBody>
+        <strong id="confirm-dialog-title">{shown.title}</strong>
+        <p id="confirm-dialog-body" className={textClass}>
+          {shown.body}
+        </p>
+      </DialogBody>
+      <DialogFooter>
         <Button data-testid="confirm-cancel" onClick={() => settle(false)}>
           {shown.cancelLabel}
         </Button>
         <Button variant="accent" data-testid="confirm-accept" onClick={() => settle(true)}>
           {shown.confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

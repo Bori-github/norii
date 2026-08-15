@@ -3,7 +3,7 @@ import { afterEach, expect, it } from "vitest";
 
 import "@app/index.css";
 
-import { Dialog } from "./dialog";
+import { Dialog } from "@norii/ui";
 
 // 왜: showModal이 포커스를 다이얼로그 안으로 옮기는데, 닫을 때 <dialog>가 DOM에서 빠지면
 //     활성 요소가 body가 된다 — 키보드로 열었다 닫으면 다음 Tab이 문서 맨 앞에서 시작한다.

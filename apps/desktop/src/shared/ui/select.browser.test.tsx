@@ -5,7 +5,7 @@ import "@app/index.css";
 
 import { css } from "styled-system/css";
 
-import { Select } from "./select";
+import { Select } from "@norii/ui";
 
 // 왜: 꺽쇠는 OS 기본 화살표를 끄고 감싸는 상자에 직접 그린다. 셀렉트가 그 상자를 채우지 않으면
 //     꺽쇠만 오른쪽 끝에 남아 셀렉트에서 떨어져 뜬다 — 실제로 그렇게 벌어진 적이 있다.
