@@ -1,18 +1,18 @@
-// 번들 크기 측정 — 측정 대상과 실행 시점은 .claude/docs/platform-strategy.md#번들-크기-측정.
+// 번들 크기 측정. 측정 대상·실행 시점: .claude/docs/platform-strategy.md#번들-크기-측정
 import { existsSync, lstatSync, openSync, readdirSync, readSync, closeSync } from "node:fs";
 import { basename, join } from "node:path";
 import process from "node:process";
 
 const ROOT = process.cwd();
-// 예산 값의 단일 출처 — 문서는 숫자를 적지 않고 이 파일을 가리킨다.
+// 예산 값의 단일 출처. 문서는 숫자 없이 이 파일을 가리킴
 const BUDGET_PER_ARCH_BYTES = 25 * 1024 * 1024;
 const FRONTEND_DIST = "apps/desktop/dist";
-// `--target`을 준 빌드는 target/<타깃>/ 아래에 쌓인다 — target 전체를 훑어야 universal이 잡힌다.
+// `--target` 빌드 산출물은 target/<타깃>/ 아래. universal을 잡으려면 target 전체 순회
 const TARGET_DIR = "apps/desktop/src-tauri/target";
 
 function sizeOf(path) {
-  // lstat으로 심볼릭 링크를 따라가지 않는다 — macOS .app은 내부 링크(Versions/Current 등)를
-  // 담으므로, 링크를 따라가면 실제 파일이 중복 집계되거나 깨진 링크에서 statSync가 던진다.
+  // 심볼릭 링크 미추적(lstat). macOS .app의 내부 링크(Versions/Current 등)를 따라가면
+  // 실제 파일 중복 집계 또는 깨진 링크에서 statSync 예외
   const stat = lstatSync(path);
   if (stat.isSymbolicLink()) {
     return 0;
@@ -32,13 +32,13 @@ function mb(bytes) {
 }
 
 // 0xCAFEBABE: 파일 종류를 알리려고 맨 앞에 박아 두는 약속된 숫자. 여러 아키텍처를 담은
-// 파일의 매직 값, 그 뒤에 아키텍처 개수가 온다.
-// 빅엔디안 — 큰 자리 바이트부터 저장하는 순서. 이 기계는 반대(리틀엔디안)지만 두 값은
-// 빅엔디안으로 들어 있어 readUInt32BE로 읽는다.
+// 파일의 매직 값, 그 뒤에 아키텍처 개수.
+// 빅엔디안: 큰 자리 바이트부터 저장하는 순서. 이 기계는 리틀엔디안이나 두 값은 빅엔디안 —
+// readUInt32BE로 읽음
 function archCount(bundlePath) {
   const macosDir = join(bundlePath, "Contents", "MacOS");
   if (!existsSync(macosDir)) {
-    // .dmg는 열어볼 수 없다 — 빌드가 쌓인 자리 이름으로 판별한다.
+    // .dmg는 열 수 없음 — 빌드가 쌓인 자리 이름으로 판별
     return bundlePath.includes("universal-apple-darwin") ? 2 : 1;
   }
   // 실행 파일 이름 = .app 이름. 점 파일·디렉터리 미제외 시 .DS_Store를 실행 파일로 읽어
