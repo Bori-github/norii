@@ -83,7 +83,6 @@ norii의 구현 순서·**구현 상태**와 열린 결정의 단일 출처다. 
 - **네이티브 E2E** — 로컬 harness(`mise run verify-native`)가 **표준 창 버튼 세로 중앙 정렬·드래그 불변식(띠는 창 이동·본문은 불변)·전체화면 토글 클릭**을 실제 입력(AppleScript·CGEvent) + WebDriver/접근성 단언으로 검증한다. frontmost·화면 좌표 의존이라 헤드리스 CI가 아니라 로컬 전용이다. 남은 것: **유리 투과**의 픽셀 판정 — `screencapture`는 되나 통제 배경(뒤에 알려진 색 창)이 필요해 아직 수동, 도입 판단이 열려 있다 (→ [테스트 전략 — 성숙도 주의](testing.md#성숙도-주의) · [창 표면 계약 — 검증](design/window-chrome.md#검증))
 - **커버리지 임계값** — 도입 시점·수치 (→ [테스트 전략](testing.md))
 - **번들 크기 임계값** — 앱 번들 예산은 확정. 프론트엔드 dist 하드 임계값 도입 여부가 열림 (→ [플랫폼 전략](platform-strategy.md#번들-크기-측정))
-- **배포 아키텍처** — 두 아키텍처를 한 파일에 담을지, 아키텍처별로 나눌지, arm64만 낼지 (→ [플랫폼 전략](platform-strategy.md#배포-초기-인지-항목))
 - **oxfmt 1.0 재확인** — 베타(0.x) → 1.0 도달 시 안정성 재점검 (→ [코드 품질](code-quality.md))
 - **E2E 도구 재확인** — tauri-plugin-webdriver pre-1.0 → 1.0 도달 시 재점검(도입 자체는 확정, 재점검만 열림) (→ [테스트 전략](testing.md))
 - **tauri-specta 2.0** — rc 핀 → 정식 2.0 도달 시 재확인 (→ [기술 스택](tech-stack.md))
