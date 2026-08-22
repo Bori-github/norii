@@ -115,7 +115,7 @@ run = "bash scripts/upload-attachment.sh"
 
 # --- 번들 크기 측정 (check 미포함 — 빌드 산출물 필요) ---
 [tasks.bundle-size]
-description = "번들 크기 측정 (프론트엔드 dist + 앱 번들, 목표 <15MB — build 후 실행)"
+description = "번들 크기 측정 (프론트엔드 dist + 앱 번들 — build 후 실행)"
 run = "node scripts/bundle-size.mjs"
 
 # --- 아이콘 생성 (SVG 원본 → React 컴포넌트 — 생성물을 커밋한다) ---
