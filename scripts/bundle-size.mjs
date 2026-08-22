@@ -33,6 +33,8 @@ function mb(bytes) {
 
 // 0xCAFEBABE: 파일 종류를 알리려고 맨 앞에 박아 두는 약속된 숫자. 여러 아키텍처를 담은
 // 파일의 매직 값, 그 뒤에 아키텍처 개수.
+// 0xCAFEBABF: 4GB가 넘는 파일에 쓰는 다른 매직 값. 개수는 두 경우 모두 매직 값 바로 뒤
+// 4바이트 — 읽는 자리 동일.
 // 빅엔디안: 큰 자리 바이트부터 저장하는 순서. 이 기계는 리틀엔디안이나 두 값은 빅엔디안 —
 // readUInt32BE로 읽음
 function archCount(bundlePath) {
@@ -57,7 +59,8 @@ function archCount(bundlePath) {
     if (readSync(fd, head, 0, 8, 0) < 8) {
       return 1;
     }
-    return head.readUInt32BE(0) === 0xcafebabe ? head.readUInt32BE(4) : 1;
+    const magic = head.readUInt32BE(0);
+    return magic === 0xcafebabe || magic === 0xcafebabf ? head.readUInt32BE(4) : 1;
   } finally {
     closeSync(fd);
   }
