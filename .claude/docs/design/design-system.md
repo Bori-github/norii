@@ -39,7 +39,7 @@ apps/desktop/panda.config.ts   include에 ../../packages/ui/src를 더해 CSS �
 ## 왜 Panda CSS인가
 
 - **디자인 시스템용 프레임워크** — 토큰·시맨틱 토큰·recipe(컴포넌트 변형)를 1급으로 제공한다. DS를 밑바닥부터 조립하지 않는다.
-- **제로 런타임** — 빌드 시 원자 CSS로 추출한다. JS 런타임 비용 0 → norii의 "가볍고 빠름"과 번들 목표(<15MB)에 정렬(→ [기술 스택](../tech-stack.md)).
+- **제로 런타임** — 빌드 시 원자 CSS로 추출한다. JS 런타임 비용 0 → norii의 "가볍고 빠름"과 번들 목표에 정렬(→ [기술 스택](../tech-stack.md) · [플랫폼 전략](../platform-strategy.md#번들-크기-측정)).
 - **완전한 타입 안전** — 토큰·변형까지 타입으로 잡힌다. 잘못된 토큰 사용이 컴파일 타임에 걸려 TS strict 정책(→ [코드 품질](../code-quality.md#타입-엄격도-tsconfig))과 맞물린다.
 - **툴체인 정합** — 순수 TS로 스타일을 작성하므로 oxlint/oxfmt가 그대로 처리한다(Tailwind의 Prettier 전용 클래스 정렬 같은 도구 공백이 없다).
 

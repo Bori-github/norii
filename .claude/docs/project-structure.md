@@ -33,7 +33,7 @@ norii/
     README.md                목록·작성 규칙의 단일 출처 (생성 여부 판단은 rules/project-rules.md)
   scripts/
     docs-drift.mjs           문서-코드 드리프트 검사 (계약 문서 ↔ 코드 → development-commands.md)
-    bundle-size.mjs          번들 크기 측정 (목표 <15MB → platform-strategy.md)
+    bundle-size.mjs          번들 크기 측정 · 예산 값 소유 (→ platform-strategy.md)
     free-port.mjs            개발 서버 빈 포트 선택 (dev·dev-webdriver 동시 실행 → development-commands.md)
     record-demo.sh           E2E 화면을 녹화해 PR 데모 영상 생성 (→ development-commands.md)
     upload-attachment.sh     영상·이미지를 GitHub CDN에 업로드, 커밋 없이 (→ development-commands.md)

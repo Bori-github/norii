@@ -42,7 +42,7 @@
 - `mise run check`: <통과 / 실패 요약>
 - TDD(신규 기능·커맨드·상태 전이·파서는 실패 테스트 먼저): <예 / 해당없음>
 - 실앱 E2E (`mise run dev-webdriver` → `mise run e2e`): <통과 / N/A>
-- 번들 크기 (`tauri build --bundles app` → `mise run bundle-size`, <15MB): <예: 9.17MB / N/A>
+- 번들 크기 (`tauri build --bundles app` → `mise run bundle-size`): <측정값 / N/A>
 - 자동 검증 불가 항목(방법·이유):
 
 ## 관련 문서 (단일 출처)
