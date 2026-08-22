@@ -61,7 +61,7 @@ semantic tokens    의미값 — colors.text, colors.bg.chrome, colors.border �
 
 ## 표면 토큰
 
-어느 표면이 어느 토큰을 쓰는지는 루트 `DESIGN.md`의 표면 표가 단일 출처다(→ [표면](decisions/surface.md)). 여기서는 토큰 이름만 정의한다.
+여기서는 토큰 이름만 정의한다 — 어느 표면이 어느 토큰을 쓰는지는 정하지 않는다(→ [표면](decisions/surface.md)).
 
 ```text
 bg.canvas         창 바닥. 유리가 켜지면 투명, 아니면 불투명. 갈라지는 유일한 토큰.
