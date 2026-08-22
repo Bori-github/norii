@@ -37,7 +37,7 @@ norii는 macOS를 기준으로 개발하고, 완료 후 다른 플랫폼 지원�
 
 norii는 **직접 배포(서명·공증된 DMG + 자동 업데이트)** 로 간다. **Mac App Store는 비목표**다.
 
-이건 선택이 아니라 디자인 결정의 귀결이다. norii의 창은 반투명 유리로 뜨는데([유리](design/decisions/glass.md)), 그 유리는 **macOS 비공개 API를 요구한다**(설정 키와 의존 사슬은 [창 표면 계약](design/window-chrome.md)이 소유). Tauri가 해당 설정의 문서에 명시한다 — *"Using private APIs on macOS prevents your application from being accepted to the App Store."*
+창 유리가 **macOS 비공개 API를 쓰기 때문에** App Store 심사를 통과할 수 없다(→ [유리](design/decisions/glass.md) · [창 표면 계약](design/window-chrome.md)).
 
 App Store를 잃어도 무방하다고 판단한 근거는 **배포 계획이 애초에 공증 + Tauri updater(직접 배포)라 심사 경로를 쓰지 않기 때문**이다.
 

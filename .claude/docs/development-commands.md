@@ -66,10 +66,10 @@ mise run upload-demo <파일>     # 3) GitHub CDN 업로드 → PR에 붙일 URL
 
 # 번들 크기 측정 (check 미포함 — 빌드 산출물 필요)
 # 지금은 프론트엔드 dist 측정만 유효하다. 앱 번들(.app)은 아래 참고.
-pnpm --filter desktop build   # vite 빌드 → dist 생성 (빠름)
+pnpm --filter desktop build   # vite 빌드 → dist 생성
 mise run bundle-size          # dist 측정 · 앱 번들 있으면 예산과 비교 (→ platform-strategy.md)
 
-# 실제 .app 크기(예산의 대상)를 재려면 번들링을 켜서 릴리스 빌드한다 (느림):
+# 실제 .app 크기(예산의 대상)를 재려면 번들링을 켜서 릴리스 빌드한다:
 #   pnpm --filter desktop tauri build --bundles app   # → target/release/bundle/macos/*.app
 #   mise run bundle-size
 # 번들링 상시화·서명·CI 측정은 배포 단계(→ platform-strategy.md)에서 다룬다.
