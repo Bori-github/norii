@@ -1,6 +1,6 @@
 // 번들 크기 측정 — 측정 대상과 실행 시점은 .claude/docs/platform-strategy.md#번들-크기-측정.
 import { existsSync, lstatSync, openSync, readdirSync, readSync, closeSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import process from "node:process";
 
 const ROOT = process.cwd();
@@ -41,7 +41,13 @@ function archCount(bundlePath) {
     // .dmg는 열어볼 수 없다 — 빌드가 쌓인 자리 이름으로 판별한다.
     return bundlePath.includes("universal-apple-darwin") ? 2 : 1;
   }
-  const [name] = readdirSync(macosDir);
+  // 실행 파일 이름 = .app 이름. 점 파일·디렉터리 미제외 시 .DS_Store를 실행 파일로 읽어
+  // 아키텍처 오판, 또는 readSync EISDIR
+  const files = readdirSync(macosDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && !entry.name.startsWith("."))
+    .map((entry) => entry.name);
+  const appName = basename(bundlePath, ".app");
+  const name = files.includes(appName) ? appName : files[0];
   if (name === undefined) {
     return 1;
   }
